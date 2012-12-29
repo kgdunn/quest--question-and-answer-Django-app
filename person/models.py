@@ -45,4 +45,5 @@ class Token(models.Model):
     has_been_used = models.BooleanField(default=False)
 
     def __unicode__(self):
-        return u'%s, %s, %s' % (str(self.has_been_used), str(self.student), self.token_address)
+        return u'%s, %s, %s' % (str(self.has_been_used), str(self.user),
+                                self.token_address)

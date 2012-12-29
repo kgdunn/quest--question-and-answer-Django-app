@@ -1,6 +1,6 @@
 from django.contrib import admin
 from models import User, UserProfile
-from django.contrib.auth.signals import user_logged_in
+#from django.contrib.auth.signals import user_logged_in
 from django.db.models import signals
 
 # 3rd-party ``registration`` app: connect up the signals
@@ -18,7 +18,7 @@ admin.site.register(UserProfile, UserProfileAdmin)
 
 # Hook up the signals here. Doing it in models.py results in circular imports.
 user_registered.connect(views.create_new_account)
-user_logged_in.connect(views.user_logged_in)
+#user_logged_in.connect(views.user_logged_in)
 
 # Create a ``UserProfile`` for every user
 signals.post_save.connect(views.create_new_account, User)

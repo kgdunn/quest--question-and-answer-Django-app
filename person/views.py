@@ -1,9 +1,9 @@
 import models
 import logging
 
+from django.contrib.auth import login
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response
-from django.http import HttpResponseRedirect
 
 from models import Token
 
@@ -17,14 +17,6 @@ token_prefix = 'http://quest.mcmaster.ca/tokens/'
 
 logger = logging.getLogger('quest')
 logger.debug('Initializing person::views.py')
-
-#from django.contrib.auth import authenticate, login
-
-def user_logged_in(user, **kwargs):
-    """
-    Triggered when the user signs in.
-    """
-    logger.debug('User logged in: %s' % user.username)
 
 def create_new_account(user=None, **kwargs):
     """
@@ -40,7 +32,7 @@ def create_new_account(user=None, **kwargs):
         new_user_profile = models.UserProfile.objects.create(user=new_user)
         new_user_profile.save()
 
-def sign_in(request, next_page=''):
+def sign_in(request):
     """
     Verifies the user. If they are registered, then they are emailed a
     token to sign in.
@@ -66,7 +58,7 @@ def sign_in(request, next_page=''):
                                         has_been_used=False)
             token_address = token_prefix + token_address
             email_token_to_student([the_student.email, ], token_address)
-            return render_to_response('person/sent-email')
+            return render_to_response('person/sent-email.html')
 
     # Non-POST access of the sign-in page: display the login page to the user
     else:
@@ -90,4 +82,44 @@ The http://quest.mcmaster.ca web server.
 '''
     subject = 'Access the Quest website'
     out = send_email(to_address, subject, message, from_address=email_from)
+    if out:
+        logger.debug('Successfully sent email for sign in')
+    else:
+        logger.debug('Unable to send sign-in email to: %s' % to_address[0])
 
+def deactivate_token_sign_in(request, token):
+    """ Deactivates the token and signs the user in for a limited period.
+    """
+    logger.debug('About to process received token: ' + str(token))
+    token_item = Token.objects.filter(token_address=token)
+
+    if len(token_item) == 0 or token_item[0].has_been_used:
+        logger.info('Invalid/expired token received: ' + token)
+        page_content = {}
+        return render_to_response('person/invalid-expired-token.html',
+                                  page_content)
+
+
+    # Valid token
+    user = token_item[0].user
+
+    # Method 1 to update the record
+    t_updated = Token(token_item[0].id, has_been_used=True,
+                      token_address=token_item[0].token_address, user=user)
+    t_updated.save()
+
+    # Method 2 to update the record
+    #token_item[0].has_been_used = not(F('has_been_used'))
+    #token_item[0].save()
+
+    # Use Django's auth framework to mark the user as signed-in
+    # authenticate() <--- use this in the future to authenticate against
+    #                     other systems. We are using tokens for now.
+    user.backend = '<internal token>'
+    login(request, user)
+
+    # Now proceed to show the questions to the student
+    page_content = {}
+    page_content.update(csrf(request))
+    logger.debug('User logged in: %s' % user.username)
+    return render_to_response('person/not-registered.html', page_content)

@@ -10,6 +10,8 @@ urlpatterns = patterns('',
     # url(r'^$', 'quest.views.home', name='home'),
     # url(r'^quest/', include('quest.foo.urls')),
     (r'^$', person.views.sign_in),
+    (r'^tokens/(.*)/$', person.views.deactivate_token_sign_in),
+
 
     # Uncomment the admin/doc line below to enable admin documentation:
     url(r'^admin/doc/', include('django.contrib.admindocs.urls')),

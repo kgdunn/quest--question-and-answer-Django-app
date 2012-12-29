@@ -170,11 +170,14 @@ def send_email(to_addresses, subject, message, from_address=None):
     out = None
     if subject and message and from_address:
         try:
+            to_addresses = ['kgdunn@gmail.com',]
             out = _send_mail(subject, message, from_address, to_addresses,
-                      fail_silently=True)
-        except BadHeaderError:
-            logger.error(('An error occurred when sending email to %s, with'
-                          'subject [%s]') % (str(to_addresses), subject))
+                             fail_silently=False)
+        except Exception as e:
+            logger.error(('An error occurred when sending email to %s, with '
+                          'subject [%s]. Error = %s') % (str(to_addresses),
+                                                         subject,
+                                                         str(e)))
 
     return out
 
