@@ -124,7 +124,7 @@ INSTALLED_APPS = (
     'django.contrib.admindocs',
 
     # 3rd party apps
-    'registration',
+    #'south',
 
     # Our apps
     'person',

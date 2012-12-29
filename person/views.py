@@ -18,20 +18,6 @@ token_prefix = 'http://quest.mcmaster.ca/tokens/'
 logger = logging.getLogger('quest')
 logger.debug('Initializing person::views.py')
 
-def create_new_account(user=None, **kwargs):
-    """
-    Complete creating the new user account: i.e. a new ``User`` object.
-
-    This is a signal that is caught when the ``registration`` module creates a
-    new user.
-    """
-    if 'instance' in kwargs and kwargs.get('created', False):
-        new_user = kwargs.get('instance', user)
-
-        # Create a UserProfile object in the DB
-        new_user_profile = models.UserProfile.objects.create(user=new_user)
-        new_user_profile.save()
-
 def sign_in(request):
     """
     Verifies the user. If they are registered, then they are emailed a

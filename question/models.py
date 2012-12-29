@@ -69,19 +69,17 @@ class QTemplate(models.Model):
     # The question template
     t_question = models.TextField()
     # The solution template
-    t_solution = models.TextField()
+    t_solution = models.TextField(blank=True, null=True)
     # The grading dictionary (string-representation)
     t_grading = models.TextField()
     # Variables used in the templates (``t_question`` and ``t_solution``)
     t_variables = models.TextField()
-
 
     def save(self, *args, **kwargs):
         """ Override the model's saving function to do some checks """
         # http://docs.djangoproject.com/en/dev/topics/db/models/
                                           #overriding-predefined-model-methods
         self.difficulty = min(self.difficulty, 9)
-
 
         # Call the "real" save() method.
         super(QTemplate, self).save(*args, **kwargs)
@@ -129,17 +127,15 @@ class QSet(models.Model):
     course = models.ForeignKey('course.Course')
 
     # When are questions first available and finally available for answering?
-    # Specify 2 of the 3 below and the 3rd is auto-calculated.
     ans_time_start = models.DateTimeField(blank=True, null=True)
     ans_time_final = models.DateTimeField(blank=True, null=True)
-    ans_max_time = models.TimeField(blank=True, null=True)
+
+    # Maximum test duration. If 0, then allow the test to be completed anytime
+    # up till ``ans_time_final``.
+    max_duration = models.TimeField(default="00:00")
 
     def save(self, *args, **kwargs):
         """ Override  model's saving function to do some checks """
-        # TODO: calculate the 3rd entry
-        #ans_time_start
-        #ans_time_final
-        #ans_max_time
 
 
         # Call the "real" save() method.
