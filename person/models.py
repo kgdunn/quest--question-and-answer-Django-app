@@ -1,10 +1,11 @@
 from django.contrib.auth.models import User
 from django.db import models
+
+# Our apps:
 from utils import unique_slugify
 
 class UserProfile(models.Model):
     # See https://docs.djangoproject.com/en/1.3/topics/auth/
-
     user = models.OneToOneField(User, unique=True, related_name="profile")
 
     # Slug field
@@ -35,13 +36,11 @@ class UserProfile(models.Model):
     def __unicode__(self):
         return 'Profile for: ' + self.user.username
 
-
-
 class Token(models.Model):
     """
     Manages the unique sign-in tokens
     """
-    student = models.ForeignKey(Student)
+    user = models.ForeignKey(User)
     token_address = models.CharField(max_length=250)
     has_been_used = models.BooleanField(default=False)
 

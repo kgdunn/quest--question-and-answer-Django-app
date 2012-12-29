@@ -18,6 +18,8 @@ token_prefix = 'http://quest.mcmaster.ca/tokens/'
 logger = logging.getLogger('quest')
 logger.debug('Initializing person::views.py')
 
+#from django.contrib.auth import authenticate, login
+
 def user_logged_in(user, **kwargs):
     """
     Triggered when the user signs in.
@@ -60,11 +62,11 @@ def sign_in(request, next_page=''):
         else:
             token_address = generate_random_token()
             Token.objects.get_or_create(token_address=token_address,
-                                        student=the_student,
+                                        user=the_student,
                                         has_been_used=False)
             token_address = token_prefix + token_address
-            email_token_to_student(the_student.email, token_address)
-            return HttpResponseRedirect('sent-email')
+            email_token_to_student([the_student.email, ], token_address)
+            return render_to_response('person/sent-email')
 
     # Non-POST access of the sign-in page: display the login page to the user
     else:
@@ -72,7 +74,6 @@ def sign_in(request, next_page=''):
         page_content = {}
         page_content.update(csrf(request))
         return render_to_response('person/sign-in-form.html', page_content)
-
 
 def email_token_to_student(to_address, token_address):
     """ Sends an email to the student with the web address to log in."""
@@ -88,5 +89,5 @@ in or log out afterwards - just close the web page.
 The http://quest.mcmaster.ca web server.
 '''
     subject = 'Access the Quest website'
-    send_email(to_address, subject, message, from_address=email_from)
+    out = send_email(to_address, subject, message, from_address=email_from)
 

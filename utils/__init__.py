@@ -167,13 +167,16 @@ def send_email(to_addresses, subject, message, from_address=None):
     if from_address is None:
         from_address = settings.SERVER_EMAIL
 
+    out = None
     if subject and message and from_address:
         try:
-            _send_mail(subject, message, from_address, to_addresses,
+            out = _send_mail(subject, message, from_address, to_addresses,
                       fail_silently=True)
         except BadHeaderError:
             logger.error(('An error occurred when sending email to %s, with'
                           'subject [%s]') % (str(to_addresses), subject))
+
+    return out
 
 def generate_random_token(base_address='', token_length=16):
     import random

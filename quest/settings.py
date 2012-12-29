@@ -134,6 +134,21 @@ INSTALLED_APPS = (
 # Authentication related:
 AUTH_PROFILE_MODULE = 'person.UserProfile'
 
+# Exec the local settings (settings that should not be included in version
+# control!
+QUEST = {}
+this_dir = __file__[0:__file__.find('settings.py')]
+try:
+    execfile(this_dir + os.sep + 'local_settings.py')
+except IOError:
+    # See https://docs.djangoproject.com/en/1.5/ref/settings for EMAIL settings
+    EMAIL_HOST = ''
+    EMAIL_HOST_USER = ''
+    EMAIL_HOST_PASSWORD = ''
+    # Visitors will receive email from this address e.g. "admin@example.org"
+    SERVER_EMAIL = ''
+    DEFAULT_FROM_EMAIL = SERVER_EMAIL
+
 
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
