@@ -42,6 +42,7 @@ class BrowserID(models.Model):
     resolution = models.CommaSeparatedIntegerField(max_length=50, blank=True)
     timezone = models.SmallIntegerField(blank=True)
 
+
 class QTemplate(models.Model):
     """
     The template for a question.
