@@ -58,11 +58,11 @@ class QTemplate(models.Model):
         """ Override the model's saving function to do some checks """
         # http://docs.djangoproject.com/en/dev/topics/db/models/
                                           #overriding-predefined-model-methods
-        self.difficulty = max(self.difficulty, 9)
+        self.difficulty = min(self.difficulty, 9)
 
 
         # Call the "real" save() method.
-        super(UserProfile, self).save(*args, **kwargs)
+        super(QTemplate, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return self.name
@@ -78,11 +78,19 @@ class QSet(models.Model):
     # If True, then the questions will be randomly selected using rules
     #      in ``min_total``, ``max_total``, ``min_num`` and ``max_num`` to
     #      guide the random selection
-    random_choice = models.BooleanField(default=True)
-    min_total = models.FloatField()            # Min grades allowed in set
-    max_total = models.FloatField()            # Max grades allowed in set
-    min_num = models.PositiveIntegerField()    # Smallest number of questions
-    max_num = models.PositiveIntegerField()
+    random_choice = models.BooleanField(default=True,
+                                        help_text = ('Randomly choose '
+                                        'questions for the students'))
+    min_total = models.FloatField(verbose_name='Total minimum grade',
+                                  help_text = ('Minimum total grades allowed '
+                                               'in set'))
+    max_total = models.FloatField(verbose_name='Total maximum grade',
+                                  help_text = ('Maximum total grades allowed '
+                                               'in set'))
+    min_num = models.PositiveIntegerField(verbose_name=('Fewest number of '
+                                                         'questions in set'))
+    max_num = models.PositiveIntegerField(verbose_name=('Most number of '
+                                                         'questions in set'))
 
     # Many-to-many? A QTemplate can be part of multiple QSet objects, and a
     #               QSet has multiple QTemplate objects:
@@ -90,7 +98,8 @@ class QSet(models.Model):
 
     # Certain question templates might be required to always be present
     # Use the ``related_name`` because there are two M2M relationships here
-    forced_q = models.ManyToManyField(QTemplate, related_name='forced')
+    forced_q = models.ManyToManyField(QTemplate, related_name='forced',
+                                      blank=True)
 
     course = models.ForeignKey('course.Course')
 
