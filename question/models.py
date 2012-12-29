@@ -16,7 +16,13 @@ QSet:      defines a set of QTemplate questions from which the system can
            N < 16 to answer. There is some flexibility in how questions are
            "randomly" assigned.
 
+Some other terminology:
+* Question: the question asked of the student
+* Grading:  the internal representation of the answer (not shown, used for
+            auto-grading)
+* Solution: the solution displayed to the student
 """
+
 from django.db import models
 
 class DateTimes(models.Model):
@@ -41,17 +47,33 @@ class QTemplate(models.Model):
     The template for a question.
     """
     question_type = (
-                ('MCQ', 'Multiple choice question (including True/False'),
-                ('Short', 'Short answer question'),
-                ('Numeric', 'Numeric answer (with specified sensitivity)'),
-
-        )
+                ('MCQ',      'Multiple choice question (including True/False'),
+                ('Short',    'Short answer question'),
+                ('Long',     'Long answer question'),
+                ('MultiSel', 'Multi-select'),  # Like MCQ, but multiple options
+                ('FIB',      'Fill in the blanks'),
+                ('Numeric',  'Numeric answer (with specified sensitivity)'),
+                ('MultiPart','Multipart questions'),
+    )
 
     name = models.CharField(max_length=250)     # e.g. "The misbehaving clock"
+    q_type = models.CharField(max_length=10, choices=question_type)
     contributor = models.ForeignKey('person.UserProfile')
     tags = models.ManyToManyField('tagging.Tag')
     difficulty = models.PositiveSmallIntegerField(blank=True)
     max_points = models.PositiveSmallIntegerField()
+
+    # Can students provide feedback on this question
+    enable_feedback = models.BooleanField(default=True)
+
+    # The question template
+    t_question = models.TextField()
+    # The solution template
+    t_solution = models.TextField()
+    # The grading dictionary (string-representation)
+    t_grading = models.TextField()
+    # Variables used in the templates (``t_question`` and ``t_solution``)
+    t_variables = models.TextField()
 
 
     def save(self, *args, **kwargs):
@@ -101,11 +123,29 @@ class QSet(models.Model):
     forced_q = models.ManyToManyField(QTemplate, related_name='forced',
                                       blank=True)
 
+    bonus_q = models.ManyToManyField(QTemplate, related_name='bonus',
+                                     blank=True, null=True)
+
     course = models.ForeignKey('course.Course')
 
-    # When are questions first available and finally available until?
-    time_start = models.DateTimeField()
-    time_final = models.DateTimeField()
+    # When are questions first available and finally available for answering?
+    # Specify 2 of the 3 below and the 3rd is auto-calculated.
+    ans_time_start = models.DateTimeField(blank=True, null=True)
+    ans_time_final = models.DateTimeField(blank=True, null=True)
+    ans_max_time = models.TimeField(blank=True, null=True)
+
+    def save(self, *args, **kwargs):
+        """ Override  model's saving function to do some checks """
+        # TODO: calculate the 3rd entry
+        #ans_time_start
+        #ans_time_final
+        #ans_max_time
+
+
+        # Call the "real" save() method.
+        super(QSet, self).save(*args, **kwargs)
+
+
 
     def __unicode__(self):
         return u'%s [%s]' % (self.name, self.course.name)
