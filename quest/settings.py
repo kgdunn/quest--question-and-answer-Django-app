@@ -129,6 +129,8 @@ INSTALLED_APPS = (
     # Our apps
     'person',
     'tagging',
+    'question',
+    'course',
 )
 
 # Authentication related:

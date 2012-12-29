@@ -28,6 +28,14 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
             user.role = 'Superuser'
             user.save()
 
+        auto_user = User.objects.create(username='Quest Grader',
+                                        is_active=False)
+        auser = user_class.objects.create(user=auto_user)
+        auser.role = 'Grader'
+        auser.save()
+
+
+
     # While we are here (and this isn't user related) check the name of
     # the site. If it is "example.com", change it to "SciPy-Central.org"
     if app_label == 'sites':

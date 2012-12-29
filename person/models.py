@@ -18,9 +18,13 @@ class UserProfile(models.Model):
             ('TA', 'TA'),                    # Next highest level
             ('Student', 'Student'),          # Lowest level
             ('Contributor', 'Contributor'),  # Just to acknowledge contribs
+            ('Grader', 'Grader'),            # Auto-grader
     )
     role = models.CharField(choices=role_choice, max_length=20,
                             default='Student')
+
+    courses = models.ManyToManyField('course.Course')
+
     class Meta:
         verbose_name_plural = 'users'
 

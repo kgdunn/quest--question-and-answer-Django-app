@@ -20,8 +20,8 @@ class Tag(models.Model):
     # Name used for URLs and tag blocks
     slug = models.SlugField(unique=True, editable=False)
 
-    # Show this longer name when user hovers their mouse
-    name = models.TextField(max_length=50)
+    # Show this longer name
+    name = models.CharField(max_length=100)
 
     # We may decide to have a page for each tag, where we show these
     # descriptions
@@ -30,7 +30,7 @@ class Tag(models.Model):
     image = models.ImageField(upload_to='tags/', blank=True)
 
     # Tags can be of two types
-    tag_type = models.TextField(max_length=10, choices=TAG_TYPES,
+    tag_type = models.CharField(max_length=10, choices=TAG_TYPES,
                                 default='regular')
 
     def __unicode__(self):
