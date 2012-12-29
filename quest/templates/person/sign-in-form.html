@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form action="" method="POST" enctype="multipart/form-data">{% csrf_token %}
+	<table class="sign-in-table">
+		<tr>
+			<td>Email address:</td>
+			<td><input id="id_student_number" type="text" name="email_prefix" maxlength="8" placeholder="xxxxxxxx"/>@mcmaster.ca</td>
+			<td><input type="submit" name="mysubmit" value="Email me a login address">* <i>It can take a few minutes before the sign-in email
+reaches your <b>McMaster email address</b>.</i></td>
+		</tr>
+	</table>
+</form>
+{% endblock %}
