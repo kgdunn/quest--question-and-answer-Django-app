@@ -2,6 +2,7 @@
 # ----------------------
 # Django
 # easy_install -U simplejson <----- not used
+# easy_install -U markdown <----- version 2.2.1 used during development/testing
 
 
 

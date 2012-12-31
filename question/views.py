@@ -1,10 +1,17 @@
 # Python and Django imports
 import re
+import json
+import random
+from lxml import etree
+
+# 3rd party imports
+import markdown
 
 # Our imports
 from models import (QTemplate, QSet, QActual)
 from person.models import UserProfile
 from tagging.views import get_and_create_tags
+from utils import generate_random_token
 
 # TODO(KGD): allow these to be case-insenstive later on
 CONTRIB_RE = re.compile(r'^Contributor:(\s*)(.*)$')
@@ -13,9 +20,9 @@ DIFFICULTY_RE = re.compile(r'^Difficulty:(\s*)(.*)$')
 GRADES_RE = re.compile(r'^Grade:(\s*)(.*)$')
 FEEDBACK_RE = re.compile(r'^Feedback:(\s*)(.*)$')
 
-LURE_RE = re.compile(r'^\&(\s*)(\S*)$')
-KEY_RE = re.compile(r'^\^(\s*)(\S*)$')
-FINAL_RE = re.compile(r'^\&(\s*)(\S*)$')
+LURE_RE = re.compile(r'^\&(\s*)(.*)$')
+KEY_RE = re.compile(r'^\^(\s*)(.*)$')
+FINAL_RE = re.compile(r'^\&(\s*)(.*)$')
 
 class ParseError(Exception):
     pass
@@ -73,6 +80,10 @@ def parse_MCQ_TF_Multi(text):
     else:
         t_solution = dict()
         t_solution['key'] = ''
+
+Consider using a different data structure for lures: I'd like to store
+('key', 'Correct answer, possible stored as a list of strings', 'x15sl4s') <-- unique code used in the HTML representation
+
         t_solution['lures'] = []
         t_solution['final'] = ''
 
@@ -133,7 +144,6 @@ def parse_question_text(text):
     [[variables]]
 
     """
-
     # Force it into a list of strings.
     if isinstance(text, basestring):
         text = text.split('\n')
@@ -216,12 +226,10 @@ def create_question_template(text):
                             )
 
     for tag in get_and_create_tags(sd['tags']):
-        #tag_intermediate = models.InterestCreation(user=user.profile,
-        #                                           tag=tag)
-        #tag_intermediate.save()
         qtemplate.tags.add(tag)
 
     return qtemplate
+
 
 def generate_questions():
     """
@@ -234,15 +242,76 @@ def generate_questions():
     pass
 
 
-def render():
+def render(qt):
     """
     Renders templates to HTML.
-    * Handle text
+    * Handles text
     * MathJax math
     * Pictures/images
     * Calls external code before rendering
+
+    Rendering order:
+        * Convert our internal representation to Markdown (or ReST)
+        * Pick random values for any variables in the question
+        * And/or evaluate any source code to obtain variables and solutions
+        * Render any variables using Jinja templates.
+        * Convert this markup to HTML.
+
     """
-    pass
+    def render_mcq(qt):
+        """Renders a multiple choice question to HTML."""
+
+        if qt.q_type in ('mcq', 'tf'):
+            q_type = 'radio'
+        elif qt.q_type in ('multi',):
+            q_type = 'checkbox'
+
+        # From: http://www.echoecho.com/htmlforms10.htm
+        # The ``name`` setting tells which group of radio buttons the field
+        # belongs to. When you select one button, all other buttons in the
+        # same group are unselected. Useful when having multiple questions
+        # on the page.
+        # The ``value`` defines what will be submitted to the server.
+
+        tplt = """* <input type = "%s" name="%s" value="%s">%s</>"""
+
+        lst = []
+        name = generate_random_token(8)
+
+        lst.append(tplt % (q_type, name, qt.t_solution['key'],
+                           qt.t_solution['key']))
+        for lure in qt.t_solution['lures']:
+            lst.append(tplt % (q_type, name, lure, lure))
+
+        random.shuffle(lst)
+        if qt.t_solution['final']:
+            lst.append(tplt % (q_type, name, qt.t_solution['final'],
+                               qt.t_solution['final']))
+
+        return lst
+
+        #----------------
+
+    # First convert strings to dictionaries:
+    qt.t_solution = json.loads(qt.t_solution)
+
+    rndr = []
+
+    if qt.q_type in ('mcq', 'tf', 'multi'):
+        rndr.append(qt.t_question)
+        rndr.append('---')
+        rndr.extend(render_mcq(qt))
+
+
+    # Now call Jinja to render any templates
+    rndr_str = '\n'.join(rndr)
+
+    # Then call Markdown
+    html = markdown.markdown(rndr_str)
+
+    return html
+
+
 
 
 def auto_grade():
@@ -253,3 +322,37 @@ def auto_grade():
     """
     pass
 
+
+#<form>
+  #<fieldset>
+   #<legend>Selecting elements</legend>
+   #<p>
+      #<label>Radio buttons</label>
+      #<input type = "radio"
+             #name = "radSize"
+             #id = "sizeSmall"
+             #value = "small"
+             #checked = "checked" />
+      #<label for = "sizeSmall">small</label>
+
+      #<input type = "radio"
+             #name = "radSize"
+             #id = "sizeMed"
+             #value = "medium" />
+      #<label for = "sizeMed">medium</label>
+
+      #<input type = "radio"
+             #name = "radSize"
+             #id = "sizeLarge"
+             #value = "large" />
+      #<label for = "sizeLarge">large</label>
+    #</p>
+  #</fieldset>
+#</form>
+
+
+
+#root = etree.Element("form")
+#fs = etree.SubElement(root, "fieldset")
+#legend
+#s = etree.tostring(root, pretty_print=True)

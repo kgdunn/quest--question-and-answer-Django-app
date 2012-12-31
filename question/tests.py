@@ -24,6 +24,7 @@ to one of your import wingdbstub statements.
 import wingdbstub
 from django.test import TestCase
 from question.models import QTemplate
+from views import create_question_template
 
 
 class SimpleTests(TestCase):
@@ -53,11 +54,11 @@ If a=1, b=2. What is a*b?
 ^2
 & 4
         """
-        from views import create_question_template
         qtemplate = create_question_template(some_text)
-        self.assertEqual(qtemplate.difficulty, 1)
-        self.assertEqual(qtemplate.q_type, 'mcq')
-        self.assertEqual(qtemplate.name, 'If a=1, b=2. What is a*b?')
+        q = QTemplate.objects.get(id=qtemplate.id)
+        self.assertEqual(q.difficulty, 1)
+        self.assertEqual(q.q_type, 'mcq')
+        self.assertEqual(q.name, 'If a=1, b=2. What is a*b?')
 
 
     def test_mcq_more_details(self):
@@ -83,7 +84,6 @@ If a=1, b=2. What is a*b?
 & 1
 ^2
 & 4"""
-        from views import create_question_template
         qtemplate = create_question_template(some_text)
         q = QTemplate.objects.get(id=qtemplate.id)
         self.assertEqual(q.difficulty, 2)
@@ -94,8 +94,45 @@ If a=1, b=2. What is a*b?
                                         '"lures": ["12", "1", "4"]}'))
 
 
+class RenderTests(TestCase):
+    fixtures = ['initial_data',]
+    def test_tf_basic(self):
+        """
+        Basic true/false template. Really the minimal possible example.
+        """
+        some_text = """
+[[type]]
+TF
+[[question]]
+The sun is hot.
+--
+& False
+^True
+        """
+        qtemplate = create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+        from views import render
+        html = render(qt)
 
-
-
-
-
+    def test_mcq_basic(self):
+        """
+        Basic question template. Really the minimal possible example.
+        """
+        some_text = """
+[[type]]
+MCQ
+[[question]]
+If a={{a}}, b={{b}}. What is a*b?
+--
+& {{a}}{{b}}
+&1
+^{% eval %}{{a}}*{{b}} {% endeval %}
+& {% eval %}{{a}}+{{b}} {% endeval %}
+[[variables]]
+{{a}}: [2, 5, 0.5, float]
+{{b}}: [5, 9, 1, int]
+        """
+        qtemplate = create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+        from views import render
+        html = render(qt)

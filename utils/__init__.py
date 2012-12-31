@@ -181,7 +181,7 @@ def send_email(to_addresses, subject, message, from_address=None):
 
     return out
 
-def generate_random_token(base_address='', token_length=16):
+def generate_random_token(token_length=16, base_address=''):
     import random
     token = ''.join([random.choice('ABCEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz2345689') for i in range(token_length)])
     return base_address + token
