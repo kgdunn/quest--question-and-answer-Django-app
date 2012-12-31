@@ -14,6 +14,7 @@ from models import (QTemplate, QSet, QActual)
 from person.models import UserProfile
 from tagging.views import get_and_create_tags
 from utils import generate_random_token
+from course.models import Course
 
 # TODO(KGD): allow these to be case-insenstive later on
 CONTRIB_RE = re.compile(r'^Contributor:(\s*)(.*)$')
@@ -282,12 +283,26 @@ def ask_question_set(request):
     return redirect('quest-ask-questions', '4C3-6C3', 'week-1')
 
 @login_required
-def ask_show_questions(request, course_code, question_set):
+def ask_show_questions(request, course_code_slug, question_set_slug):
     """
     Display questions (and perhaps answers) to questions from a question set
     for a specific student
     """
     user = request.user.profile
+    courses = Course.objects.filter(slug=course_code_slug)
+    if not courses:
+        # TODO(KGD): redirect to login page
+        return
+
+    qset=QSet.objects.filter(slug=question_set_slug).filter(course=courses[0])
+    if not qset:
+        # TODO(KGD): redirect to login page
+                return
+
+    # Show all the questions for this student
+    quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
+
+    # Now display the questions
 
 
 

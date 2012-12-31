@@ -15,8 +15,8 @@ urlpatterns = patterns('',
     url(r'^question-sets/$', ask_question_set, name='quest-question-set'),
 
     # ://(course-code)/(question-set-slug)/
-    url(r'^(?P<course_code>.*)/(?P<question_set>.*)/$', ask_show_questions,
-        name='quest-ask-questions'),
+    url(r'^(?P<course_code_slug>.*)/(?P<question_set_slug>.*)/$',
+        ask_show_questions, name='quest-ask-questions'),
 
     (r'^tokens/(.*)/$', person.views.deactivate_token_sign_in),
 

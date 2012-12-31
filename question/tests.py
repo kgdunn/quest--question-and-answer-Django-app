@@ -21,6 +21,10 @@ When code is changed, just save it and Django will restart. The debugger will
 reconnect to Wing IDE once you request a page load in your browser that leads
 to one of your import wingdbstub statements.
 """
+
+# TODO: sign in student and make sure they only see the questions they
+#       are supposed to see, i.e. not the full question set, just the subset
+
 try:
     import simplejson as json
 except ImportError:
