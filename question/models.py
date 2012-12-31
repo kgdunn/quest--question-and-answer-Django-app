@@ -28,6 +28,8 @@ try:
 except ImportError:
     import json
 from django.db import models
+from django.template.defaultfilters import slugify
+from django.core.exceptions import ValidationError
 
 class DateTimes(models.Model):
     """ Date and times something was accessed or created."""
@@ -47,6 +49,7 @@ class BrowserID(models.Model):
     timezone = models.SmallIntegerField(blank=True)
 
 
+
 class QTemplate(models.Model):
     """
     The template for a question.
@@ -60,7 +63,6 @@ class QTemplate(models.Model):
                 ('numeric',  'Numeric answer (with specified sensitivity)'),
                 ('multipart','Multipart questions'),
     )
-
     name = models.CharField(max_length=250)     # e.g. "The misbehaving clock"
     q_type = models.CharField(max_length=10, choices=question_type)
     contributor = models.ForeignKey('person.UserProfile', blank=True)
@@ -86,11 +88,11 @@ class QTemplate(models.Model):
                                           #overriding-predefined-model-methods
 
         # Clean up the lures/distractors from empty items (blank lines)
-        if self.q_type in ('mcq', 'tf', 'multi'):
-            if self.t_grading.has_key('lures'):
-                self.t_grading['lures'] =  [lure for lure in
-                                             self.t_grading['lures'] if
-                                             lure.strip()]
+        #if self.q_type in ('mcq', 'tf', 'multi'):
+        #    if self.t_grading.has_key('lures'):
+        #        self.t_grading['lures'] =  [lure for lure in
+        #                                     self.t_grading['lures'] if
+        #                                     lure.strip()]
 
         self.t_variables = json.dumps(self.t_variables, sort_keys=True)
         self.t_grading = json.dumps(self.t_grading, sort_keys=True)
@@ -104,11 +106,13 @@ class QTemplate(models.Model):
     def __unicode__(self):
         return self.name
 
+
 class QSet(models.Model):
     """
     Manages sets of questions (question set)
     """
     name = models.CharField(max_length=250)    # e.g. "Week 1"
+    slug = models.SlugField(editable=False)
 
     # Should questions be randomly chosen from a set of questions?
     # If False, then all questions in ``qtemplates`` will be asked.
@@ -151,17 +155,29 @@ class QSet(models.Model):
     # up till ``ans_time_final``.
     max_duration = models.TimeField(default="00:00")
 
+    is_active = models.BooleanField(default=True)
+
     def save(self, *args, **kwargs):
         """ Override  model's saving function to do some checks """
-
-
         # Call the "real" save() method.
-        super(QSet, self).save(*args, **kwargs)
 
+        slug = slugify(self.name)
+
+        # happens if the slug is totally unicode characters
+        if len(slug) == 0:
+            raise ValidationError('QSet slug contains invalid characters')
+
+        if QSet.objects.filter(slug=slug):
+            return
+        else:
+            # Call the "real" save() method.
+            self.slug = slug
+            super(QSet, self).save(*args, **kwargs)
 
 
     def __unicode__(self):
         return u'%s [%s]' % (self.name, self.course.name)
+
 
 class QActual(models.Model):
     """
@@ -170,6 +186,9 @@ class QActual(models.Model):
     """
     # Question origin
     qtemplate = models.ForeignKey(QTemplate)
+
+    # Which question set was this question used in?
+    qset = models.ForeignKey(QSet)
 
     # Who is answering this question?
     user = models.ForeignKey('person.UserProfile')
@@ -183,9 +202,14 @@ class QActual(models.Model):
     # The student's answer
     given_answer = models.TextField(blank=True)
 
+    # NOTE: it is a conscious decision not to assign grades to the ``QActual``
+    #       objects. We rather assign grades in a ``grades.Grade`` object;
+    #       these are smaller and we can deal with grading as a separate
+    #       event.
+
+
     # Tracking on the question
     # ---------------------------
-
     # When was the question displayed in the browser [comma-separated list]
     times_displayed = models.ManyToManyField(DateTimes,
                                              related_name='displayed')
@@ -196,6 +220,12 @@ class QActual(models.Model):
 
     # Browser ID
     browsers = models.ManyToManyField(BrowserID)
+
+
+
+    def __unicode__(self):
+        return u'%s [for %s]' % (self.qtemplate.name,
+                                 self.user.user.username)
 
 
 

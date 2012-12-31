@@ -1,9 +1,10 @@
 import models
 import logging
 
-from django.contrib.auth import login
+from django.conf import settings
+from django.contrib.auth import login, authenticate
 from django.core.context_processors import csrf
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, redirect
 
 from models import Token
 
@@ -17,6 +18,19 @@ token_prefix = 'http://quest.mcmaster.ca/tokens/'
 
 logger = logging.getLogger('quest')
 logger.debug('Initializing person::views.py')
+
+def create_new_account(user=None, **kwargs):
+    """
+    Complete creating the new user account: i.e. a new ``User`` object.
+
+    This is a signal that is caught when we create a new user.
+    """
+    if 'instance' in kwargs and kwargs.get('created', False):
+        new_user = kwargs.get('instance', user)
+
+        # Create a UserProfile object in the DB
+        new_user_profile = models.UserProfile.objects.create(user=new_user)
+        new_user_profile.save()
 
 def sign_in(request):
     """
@@ -92,20 +106,24 @@ def deactivate_token_sign_in(request, token):
     # Method 1 to update the record
     t_updated = Token(token_item[0].id, has_been_used=True,
                       token_address=token_item[0].token_address, user=user)
-    t_updated.save()
 
-    # Method 2 to update the record
-    #token_item[0].has_been_used = not(F('has_been_used'))
-    #token_item[0].save()
+
+    # Don't deactivate tokens while debugging
+    if not settings.DEBUG:
+        t_updated.save()
 
     # Use Django's auth framework to mark the user as signed-in
     # authenticate() <--- use this in the future to authenticate against
     #                     other systems. We are using tokens for now.
-    user.backend = '<internal token>'
+    user = authenticate(remote_user=user.username)
     login(request, user)
 
     # Now proceed to show the questions to the student
-    page_content = {}
-    page_content.update(csrf(request))
-    logger.debug('User logged in: %s' % user.username)
-    return render_to_response('person/not-registered.html', page_content)
+    # ------------------------------------------------
+
+    # Temporarily render the question set for the students
+    if True:
+        from question.views import generate_questions
+        generate_questions('4C3/6C3', 'Week 1')
+
+    return redirect('quest-question-set')

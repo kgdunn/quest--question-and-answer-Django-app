@@ -19,10 +19,10 @@
       "max_grade": 5,
       "name": "Basic multiplication",
       "q_type": "mcq",
-      "t_question": "If a=1, b=2. What is a*b?\n12\n1\n^2\n4\n",
-      "t_solution": "",
-      "t_grading": "",
-      "t_variables": "",
+      "t_question": "If a=1, b=2. What is a*b?",
+      "t_solution": "This is just straightforward multiplication.",
+      "t_grading": "{\"nS4q\": [\"lure\", \"4\"], \"dNyj\": [\"key\", \"2\"], \"YRb4\": [\"lure\", \"12\"], \"nfrY\": [\"lure\", \"1\"]}",
+      "t_variables": "{}",
       "tags": [
         1
       ]
@@ -40,13 +40,15 @@
       "qtemplates": [
         1
       ],
+      "slug": "week-1",
       "random_choice": true,
       "min_total": 20.0,
       "ans_time_final": "2012-12-29T18:04:42Z",
       "course": 1,
       "max_total": 24.0,
       "min_num": 2,
-      "max_num": 3
+      "max_num": 3,
+      "is_active": true
     }
   },
   {
@@ -54,7 +56,8 @@
     "model": "course.course",
     "fields": {
       "code": "4C3/6C3",
-      "name": "Statistics for Engineering, 4C3/6C3"
+      "name": "Statistics for Engineering, 4C3/6C3",
+      "slug": "4C3-6C3"
     }
   },
    {
@@ -86,5 +89,15 @@
       "user": 3,
       "slug": "testingstudent"
     }
+  },
+  {
+    "pk": 1,
+    "model": "person.token",
+    "fields": {
+      "user": 3,
+      "has_been_used": false,
+      "token_address": "EW3b36pYkMwb6EMM"
+    }
   }
+
 ]

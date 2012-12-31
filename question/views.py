@@ -3,6 +3,8 @@ import re
 import json
 import random
 from lxml import etree
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render_to_response, redirect
 
 # 3rd party imports
 import markdown
@@ -223,7 +225,7 @@ def create_question_template(text):
     return qtemplate
 
 
-def generate_questions():
+def generate_questions(course_code, qset_name):
     """
     1. Generates the questions from the question sets, rendering templates
     2. Emails students in the class the link to sign in and start answering
@@ -231,7 +233,62 @@ def generate_questions():
 
     # Remember to copy over the rendered HTML to the question and the q_variables
     # dict used in the template
-    pass
+
+    from course.models import Course
+
+    course = Course.objects.filter(code=course_code)
+    qset = []
+    if course:
+        qset = QSet.objects.filter(name=qset_name).filter(course=course[0])
+
+    if not qset:
+    # TODO(KGD): raise error: course and qset not found
+        return
+
+    # Now render, for every student, their questions from the question set
+    for user in UserProfile.objects.filter(courses=course):
+
+        # TODO(KGD): handle the randomization of questions here
+        # ``qts`` = question templates
+        qts = qset[0].qtemplates.all()
+
+        for qt in qts:
+            html, vardict = render(qt)
+            qa = QActual.objects.create(qtemplate=qt, qset=qset[0],
+                                        user=user, as_displayed=html,
+                                        var_dict = vardict)
+            print(qa)
+
+@login_required
+def ask_question_set(request):
+    """
+    Ask which question set to display
+    """
+    user = request.user.profile
+    qsets = []
+    for course in user.courses.all():
+        # Which course(s) is the user registered for? Get all the QSet's for them
+        qsets.extend(course.qset_set.all())
+
+    # Sort them from most current to earliest (reverse time order)
+    qset_order = [q.ans_time_start for q in qsets]
+    qset_order.sort()
+
+    # Show question sets
+
+    # Assume user has clicked on the question set
+    # Show all the questions
+
+    return redirect('quest-ask-questions', '4C3-6C3', 'week-1')
+
+@login_required
+def ask_show_questions(request, course_code, question_set):
+    """
+    Display questions (and perhaps answers) to questions from a question set
+    for a specific student
+    """
+    user = request.user.profile
+
 
 
 def render(qt):
@@ -242,13 +299,20 @@ def render(qt):
     * Pictures/images
     * Calls external code before rendering
 
+    To maintain integrity, rendering from ``QTemplate`` to a ``QActual`` is
+    only and ever done ONCE (at rendering time). Later, when the question is
+    graded, or reloaded by the student, they will always see the same question.
+    This is because questions may contain random values specific to the student
+    so they must be rendered only once, including the correct solution, which
+    often is dependent on the randomly selected values.
+
     Rendering order:
-        * Convert our internal representation to Markdown (or ReST)
-        * Pick random values for any variables in the question
-        * And/or evaluate any source code to obtain variables and solutions
-        * t_grading['answer'] string is run through rendering as well
-        * Render any variables using Jinja templates.
-        * Convert this markup to HTML.
+        1 Convert our internal representation to Markdown (or ReST)
+        2 Pick random values for any variables in the question
+        3 And/or evaluate any source code to obtain variables and solutions
+        4 t_grading['answer'] string is run through rendering as well
+        5 Render any variables using Jinja templates.
+        6 Convert this markup to HTML.
 
     """
     def get_type(mcq_dict, keytype):
@@ -256,6 +320,7 @@ def render(qt):
         for key, value in mcq_dict.iteritems():
             if value[0] == keytype:
                 yield value[1], key
+    #----------------
 
     def render_mcq(qt):
         """Renders a multiple choice question to HTML."""
@@ -288,11 +353,12 @@ def render(qt):
                     lst.append(tplt % (q_type, name, value, final))
 
         return lst
+    #----------------
 
-        #----------------
-
-    # First convert strings to dictionaries:
-    qt.t_grading = json.loads(qt.t_grading)
+    # 1. First convert strings to dictionaries:
+    if isinstance(qt.t_grading, basestring):
+        qt.t_grading = json.loads(qt.t_grading)
+        qt.t_variables = json.loads(qt.t_variables)
 
     rndr = []
 
@@ -302,13 +368,24 @@ def render(qt):
         rndr.extend(render_mcq(qt))
 
 
-    # Now call Jinja to render any templates
+    # 2. Random variables, if required.
+    vardict = {}
+    if qt.t_variables:
+        pass
+
+
+
+    # 3. Evaluate source code
+
+    # 4. Evalute the answer string???
+
+    # 5. Now call Jinja to render any templates
     rndr_str = '\n'.join(rndr)
 
-    # Then call Markdown
+    # 6. Then call Markdown
     html = markdown.markdown(rndr_str)
 
-    return html
+    return html, json.dumps(vardict, separators=(',', ':'), sort_keys=True)
 
 
 def auto_grade():

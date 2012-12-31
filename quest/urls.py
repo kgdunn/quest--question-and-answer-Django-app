@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, include, url
 import person
+from question.views import ask_question_set, ask_show_questions
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -9,7 +10,14 @@ urlpatterns = patterns('',
     # Examples:
     # url(r'^$', 'quest.views.home', name='home'),
     # url(r'^quest/', include('quest.foo.urls')),
-    (r'^$', person.views.sign_in),
+    url(r'^$', person.views.sign_in, name='quest-main-page'),
+
+    url(r'^question-sets/$', ask_question_set, name='quest-question-set'),
+
+    # ://(course-code)/(question-set-slug)/
+    url(r'^(?P<course_code>.*)/(?P<question_set>.*)/$', ask_show_questions,
+        name='quest-ask-questions'),
+
     (r'^tokens/(.*)/$', person.views.deactivate_token_sign_in),
 
 

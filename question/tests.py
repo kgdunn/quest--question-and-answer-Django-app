@@ -120,7 +120,7 @@ The sun is hot.
         qtemplate = create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
-        html = render(qt)
+        html, vardict = render(qt)
 
     def test_mcq_basic(self):
         """
@@ -143,4 +143,4 @@ If a={{a}}, b={{b}}. What is a*b?
         qtemplate = create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
-        html = render(qt)
+        html, vardict = render(qt)
