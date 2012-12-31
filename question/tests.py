@@ -21,6 +21,11 @@ When code is changed, just save it and Django will restart. The debugger will
 reconnect to Wing IDE once you request a page load in your browser that leads
 to one of your import wingdbstub statements.
 """
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 import wingdbstub
 from django.test import TestCase
 from question.models import QTemplate
@@ -89,9 +94,12 @@ If a=1, b=2. What is a*b?
         self.assertEqual(q.difficulty, 2)
         self.assertEqual(q.max_grade, 3)
         self.assertEqual(q.enable_feedback, False)
-        self.assertEqual(q.t_grading, u'{}')
-        self.assertEqual(q.t_solution, (u'{"final": "", "key": "2", '
-                                        '"lures": ["12", "1", "4"]}'))
+        self.assertEqual(q.t_solution, u'')
+        t_grading = json.loads(q.t_grading)
+        vals = t_grading.values()
+        vals.sort()
+        self.assertEqual(vals, [[u'key', u'2'], [u'lure', u'1'],
+                                [u'lure', u'12'], [u'lure', u'4']])
 
 
 class RenderTests(TestCase):

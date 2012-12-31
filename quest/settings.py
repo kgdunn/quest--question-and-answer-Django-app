@@ -1,19 +1,16 @@
 # Project dependancies
 # ----------------------
 # Django
-# easy_install -U simplejson <----- not used
+# easy_install -U simplejson <----- version 2.6.2 used during development
 # easy_install -U markdown <----- version 2.2.1 used during development/testing
-
-
 
 import os
 
 DEBUG = True
-#TEMPLATE_DEBUG = DEBUG
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = DEBUG
 
 ADMINS = (
-     ('Your Nam,,e', 'your_email@example.com'),
+     ('Your Name', 'your_email@example.com'),
 )
 
 MANAGERS = ADMINS

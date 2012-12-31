@@ -23,7 +23,10 @@ Some other terminology:
 * Solution: the solution displayed to the student
 """
 # Django and Python imports
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 from django.db import models
 
 class DateTimes(models.Model):
@@ -84,14 +87,13 @@ class QTemplate(models.Model):
 
         # Clean up the lures/distractors from empty items (blank lines)
         if self.q_type in ('mcq', 'tf', 'multi'):
-            if self.t_solution.has_key('lures'):
-                self.t_solution['lures'] =  [lure for lure in
-                                             self.t_solution['lures'] if
+            if self.t_grading.has_key('lures'):
+                self.t_grading['lures'] =  [lure for lure in
+                                             self.t_grading['lures'] if
                                              lure.strip()]
 
         self.t_variables = json.dumps(self.t_variables, sort_keys=True)
         self.t_grading = json.dumps(self.t_grading, sort_keys=True)
-        self.t_solution = json.dumps(self.t_solution, sort_keys=True)
         self.max_grade = float(self.max_grade)
         self.difficulty = int(self.difficulty)
         self.difficulty = min(self.difficulty, 9)

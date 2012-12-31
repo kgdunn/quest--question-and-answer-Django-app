@@ -75,43 +75,35 @@ def parse_MCQ_TF_Multi(text):
     # Handles the case of the """--\n--\n""" where we specify the solution in
     # terms of a function.
     if text[0].strip() == '--':
-        t_solution = '<function>'
+        t_solution = ''
         t_grading = '<function>'
     else:
-        t_solution = dict()
-        t_solution['key'] = ''
+        t_solution = ''
+        t_grading = dict()
 
-Consider using a different data structure for lures: I'd like to store
-('key', 'Correct answer, possible stored as a list of strings', 'x15sl4s') <-- unique code used in the HTML representation
-
-        t_solution['lures'] = []
-        t_solution['final'] = ''
-
-        t_grading = {}
         for line in text:
             if line.startswith('%'):
-                section_name = 'final'
+                section_name = generate_random_token(4)
+                t_grading[section_name] = ['final', ]
                 final = FINAL_RE.match(line).group(2)
-                t_solution[section_name] = final
+                t_grading[section_name].append(final)
                 continue
 
             elif line.startswith('^'):
-                section_name = 'key'
+                section_name = generate_random_token(4)
+                t_grading[section_name] = ['key', ]
                 key = KEY_RE.match(line).group(2)
-                t_solution[section_name] = key
+                t_grading[section_name].append(key)
                 continue
 
             elif line.startswith('&'):
-                section_name = 'lures'
+                section_name = generate_random_token(4)
+                t_grading[section_name] = ['lure', ]
                 lure = LURE_RE.match(line).group(2)
-                t_solution['lures'].append(lure)
+                t_grading[section_name].append(lure)
                 continue
 
-            if isinstance(t_solution[section_name], list):
-                t_solution[section_name].append(line)
-            else:
-                t_solution[section_name] += '\n' + line
-
+            t_grading[section_name][1] += '\n' + line
 
     return t_question, t_solution, t_grading
 
@@ -254,10 +246,17 @@ def render(qt):
         * Convert our internal representation to Markdown (or ReST)
         * Pick random values for any variables in the question
         * And/or evaluate any source code to obtain variables and solutions
+        * t_grading['answer'] string is run through rendering as well
         * Render any variables using Jinja templates.
         * Convert this markup to HTML.
 
     """
+    def get_type(mcq_dict, keytype):
+        """Gets the required key type(s) from the MCQ grading dictionary"""
+        for key, value in mcq_dict.iteritems():
+            if value[0] == keytype:
+                yield value[1], key
+
     def render_mcq(qt):
         """Renders a multiple choice question to HTML."""
 
@@ -273,33 +272,33 @@ def render(qt):
         # on the page.
         # The ``value`` defines what will be submitted to the server.
 
-        tplt = """* <input type = "%s" name="%s" value="%s">%s</>"""
+        tplt = """<input type = "%s" name="%s" value="%s">%s</><br>"""
 
         lst = []
         name = generate_random_token(8)
 
-        lst.append(tplt % (q_type, name, qt.t_solution['key'],
-                           qt.t_solution['key']))
-        for lure in qt.t_solution['lures']:
-            lst.append(tplt % (q_type, name, lure, lure))
+        for (key, value) in get_type(qt.t_grading, keytype='key'):
+            lst.append(tplt % (q_type, name, value, key))
+
+        for (lure, value) in get_type(qt.t_grading, keytype='lure'):
+            lst.append(tplt % (q_type, name, value, lure))
 
         random.shuffle(lst)
-        if qt.t_solution['final']:
-            lst.append(tplt % (q_type, name, qt.t_solution['final'],
-                               qt.t_solution['final']))
+        for (final, value) in get_type(qt.t_grading, keytype='final'):
+                    lst.append(tplt % (q_type, name, value, final))
 
         return lst
 
         #----------------
 
     # First convert strings to dictionaries:
-    qt.t_solution = json.loads(qt.t_solution)
+    qt.t_grading = json.loads(qt.t_grading)
 
     rndr = []
 
     if qt.q_type in ('mcq', 'tf', 'multi'):
         rndr.append(qt.t_question)
-        rndr.append('---')
+        rndr.append('- - -')
         rndr.extend(render_mcq(qt))
 
 
@@ -310,8 +309,6 @@ def render(qt):
     html = markdown.markdown(rndr_str)
 
     return html
-
-
 
 
 def auto_grade():
