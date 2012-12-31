@@ -1,110 +1,227 @@
+# Python and Django imports
 import re
-from orderedmultidict import omdict
 
-class ParseError(Exception): pass
+# Our imports
+from models import (QTemplate, QSet, QActual)
+from person.models import UserProfile
+from tagging.views import get_and_create_tags
 
-def parse_question_text(text):
+# TODO(KGD): allow these to be case-insenstive later on
+CONTRIB_RE = re.compile(r'^Contributor:(\s*)(.*)$')
+TAGS_RE = re.compile(r'^Tags:(\s*)(.*)$')
+DIFFICULTY_RE = re.compile(r'^Difficulty:(\s*)(.*)$')
+GRADES_RE = re.compile(r'^Grade:(\s*)(.*)$')
+FEEDBACK_RE = re.compile(r'^Feedback:(\s*)(.*)$')
+
+LURE_RE = re.compile(r'^\&(\s*)(\S*)$')
+KEY_RE = re.compile(r'^\^(\s*)(\S*)$')
+FINAL_RE = re.compile(r'^\&(\s*)(\S*)$')
+
+class ParseError(Exception):
+    pass
+
+
+def split_sections(text):
     """
-    Parses a question's template text to create our internal question
-    representation.
+    Splits the problem statement into its sections. Section are denoted by
+    double brackets:
+        [[section name]]
+        section content
+        [[next section]]
+        more content
+        goes here
 
-    Rules:
-    #. First line must be "Type:__________" where the missing part is one of
-       the valid question types
+    will return
+    {'section name': ['section content', ], 'next section', ['more content',
+     'goes here']
+    }
     """
-    TYPE_RE = re.compile(r'^Type:(\s*)(\S*)$')
-    CONTRIB_RE = re.compile(r'^Contributor:(\s*)(\S*)$')
-    TAGS_RE = re.compile(r'^Tags:(\s*)(\S*)$')
-    DIFFICULTY_RE = re.compile(r'^Difficulty:(\s*)(\S*)$')
-    POINTS_RE = re.compile(r'^Points:(\s*)(\S*)$')
-    LURE_RE = re.compile(r'^\&(\s*)(\S*)$')
-    KEY_RE = re.compile(r'^\^(\s*)(\S*)$')
-    FINAL_RE = re.compile(r'^\&(\s*)(\S*)$')
+    SECTION_RE = re.compile(r'(\s*)\[\[(\S*)\]\](\s*)')
+    out = {}
+    content = []
+    for line in text:
+        if SECTION_RE.match(line):
+            section = SECTION_RE.match(line).group(2).lower()
+            content = []
+            out[section] = content
+        else:
+            content.append(line)
 
-    # Force it into a list of strings.
-    if isinstance(text, basestring):
-        text = text.split('\n')
+    return out
 
-    q_type = None
-    name = None
-    contrib = 1
-    tags = ''
-    difficulty = 1
-    max_points = 1
+
+def parse_MCQ_TF_Multi(text):
+    """
+    Multiple choice (MCQ)
+    True/False (TF)
+    Multiple checkbox answer (Multi)
+
+    are parsed and processed here.
+    """
+    instructions = []
     while text[0].strip() != '--':
-        line = text[0].strip()
-
-        if TYPE_RE.match(line):
-            q_type = TYPE_RE.match(line).group(2)
-
-        if CONTRIB_RE.match(line):
-            contrib = CONTRIB_RE.match(line).group(2)
-
-        if TAGS_RE.match(line):
-            tags = TAGS_RE.match(line).group(2)
-
-        if DIFFICULTY_RE.match(line):
-            difficulty = DIFFICULTY_RE.match(line).group(2)
-
-        if POINTS_RE.match(line):
-            max_points = POINTS_RE.match(line).group(2)
-
+        instructions.append(text[0].strip())
         text.pop(0)
-
-    # This item is mandatory
-    if not q_type:
-        raise ParseError('Question type not specified.')
-
-    # Instruction must follow now
     text.pop(0)
-    instruction = []
-    while text[0].strip() != '--':
-        instruction.append(text[0].strip())
-        text.pop(0)
-
-    text.pop(0)
-    t_question = ''.join(instruction)
+    t_question = ''.join(instructions)
 
     # Handles the case of the """--\n--\n""" where we specify the solution in
     # terms of a function.
     if text[0].strip() == '--':
         t_solution = '<function>'
+        t_grading = '<function>'
     else:
-        t_solution = omdict()
-        while text[0].strip() != '--':
-            soln = text[0].strip()
-            if soln.startswith('%'):
-                # Final multiple choice option
-                final = FINAL_RE.match(soln).group(2)
-                t_solution.add('final', final)
+        t_solution = dict()
+        t_solution['key'] = ''
+        t_solution['lures'] = []
+        t_solution['final'] = ''
 
-            elif soln.startswith('^'):
-                # Correct option
-                key = KEY_RE.match(soln).group(2)
-                t_solution.add('key', key)
+        t_grading = {}
+        for line in text:
+            if line.startswith('%'):
+                section_name = 'final'
+                final = FINAL_RE.match(line).group(2)
+                t_solution[section_name] = final
+                continue
 
-            elif soln.startswith('&'):
-                # Lure or distractor answer
-                lure = LURE_RE.match(soln).group(2)
-                t_solution.add('lure', lure)
+            elif line.startswith('^'):
+                section_name = 'key'
+                key = KEY_RE.match(line).group(2)
+                t_solution[section_name] = key
+                continue
 
+            elif line.startswith('&'):
+                section_name = 'lures'
+                lure = LURE_RE.match(line).group(2)
+                t_solution['lures'].append(lure)
+                continue
+
+            if isinstance(t_solution[section_name], list):
+                t_solution[section_name].append(line)
             else:
-                raise ParseError(('A line [%s] in an MCQ/TF/Multi question '
-                                  'must start with either ^, & or %'))
+                t_solution[section_name] += '\n' + line
 
 
-            # end if-elif
-            text.pop(0)
+    return t_question, t_solution, t_grading
 
+
+def parse_question_text(text):
+    """
+    Parses a question's template text to create our internal question
+    representation. For example, for a multiple choice question:
+
+
+    [[type]]
+    mcq
+
+    [[attribs]]
+    Name: Multiplication warm-up
+    Contributor: Kevin Dunn
+    Difficulty: 2
+    Tags: multiplication, math
+    Grade: 3
+
+    [[question]]
+    If a=1, b=2. What is a*b?
+    --
+    & 12    <-- distractors (lures) begin with "&"
+    & 1     <-- distractor
+    ^2      <-- correct answer(s) begin with "^"
+    & 4     <-- distractor
+    % None  <-- an option that must be presented last begins with "%"
+
+    [[variables]]
+
+    """
+
+    # Force it into a list of strings.
+    if isinstance(text, basestring):
+        text = text.split('\n')
+
+    # ``sd`` = section dictionary; see comments for function below.
+    sd = split_sections(text)
+
+    # These items are mandatory
+    if not sd.has_key('type'):
+        raise ParseError('[[type]] section not given')
+    if not sd.has_key('question'):
+        raise ParseError('[[question]] section not given')
+
+    if isinstance(sd['type'], list):
+        sd['type'] = ''.join(sd['type']).strip().lower()
+    elif isinstance(sd['type'], basestring):
+        sd['type'] = sd['type'].strip().lower()
+
+    if sd['type'] in ('tf', 'mcq', 'multi'):
+        t_question, t_solution, t_grading = parse_MCQ_TF_Multi(sd['question'])
+        sd.pop('question')
+
+    sd['contributor'] = 1
+    sd['tags'] = ''
+    sd['difficulty'] = 1
+    sd['max_grade'] = 1
+    sd['feedback'] = True
+    if sd.has_key('attribs'):
+        lines = sd['attribs']
+        for line in lines:
+            line = line.strip()
+
+            if CONTRIB_RE.match(line):
+                sd['contributor'] = CONTRIB_RE.match(line).group(2).strip()
+
+            if TAGS_RE.match(line):
+                sd['tags'] = TAGS_RE.match(line).group(2)
+
+            if DIFFICULTY_RE.match(line):
+                sd['difficulty'] = DIFFICULTY_RE.match(line).group(2)
+
+            if GRADES_RE.match(line):
+                sd['max_grade'] = GRADES_RE.match(line).group(2)
+
+            if FEEDBACK_RE.match(line):
+                sd['feedback'] = FEEDBACK_RE.match(line).group(2).lower() \
+                                                                     == 'true'
+
+        # Remove this key: not required anymore
+        sd.pop('attribs')
 
     # Final checks before returning
-    if name is None:
-        name = t_question
+    if not sd.has_key('name'):
+        sd['name'] = t_question
 
-    return (q_type, name, contrib, tags, difficulty, max_points,
-            t_question, t_solution, t_grading)
+    sd['t_question'] = t_question
+    sd['t_solution'] = t_solution
+    sd['t_grading'] = t_grading
+    sd['t_variables'] = {}
+
+    return sd
 
 
+def create_question_template(text):
+    """
+    Creates the QTemplate (question template) and adds it to the database.
+    """
+    sd = parse_question_text(text)
+    contributor = UserProfile.objects.filter(role='Grader')[0] or None
+
+    qtemplate = QTemplate.objects.create(name=sd['name'], q_type=sd['type'],
+                             contributor=contributor,
+                             difficulty=sd['difficulty'],
+                             max_grade = sd['max_grade'],
+                             enable_feedback = sd['feedback'],
+                             t_question = sd['t_question'],
+                             t_solution = sd['t_solution'],
+                             t_grading = sd['t_grading'],
+                             t_variables = sd['t_variables']
+                            )
+
+    for tag in get_and_create_tags(sd['tags']):
+        #tag_intermediate = models.InterestCreation(user=user.profile,
+        #                                           tag=tag)
+        #tag_intermediate.save()
+        qtemplate.tags.add(tag)
+
+    return qtemplate
 
 def generate_questions():
     """
@@ -116,6 +233,7 @@ def generate_questions():
     # dict used in the template
     pass
 
+
 def render():
     """
     Renders templates to HTML.
@@ -125,6 +243,7 @@ def render():
     * Calls external code before rendering
     """
     pass
+
 
 def auto_grade():
     """

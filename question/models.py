@@ -22,7 +22,8 @@ Some other terminology:
             auto-grading)
 * Solution: the solution displayed to the student
 """
-
+# Django and Python imports
+import json
 from django.db import models
 
 class DateTimes(models.Model):
@@ -48,21 +49,21 @@ class QTemplate(models.Model):
     The template for a question.
     """
     question_type = (
-                ('MCQ',      'Multiple choice question (including True/False'),
-                ('Short',    'Short answer question'),
-                ('Long',     'Long answer question'),
-                ('MultiSel', 'Multi-select'),  # Like MCQ, but multiple options
-                ('FIB',      'Fill in the blanks'),
-                ('Numeric',  'Numeric answer (with specified sensitivity)'),
-                ('MultiPart','Multipart questions'),
+                ('mcq',      'Multiple choice question (including True/False'),
+                ('short',    'Short answer question'),
+                ('long',     'Long answer question'),
+                ('multi',    'Multi-select'),  # Like MCQ, but multiple options
+                ('fib',      'Fill in the blanks'),
+                ('numeric',  'Numeric answer (with specified sensitivity)'),
+                ('multipart','Multipart questions'),
     )
 
     name = models.CharField(max_length=250)     # e.g. "The misbehaving clock"
     q_type = models.CharField(max_length=10, choices=question_type)
-    contributor = models.ForeignKey('person.UserProfile')
-    tags = models.ManyToManyField('tagging.Tag')
-    difficulty = models.PositiveSmallIntegerField(blank=True)
-    max_points = models.PositiveSmallIntegerField()
+    contributor = models.ForeignKey('person.UserProfile', blank=True)
+    tags = models.ManyToManyField('tagging.Tag', blank=True)
+    difficulty = models.PositiveSmallIntegerField(default=1)
+    max_grade = models.PositiveSmallIntegerField()
 
     # Can students provide feedback on this question
     enable_feedback = models.BooleanField(default=True)
@@ -74,12 +75,25 @@ class QTemplate(models.Model):
     # The grading dictionary (string-representation)
     t_grading = models.TextField()
     # Variables used in the templates (``t_question`` and ``t_solution``)
-    t_variables = models.TextField()
+    t_variables = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         """ Override the model's saving function to do some checks """
         # http://docs.djangoproject.com/en/dev/topics/db/models/
                                           #overriding-predefined-model-methods
+
+        # Clean up the lures/distractors from empty items (blank lines)
+        if self.q_type in ('mcq', 'tf', 'multi'):
+            if self.t_solution.has_key('lures'):
+                self.t_solution['lures'] =  [lure for lure in
+                                             self.t_solution['lures'] if
+                                             lure.strip()]
+
+        self.t_variables = json.dumps(self.t_variables, sort_keys=True)
+        self.t_grading = json.dumps(self.t_grading, sort_keys=True)
+        self.t_solution = json.dumps(self.t_solution, sort_keys=True)
+        self.max_grade = float(self.max_grade)
+        self.difficulty = int(self.difficulty)
         self.difficulty = min(self.difficulty, 9)
 
         # Call the "real" save() method.

@@ -1,4 +1,10 @@
-# Django settings for quest project.
+# Project dependancies
+# ----------------------
+# Django
+# easy_install -U simplejson <----- not used
+
+
+
 import os
 
 DEBUG = True

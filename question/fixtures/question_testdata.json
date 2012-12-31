@@ -16,7 +16,7 @@
     "fields": {
       "contributor": 1,
       "difficulty": 3,
-      "max_points": 5,
+      "max_grade": 5,
       "name": "Basic multiplication",
       "q_type": "MCQ",
       "t_question": "If a=1, b=2. What is a*b?\n12\n1\n^2\n4\n",

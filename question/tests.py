@@ -27,32 +27,74 @@ from question.models import QTemplate
 
 
 class SimpleTests(TestCase):
-    fixtures = ['initial_data', 'question_testdata.json',]
-    def test_loading_of_tests(self):
+    fixtures = ['initial_data',]
+    def test_loading_of_tests_from_fixtures(self):
         """
-        Tests that 1 + 1 always equals 2.
+        Loaded from fixture
         """
         q = QTemplate.objects.all().filter(name='Basic multiplication')
         self.assertEqual(len(q), 1)
         self.assertEqual(q[0].difficulty, 3)
 
 class ParseTests(TestCase):
-    fixtures = ['initial_data', 'question_testdata.json',]
-    def test_mcq_tests(self):
+    fixtures = ['initial_data',]
+    def test_mcq_basic(self):
         """
-        Tests that 1 + 1 always equals 2.
+        Basic question template. Really the minimal possible example.
         """
-        some_text = """Type: MCQ
-        --
-        If a=1, b=2. What is a*b?
-        --
-        & 12
-        & 1
-        ^2
-        & 4
-        --"""
-        from views import parse_question_text
-        parse_question_text(some_text)
+        some_text = """
+[[type]]
+MCQ
+[[question]]
+If a=1, b=2. What is a*b?
+--
+& 12
+&1
+^2
+& 4
+        """
+        from views import create_question_template
+        qtemplate = create_question_template(some_text)
+        self.assertEqual(qtemplate.difficulty, 1)
+        self.assertEqual(qtemplate.q_type, 'mcq')
+        self.assertEqual(qtemplate.name, 'If a=1, b=2. What is a*b?')
+
+
+    def test_mcq_more_details(self):
+        """
+        More complete template
+        """
+        some_text = """
+[[type]]
+MCQ
+
+[[attribs]]
+Name: Multiplication warm-up
+Contributor: Kevin Dunn
+Difficulty: 2
+Tags: multiplication, math
+Grade: 3
+Feedback: False
+
+[[question]]
+If a=1, b=2. What is a*b?
+--
+& 12
+& 1
+^2
+& 4"""
+        from views import create_question_template
+        qtemplate = create_question_template(some_text)
+        q = QTemplate.objects.get(id=qtemplate.id)
+        self.assertEqual(q.difficulty, 2)
+        self.assertEqual(q.max_grade, 3)
+        self.assertEqual(q.enable_feedback, False)
+        self.assertEqual(q.t_grading, u'{}')
+        self.assertEqual(q.t_solution, (u'{"final": "", "key": "2", '
+                                        '"lures": ["12", "1", "4"]}'))
+
+
+
 
 
 
