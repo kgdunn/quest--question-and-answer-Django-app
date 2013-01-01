@@ -1,8 +1,9 @@
 # Project dependancies
 # ----------------------
 # Django
-# easy_install -U simplejson <----- version 2.6.2 used during development
-# easy_install -U markdown <----- version 2.2.1 used during development/testing
+# easy_install -U simplejson <--- version 2.6.2 used during development
+# easy_install -U markdown   <--- version 2.2.1 used during development/testing
+# easy_install -U jinja2     <--- NOT USED version 2.6 used for development
 
 import os
 

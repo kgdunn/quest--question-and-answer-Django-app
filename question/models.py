@@ -197,6 +197,8 @@ class QActual(models.Model):
     # accurate reflection of the question
     as_displayed = models.TextField(blank=True)
     # The variables dictionary used to render the template is also saved
+    # To be compatible with our template rendering engine (Jinja2), the
+    # variable names in the dict must be strings: [a-zA-Z_][a-zA-Z0-9_]*
     var_dict = models.TextField(blank=True)
 
     # The student's answer

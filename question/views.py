@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # Python and Django imports
 import re
 import json
@@ -8,6 +10,7 @@ from django.shortcuts import render_to_response, redirect
 
 # 3rd party imports
 import markdown
+
 
 # Our imports
 from models import (QTemplate, QSet, QActual)
@@ -234,9 +237,6 @@ def generate_questions(course_code, qset_name):
 
     # Remember to copy over the rendered HTML to the question and the q_variables
     # dict used in the template
-
-    from course.models import Course
-
     course = Course.objects.filter(code=course_code)
     qset = []
     if course:
@@ -280,6 +280,32 @@ def ask_question_set(request):
     # Assume user has clicked on the question set
     # Show all the questions
 
+
+    from django import template
+    from django.template.defaultfilters import stringfilter
+    register = template.Library()
+    #@register.filter
+    #@stringfilter
+    #def lower(value):
+        #return value.lower()
+
+    #g = """{% load core_tags %} x + y = {% eval %} {{x}} + {{y}} {% endeval %}"""
+    g = """{% load core_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
+    g = """{% load core_tags %} x + y = {% quick_eval "x/y" 5 %}"""
+    from django.template import Context, Template
+    t = Template(g)
+    c = Context({'x':4, 'y':20})
+    r = t.render(c)
+    print(r)
+
+
+
+
+
+
+
+
+
     return redirect('quest-ask-questions', '4C3-6C3', 'week-1')
 
 @login_required
@@ -297,7 +323,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     qset=QSet.objects.filter(slug=question_set_slug).filter(course=courses[0])
     if not qset:
         # TODO(KGD): redirect to login page
-                return
+        return
 
     # Show all the questions for this student
     quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
@@ -365,7 +391,7 @@ def render(qt):
 
         random.shuffle(lst)
         for (final, value) in get_type(qt.t_grading, keytype='final'):
-                    lst.append(tplt % (q_type, name, value, final))
+            lst.append(tplt % (q_type, name, value, final))
 
         return lst
     #----------------

@@ -129,6 +129,15 @@ The sun is hot.
     def test_mcq_basic(self):
         """
         Basic question template. Really the minimal possible example.
+
+        NOTE: it would be much cleaner to have
+                    {{ a+b |evaluate }}
+              instead of
+                    {% evaluate "a+b" %}
+              unfortunately the former (a Django template filter) evaluates
+              "a" and "b" directly and does not pass the context dictionary.
+              The latter (a Django template tag) is far more powerful and
+              gives us additional flexibility at render time.
         """
         some_text = """
 [[type]]
@@ -138,8 +147,8 @@ If a={{a}}, b={{b}}. What is a*b?
 --
 & {{a}}{{b}}
 &1
-^{% eval %}{{a}}*{{b}} {% endeval %}
-& {% eval %}{{a}}+{{b}} {% endeval %}
+^{% evaluate "a*b" %}
+& {% evaluate "a+b" %}
 [[variables]]
 {{a}}: [2, 5, 0.5, float]
 {{b}}: [5, 9, 1, int]
