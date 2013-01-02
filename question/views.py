@@ -10,6 +10,7 @@ from django.shortcuts import render_to_response, redirect
 
 # 3rd party imports
 import markdown
+import numpy as np
 
 
 # Our imports
@@ -18,6 +19,9 @@ from person.models import UserProfile
 from tagging.views import get_and_create_tags
 from utils import generate_random_token
 from course.models import Course
+
+
+class BadVariableSpecification(Exception): pass
 
 # TODO(KGD): allow these to be case-insenstive later on
 CONTRIB_RE = re.compile(r'^Contributor:(\s*)(.*)$')
@@ -193,6 +197,34 @@ def parse_question_text(text):
         # Remove this key: not required anymore
         sd.pop('attribs')
 
+    # Process the variables
+    var_dict = {}
+    if sd.get('variables', ''):
+        var_re = re.compile(r'(\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*):(.*)')
+        for line in sd['variables']:
+            if var_re.match(line):
+                _, key, _, val = var_re.match(line).groups()
+                key = key.strip()
+                # Strip away the brackets and split the string apart at the
+                # commas; store as a list
+                val = val.strip()
+                val = [item.strip() for item in val.strip('[]').split(',')]
+
+                if len(val) in (3, 4, 5):
+                    for idx, entry in enumerate(val[0:3]):
+                        val[idx] = np.float(entry)
+                else:
+                    raise BadVariableSpecification(('Variable spec list '
+                                                    'should be 3, 4, or 5'
+                                                    'entries in length.'))
+                var_dict[key] = val
+            else:
+                # TODO(KGD?): silently fail on variable lines that don't match
+                pass
+
+        sd.pop('variables')
+
+
     # Final checks before returning
     if not sd.has_key('name'):
         sd['name'] = t_question
@@ -200,7 +232,7 @@ def parse_question_text(text):
     sd['t_question'] = t_question
     sd['t_solution'] = t_solution
     sd['t_grading'] = t_grading
-    sd['t_variables'] = {}
+    sd['t_variables'] = var_dict
 
     return sd
 
@@ -254,10 +286,10 @@ def generate_questions(course_code, qset_name):
         qts = qset[0].qtemplates.all()
 
         for qt in qts:
-            html, vardict = render(qt)
+            html, var_dict = render(qt)
             qa = QActual.objects.create(qtemplate=qt, qset=qset[0],
                                         user=user, as_displayed=html,
-                                        var_dict = vardict)
+                                        var_dict = var_dict)
             print(qa)
 
 @login_required
@@ -280,16 +312,10 @@ def ask_question_set(request):
     # Assume user has clicked on the question set
     # Show all the questions
 
-
     from django import template
     from django.template.defaultfilters import stringfilter
     register = template.Library()
-    #@register.filter
-    #@stringfilter
-    #def lower(value):
-        #return value.lower()
 
-    #g = """{% load core_tags %} x + y = {% eval %} {{x}} + {{y}} {% endeval %}"""
     g = """{% load core_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
     g = """{% load core_tags %} x + y = {% quick_eval "x/y" 5 %}"""
     from django.template import Context, Template
@@ -329,8 +355,6 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
 
     # Now display the questions
-
-
 
 def render(qt):
     """
@@ -410,9 +434,9 @@ def render(qt):
 
 
     # 2. Random variables, if required.
-    vardict = {}
+    var_dict = {}
     if qt.t_variables:
-        pass
+        var_dict = create_random_variables(qt.t_variables)
 
 
 
@@ -426,7 +450,93 @@ def render(qt):
     # 6. Then call Markdown
     html = markdown.markdown(rndr_str)
 
-    return html, json.dumps(vardict, separators=(',', ':'), sort_keys=True)
+    return html, json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
+
+def create_random_variables(var_dict):
+    """
+    The ``var_dict`` is augmented with the randomly selected value.
+
+    Before:
+    {'a': [[ -5,   3,   2, int,   uniform], None],
+     'b': [[2.4, 2.7, 0.1, float, normal], None],
+     'c': [[  1,   2, 0.5], None],                   <--- minimal specifcation
+     'd': [[-Inf, Inf, 1E10], None],    <--- valid specification, depends on
+                                             whether it's a float or int type
+    }
+    indicates we have a variable ``a`` to select that must be taken from the
+    uniform distribution, and must come from the set: [-5, -3, -1, +1, 3],
+    where the value to select must be from a uniform distribution. The
+    variable ``b`` must be from [2.4, 2.5, 2.6, 2.7] and values should be
+    normally distributed (i.e. 2.5 and 2.6 are going to appear more frequently
+    than 2.4 and 2.7.
+
+    The minimal specification will assume floating point and use random
+    numbers from the uniform distribution.
+
+    The values selected will take the place of ``None`` in the above list, so
+    that if a non-None already exists there it will be simply overwritten.
+    """
+    for key, val in var_dict.iteritems():
+        if type(val[0]) in (list,):
+            spec = val[0]
+        else:
+            spec = val
+            var_dict[key] = [spec, None]
+
+
+        if len(spec) == 3:
+            lo, hi, step = spec
+            v_type = 'float'
+            dist = 'uniform'
+        elif len(spec) == 4:
+            lo, hi, step, v_type = spec
+            dist = 'uniform'
+        elif len(spec) == 5:
+            lo, hi, step, v_type, dist = spec
+        else:
+            raise BadVariableSpecification(('Specification list should be 3 '
+                                            'or more entries'))
+
+        dist = dist.strip().lower()
+        v_type = v_type.strip().lower()
+
+        if lo > hi:
+            raise BadVariableSpecification(('[low, high, step]: low < high'))
+        if step > (hi-lo):
+            raise BadVariableSpecification(('[low, high, step]: step < '
+                                            '(low - high'))
+
+        if np.isinf(lo):
+            if v_type == 'int':
+                lo = np.iinfo(v_type).min
+            elif v_type == 'float':
+                lo = np.finfo(v_type).min
+
+        if np.isinf(hi):
+            if v_type == 'int':
+                hi = np.iinfo(v_type).max
+            elif v_type == 'float':
+                hi = np.finfo(v_type).max
+
+        if dist == 'uniform':
+            rnd_val = np.random.uniform()
+        elif dist == 'normal':
+            rnd_val = np.random.normal(loc=(hi-lo)/2.0, scale=(hi-lo)/6.0)
+
+        temp = rnd_val * (hi - lo)
+        # Randomly round ``temp`` down or round up:
+        # e.g. [60, 100, 8] and if rnd_val = 0.25, then temp = 0.25*40 = 10
+        #      we can legimately choose 68 or 76 to round towards. Make this
+        #      a random decision, so we are not biased
+        if np.random.rand() < 0.5:
+            temp = np.floor(temp/(step+0.)) * step + lo
+        else:
+            temp = np.ceil(temp/(step+0.)) * step + lo
+
+        if v_type == 'int':
+            var_dict[key][1] = int(temp)
+        else:
+            var_dict[key][1] = float(temp)
 
 
 def auto_grade():

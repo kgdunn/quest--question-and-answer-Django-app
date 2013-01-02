@@ -3,7 +3,8 @@ import logging
 from django import template
 register = template.Library()
 
-# 3rd part imports
+# 3rd party imports
+import numpy as np
 logger = logging.getLogger('quest')
 
 # Idea from: http://lybniz2.sourceforge.net/safeeval.html
@@ -73,9 +74,11 @@ class EvaluateString(template.Node):
         Render the ``quick_eval`` template tag
         """
         # Use the most recent context to evaluate the template.
-        ctx = context.dicts[-1].copy()
+        context_dict = context.dicts[-1].copy()
 
         # TODO(KGD): convert every entry to Numpy floats (even ints)
+        for key, val in context_dict.iteritems():
+            context_dict[key] = np.float(val)
 
         # TODO(KGD): http://lucumr.pocoo.org/2011/2/1/exec-in-python/
 
@@ -84,7 +87,7 @@ class EvaluateString(template.Node):
         # single (interactive) statement, or 'eval' to compile an expression.
         #code = compile(self.format_string, "<internal>", "eval")
         try:
-            out = eval(self.format_string, safe_dict, ctx)
+            out = eval(self.format_string, safe_dict, context_dict)
         except Exception as e:
             out = str(e)
 
