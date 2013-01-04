@@ -289,7 +289,7 @@ def generate_questions(course_code, qset_name):
             html, var_dict = render(qt)
             qa = QActual.objects.create(qtemplate=qt, qset=qset[0],
                                         user=user, as_displayed=html,
-                                        var_dict = var_dict)
+                                        var_dict = vardict)
             print(qa)
 
 @login_required
@@ -318,6 +318,7 @@ def ask_question_set(request):
 
     g = """{% load core_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
     g = """{% load core_tags %} x + y = {% quick_eval "x/y" 5 %}"""
+    g = """{% load core_tags %} x + y = {% quick_eval "x*log(y)" 5 %}"""
     from django.template import Context, Template
     t = Template(g)
     c = Context({'x':4, 'y':20})
@@ -450,7 +451,7 @@ def render(qt):
     # 6. Then call Markdown
     html = markdown.markdown(rndr_str)
 
-    return html, json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
+    return html, json.dumps(vardict, separators=(',', ':'), sort_keys=True)
 
 def create_random_variables(var_dict):
     """

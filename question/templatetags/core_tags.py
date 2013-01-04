@@ -12,7 +12,10 @@ from math import *
 safe_list = ['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh',
              'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e',
              'exp', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum',
-             'hypot', 'isinf', 'isnan', 'ldexp', 'log', 'log10', 'log1p',
+             'hypot', 'isinf', 'isnan', 'ldexp',
+             'log',  # log to the base "e"
+             'log10',# log to the base "10"
+             'log1p',
              'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt',
              'tan', 'tanh', 'trunc']
 safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
@@ -34,6 +37,12 @@ safe_dict['max'] = max
 safe_dict['any'] = any
 safe_dict['bool'] = bool
 safe_dict['complex'] = complex
+
+
+# Now fix up some confusion:
+safe_dict['ln'] = safe_dict['log']   # "ln" is the usual log to the base "e"
+safe_dict['log10']                    # "log10" is made to be to the base "10"
+safe_dict.pop('log')                  # remove "log" to avoid any confusion
 
 
 @register.tag
@@ -88,12 +97,23 @@ class EvaluateString(template.Node):
         #code = compile(self.format_string, "<internal>", "eval")
         try:
             out = eval(self.format_string, safe_dict, context_dict)
-        except Exception as e:
-            out = str(e)
+        except NameError as e_log:
+            if e_log.args[0] == "name 'log' is not defined":
+                out = ('The log() function is ambiguous. Please use ln() for '
+                       'the base "e", or use log10() for base 10 logarithms.')
+                raise (out)
+                # TODO(KGD): make sure this doesn't pass unraised
+            else:
 
-        # Clean up the output
-        from decimal import Decimal, Context
-        out = Context(prec=self.sig_figs, Emax=999,).create_decimal(str(out))
-        out = out.to_eng_string()
+                raise(e_log)
+        except Exception as e:
+            # TODO(KGD): make sure this doesn't pass unraised
+            raise(e)
+            #out = str(e)
+        else:
+            # Clean up the output
+            from decimal import Decimal, Context
+            out = Context(prec=self.sig_figs, Emax=999,).create_decimal(str(out))
+            out = out.to_eng_string()
 
         return out
