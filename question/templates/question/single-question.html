@@ -1,0 +1,75 @@
+{% extends "core.html" %}
+
+{% block content %}
+
+  <div id="quest-item-header">
+	<div id="quest-item-header-left">{% if item.previous_item %}<a href="{{item.previous_item}}">Previous</a>{% endif %}</div>
+	<div id="quest-item-header-right">{% if item.next_item %}<a href="{{item.next_item}}">Next</a>{% endif %}</div>
+  </div>
+
+
+  <h2>{{item.title}}</h2>
+
+  <div id="quest-itemdisp-container">
+
+    <div class="quest-item-row">
+    </div>
+
+    <div class="quest-item-row">
+      <span class="quest-item-label">Authors:</span>
+      <span class="quest-item-entry">{{item.full_author_listing|safe}}</span>
+    </div>
+
+    <div class="quest-item-row">
+      <span class="quest-item-label">Publication year:</span>
+      <span class="quest-item-entry"><a href="{% url quest-show-items what_view="pub-by-year" extra_info=item.year %}">{{ item.year }}</a></span>
+    </div>
+
+    {% if item.doi_link %}
+    <div class="quest-item-row">
+      <span class="quest-item-label">DOI link:</span>
+      <span class="quest-item-entry"><a href="{{item.doi_link}}">{{item.doi_link_cleaned}}</a></span>
+    </div>
+    {% else %}
+	  {% if item.web_link %}
+		<div class="quest-item-row">
+		  <span class="quest-item-label">External link:</span>
+		  <span class="quest-item-entry"><a href="{{item.web_link}}">{{item.web_link}}</a></span>
+		</div>
+	  {% endif%}
+	{% endif%}
+
+	{% if item.show_abstract %}
+    <div class="quest-item-row">
+      <span class="quest-item-label">Abstract:</span>
+      <span class="quest-item-entry">{{item.abstract|safe}}</span>
+    </div>
+	{% endif%}
+
+    <div class="quest-item-row">
+      <span class="quest-item-label">Citation:</span>
+      <span class="quest-item-entry quest-item-description">{{item.full_citation|safe}}</span>
+    </div>
+
+    <div class="quest-item-row">
+      <span class="quest-item-label">Tags:</span>
+      <span class="quest-item-entry">{% for tag in tag_list %}<span><a href="{% url quest-show-items what_view="tag" extra_info=tag %}" class="quest-tag">{{tag.name}}</a></span>{% endfor %}</span>
+    </div>
+    <div style="clear:both;">&nbsp;</div>
+
+    <div class="quest-item-row">
+      <span class="quest-item-label">Download PDF:</span>
+      {% if item.download_link %}
+
+	    <img src="{{MEDIA_URL}}literature/nuvola_mimetypes_pdf.png" width="24">
+		<span class="quest-item-entry"><a href="{{item.download_link}}">Get PDF</a> [{{item.download_size|filesizeformat}}]</span>
+	  {% else %}
+	    No PDF available
+	  {% endif %}
+    </div>
+
+  </div>
+
+  <div style="clear: both;"><p>&nbsp;</div>
+
+{% endblock %}

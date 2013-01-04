@@ -9,6 +9,8 @@ import re
 import os
 import errno
 import logging
+import datetime
+
 logger = logging.getLogger('quest')
 
 rest_help_extra = """Use <a href="http://sphinx.pocoo.org/latest/rest.html">reStructuredText</a>.
@@ -20,7 +22,6 @@ rest_help_extra = """Use <a href="http://sphinx.pocoo.org/latest/rest.html">reSt
 <li class="spc-odd"><tt>\(</tt><tt>e^{i \pi}+1=0</tt><tt>\)</tt> shows as \(e^{i \pi}+1=0\)</li>
 <li class="spc-even"><a href="/markup-help" target="_blank">More help</a> with bulleted lists, math, hyperlinks and other features</li>
 </div>"""
-
 
 def ensuredir(path):
     """Ensure that a path exists."""
@@ -127,24 +128,24 @@ def highlight_code(code, lexer=None):
 #class SciPyStyle(Style):
     #default_style = ""
     #styles = {
-        ##Comment:                '#888',
-        ##Keyword:                'bold #080',
-        ##Name:                   '#080',
-        ##Name.Function:          '#00F',
-        ##Name.Class:             'bold #00F',
-        ##String:                 '#BA2121',
-        #Comment:                '#008000',
-        #Keyword:                'bold #000080',
-        #Name:                   '#000',
-        #Name.Builtin:           '#407090',
-        #Name.Function:          'bold #008080',
-        #Name.Class:             'bold #00F',
-        #Name.Namespace:         '#000000',
-        #Number:                 '#008080',
-        #String:                 '#800080',
-        #String.Doc:             '#800000',
-        #Operator:               '#000000',
-        #Operator.Word:          'bold #AA22FF',
+            ##Comment:                '#888',
+            ##Keyword:                'bold #080',
+            ##Name:                   '#080',
+            ##Name.Function:          '#00F',
+            ##Name.Class:             'bold #00F',
+            ##String:                 '#BA2121',
+            #Comment:                '#008000',
+            #Keyword:                'bold #000080',
+            #Name:                   '#000',
+            #Name.Builtin:           '#407090',
+            #Name.Function:          'bold #008080',
+            #Name.Class:             'bold #00F',
+            #Name.Namespace:         '#000000',
+            #Number:                 '#008080',
+            #String:                 '#800080',
+            #String.Doc:             '#800000',
+            #Operator:               '#000000',
+            #Operator.Word:          'bold #AA22FF',
     #}
 
 #formatter = formatters.HtmlFormatter(style=SciPyStyle)
@@ -155,8 +156,8 @@ def highlight_code(code, lexer=None):
     else:
         lexer_class = lexers.get_lexer_for_mimetype(lexer or 'text/x-python')
         return highlight(code, lexer_class,
-                                      formatters.HtmlFormatter(linenos=True,
-                                                               linenostep=1,))
+                         formatters.HtmlFormatter(linenos=True,
+                                                  linenostep=1,))
 
 def send_email(to_addresses, subject, message, from_address=None):
     """

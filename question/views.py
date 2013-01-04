@@ -4,21 +4,28 @@
 import re
 import json
 import random
+import logging
+import datetime
 from lxml import etree
+from django.core.context_processors import csrf
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render_to_response, redirect
+from django.shortcuts import (render_to_response, redirect, RequestContext,
+                              HttpResponse)
+
 
 # 3rd party imports
 import markdown
 import numpy as np
 
-
 # Our imports
 from models import (QTemplate, QSet, QActual)
-from person.models import UserProfile
+from person.models import (UserProfile, Token)
 from tagging.views import get_and_create_tags
 from utils import generate_random_token
 from course.models import Course
+
+logger = logging.getLogger('quest')
+logger.debug('Initializing quest::question::views.py')
 
 
 class BadVariableSpecification(Exception): pass
@@ -282,18 +289,72 @@ def generate_questions(course_code, qset_name):
     for user in UserProfile.objects.filter(courses=course):
 
         # TODO(KGD): handle the randomization of questions here
+
+
         # ``qts`` = question templates
         qts = qset[0].qtemplates.all()
+        n_questions = len(qts)
 
-        for qt in qts:
+        for idx, qt in enumerate(qts):
             html, var_dict = render(qt)
+
+            prev_q = next_q = None
+            if idx == 0:
+                if n_questions > 1:
+                    next_q = qts[1]
+            elif idx == n_questions-1:
+                if n_questions > 1:
+                    prev_q = qts[idx-1]
+
             qa = QActual.objects.create(qtemplate=qt, qset=qset[0],
                                         user=user, as_displayed=html,
-                                        var_dict = var_dict)
+                                        var_dict=var_dict,
+                                        next_q=next_q, prev_q=prev_q)
             print(qa)
 
+
+def validate_user(request, course_code_slug, question_set_slug, token):
+    """
+    Some validation code that is common to functions below.
+    """
+    user = request.user.profile
+    courses = Course.objects.filter(slug=course_code_slug)
+    if not courses:
+        logger.info('Bad course code request: [%s]; request path="%s"' %
+                    (course_code_slug, request.path_info))
+        return redirect('quest-main-page')
+
+    qset=QSet.objects.filter(slug=question_set_slug).filter(course=courses[0])
+    if not qset:
+        logger.info('Bad question set request: [%s]; request path="%s"' %
+                    (question_set_slug, request.path_info))
+        return redirect('quest-main-page')
+
+    token_obj = Token.objects.filter(token_address=token).filter(user=user)
+    if not token_obj:
+        logger.info('Bad token used: [%s]; request path="%s"' %
+                    (token, request.path_info))
+        return redirect('quest-main-page')
+
+    if request.session['token'] != token:
+        logger.info('Token mismatch: [%s]; session token="%s"' %
+                    (request.path_info, request.session['token']))
+        return redirect('quest-main-page')
+
+    if request.session['expires'] < datetime.datetime.now():
+        exp = request.session['expires'].strftime('%H:%M:%S on %d %h %Y')
+        ctxdict = {'time_expired': exp}
+        ctxdict.update(csrf(request))
+        return render_to_response('question/time-expired.html', ctxdict,
+                                  context_instance=RequestContext(request))
+
+
+    # Return all the questions for this student
+    return QActual.objects.filter(qset=qset[0]).filter(user=user)
+
+
 @login_required
-def ask_question_set(request):
+def ask_question_set(request):                 # URL: ``quest-question-set``
     """
     Ask which question set to display
     """
@@ -307,55 +368,59 @@ def ask_question_set(request):
     qset_order = [q.ans_time_start for q in qsets]
     qset_order.sort()
 
+    token = request.session['token']
+
     # Show question sets
 
     # Assume user has clicked on the question set
     # Show all the questions
 
-    from django import template
-    from django.template.defaultfilters import stringfilter
-    register = template.Library()
+    #from django import template
+    #from django.template.defaultfilters import stringfilter
+    #register = template.Library()
 
-    g = """{% load quest_render_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
-    g = """{% load quest_render_tags %} x + y = {% quick_eval "x/y" 5 %}"""
-    g = """{% load quest_render_tags %} x + y = {% quick_eval "x*ln(y)" 5 %}"""
-    from django.template import Context, Template
-    t = Template(g)
-    c = Context({'x':4, 'y':20})
-    r = t.render(c)
-    print(r)
+    #g = """{% load quest_render_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
+    #g = """{% load quest_render_tags %} x + y = {% quick_eval "x/y" 5 %}"""
+    #g = """{% load quest_render_tags %} x + y = {% quick_eval "x*ln(y)" 5 %}"""
+    #from django.template import Context, Template
+    #t = Template(g)
+    #c = Context({'x':4, 'y':20})
+    #r = t.render(c)
+    #print(r)
 
+    return redirect('quest-ask-show-questions', '4C3-6C3', 'week-1', token)
 
-
-
-
-
-
-
-
-    return redirect('quest-ask-questions', '4C3-6C3', 'week-1')
-
-@login_required
-def ask_show_questions(request, course_code_slug, question_set_slug):
+@login_required                                   # URL: ``quest-ask-question``
+def ask_show_questions(request, course_code_slug, question_set_slug,
+                           token):
     """
     Display questions (and perhaps answers) to questions from a question set
     for a specific student
     """
-    user = request.user.profile
-    courses = Course.objects.filter(slug=course_code_slug)
-    if not courses:
-        # TODO(KGD): redirect to login page
-        return
-
-    qset=QSet.objects.filter(slug=question_set_slug).filter(course=courses[0])
-    if not qset:
-        # TODO(KGD): redirect to login page
-        return
-
-    # Show all the questions for this student
-    quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
+    quests = validate_user(request, course_code_slug, question_set_slug, token)
+    if type(quests) in (HttpResponse,):
+        return quests
 
     # Now display the questions
+    ctxdict = {'quests_lists': quests}
+    ctxdict.update(csrf(request))
+    return render_to_response('question/question-list.html', ctxdict,
+                              context_instance=RequestContext(request))
+
+@login_required                                # URL: ``ask-specific-question``
+def ask_specific_question(request, course_code_slug, question_set_slug,
+                              token, question_id):
+    """
+    Asks a specific question to the user.
+    """
+    quests = validate_user(request, course_code_slug, question_set_slug, token)
+    if type(quests) in (HttpResponse,):
+        return quests
+
+    # Now display the questions
+    return render_to_response('single-question.html',
+                              {'quests_lists': quests},
+                              context_instance=RequestContext(request))
 
 
 def render(qt):
@@ -454,6 +519,7 @@ def render(qt):
 
     return html, json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
 
+
 def create_random_variables(var_dict):
     """
     The ``var_dict`` is augmented with the randomly selected value.
@@ -539,6 +605,8 @@ def create_random_variables(var_dict):
             var_dict[key][1] = int(temp)
         else:
             var_dict[key][1] = float(temp)
+
+    return var_dict
 
 
 def auto_grade():

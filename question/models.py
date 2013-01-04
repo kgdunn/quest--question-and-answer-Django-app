@@ -201,7 +201,7 @@ class QActual(models.Model):
     # variable names in the dict must be strings: [a-zA-Z_][a-zA-Z0-9_]*
     var_dict = models.TextField(blank=True)
 
-    # The student's answer
+    # The student's answer (may be intermediate still)
     given_answer = models.TextField(blank=True)
 
     # NOTE: it is a conscious decision not to assign grades to the ``QActual``
@@ -209,6 +209,14 @@ class QActual(models.Model):
     #       these are smaller and we can deal with grading as a separate
     #       event.
 
+    # Has the question been submitted yet?
+    is_final = models.BooleanField(default=False)
+
+    # Links to the previous and next question in the series
+    next_q = models.ForeignKey('self', blank=True, null=True,
+                               related_name='next_question')
+    prev_q = models.ForeignKey('self', blank=True, null=True,
+                               related_name='prev_question')
 
     # Tracking on the question
     # ---------------------------
