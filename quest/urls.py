@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, include, url
 import person
 from question.views import(ask_question_set, ask_show_questions,
-                           ask_specific_question)
+                           ask_specific_question, store_answer)
 from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
@@ -28,16 +28,22 @@ urlpatterns += patterns('',
 
     url(r'^question-sets/$', ask_question_set, name='quest-question-set'),
 
+    # ://store/(course-code)/(question-set-slug)/(question-id)/
+    url(r'^store/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', store_answer, name='quest-store-answer'),
+
     # ://(course-code)/(question-set-slug)/(question-id)/
     url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
+
+
 
     # ://(course-code)/(question-set-slug)/
     url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', ask_show_questions, name='quest-ask-show-questions'),
 
 
 
-    # Uncomment the admin/doc line below to enable admin documentation:
-    url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    #url(r'^submit-answers/$', submit_answers, name='quest-submit-answers'),
+
+
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),

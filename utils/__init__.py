@@ -41,7 +41,7 @@ def get_IP_address(request):
     """
     # Catchs the case when the user is on a proxy
     ip = request.META.get('HTTP_X_FORWARDED_FOR', '')
-    if ip == '' or ip.lower() == 'unkown':
+    if ip == '' or ip.lower() in ('unkown', ):
         ip = request.META.get('REMOTE_ADDR', '')   # User is not on a proxy
     return ip
 

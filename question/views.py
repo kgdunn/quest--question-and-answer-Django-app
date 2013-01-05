@@ -313,7 +313,8 @@ def generate_questions(course_code, qset_name):
             print(qa)
 
 
-def validate_user(request, course_code_slug, question_set_slug):
+def validate_user(request, course_code_slug, question_set_slug,
+                  question_id=None):
     """
     Some validation code that is common to functions below.
     """
@@ -349,13 +350,33 @@ def validate_user(request, course_code_slug, question_set_slug):
         return render_to_response('question/time-expired.html', ctxdict,
                                   context_instance=RequestContext(request))
 
-
     # Return all the questions for this student
-    return QActual.objects.filter(qset=qset[0]).filter(user=user)
+    quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
+
+    q_id = question_id
+    if question_id:
+        try:
+            q_id = int(question_id)
+        except ValueError:
+            logger.info('Bad question number request: [%s]; request path="%s"'
+                    % (question_id, request.path_info))
+            return redirect('quest-main-page')
+
+        if q_id < 1 or q_id > len(quests):
+            logger.info('Bad question integer request: [%s]; request path="%s"' %
+                        (question_id, request.path_info))
+            return redirect('quest-ask-show-questions', course_code_slug,
+                            question_set_slug)
+
+
+    if question_id:
+        return (quests, q_id)
+    else:
+        return quests
 
 
 @login_required
-def ask_question_set(request):           # URL: ``quest-question-set``
+def ask_question_set(request):        # URL: ``quest-question-set``
     """
     Ask which question set to display
     """
@@ -391,7 +412,7 @@ def ask_question_set(request):           # URL: ``quest-question-set``
 
     return redirect('quest-ask-show-questions', '4C3-6C3', 'week-1')
 
-@login_required                             # URL: ``quest-ask-show-questions``
+@login_required                          # URL: ``quest-ask-show-questions``
 def ask_show_questions(request, course_code_slug, question_set_slug):
     """
     Display questions (and perhaps answers) to questions from a question set
@@ -408,31 +429,24 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     return render_to_response('question/question-list.html', ctxdict,
                               context_instance=RequestContext(request))
 
-@login_required                             # URL: ``ask-specific-question``
+@login_required                          # URL: ``quest-ask-specific-question``
 def ask_specific_question(request, course_code_slug, question_set_slug,
                               question_id):
     """
     Asks a specific question to the user.
     """
-    quests = validate_user(request, course_code_slug, question_set_slug)
+    quests = validate_user(request, course_code_slug, question_set_slug,
+                                 question_id)
     if isinstance(quests, HttpResponse):
         return quests
 
+    if isinstance(quests, tuple):
+        quests, q_id = quests
+
     # TODO(KGD): Log start time of question (and end time of previous one)
+    #times_displayed
 
-    # Now display the question
-    try:
-        q_id = int(question_id)
-    except ValueError:
-        logger.info('Bad question number request: [%s]; request path="%s"' %
-                    (question_id, request.path_info))
-        return redirect('quest-main-page')
 
-    if q_id < 1 or q_id > len(quests):
-        logger.info('Bad question integer request: [%s]; request path="%s"' %
-                    (question_id, request.path_info))
-        return redirect('quest-ask-show-questions', course_code_slug,
-                        question_set_slug)
 
     ctxdict = {'quests_lists': quests,
                'item_id': q_id,
@@ -443,6 +457,31 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
     ctxdict.update(csrf(request))
     return render_to_response('question/single-question.html', ctxdict,
                               context_instance=RequestContext(request))
+
+@login_required                          # URL: ``quest-submit-answers``
+def submit_answers(request):
+    """
+    Obtain the finalized student answers and store them permanently.
+    """
+    pass
+
+
+@login_required                          # URL: ``quest-store-answer``
+def store_answer(request, course_code_slug, question_set_slug, question_id):
+    """
+    """
+    quests = validate_user(request, course_code_slug, question_set_slug,
+                            question_id)
+    if isinstance(quests, HttpResponse):
+        return quests
+
+    if isinstance(quests, tuple):
+        quests, q_id = quests
+
+    quests[q_id-1].given_answer = request.GET['entered']
+    quests[q_id-1].save()
+    return HttpResponse('%s: Answer recorded' %
+                        datetime.datetime.now().strftime('%H:%M:%S'))
 
 
 def render(qt):
