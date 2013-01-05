@@ -313,7 +313,7 @@ def generate_questions(course_code, qset_name):
             print(qa)
 
 
-def validate_user(request, course_code_slug, question_set_slug, token):
+def validate_user(request, course_code_slug, question_set_slug):
     """
     Some validation code that is common to functions below.
     """
@@ -330,6 +330,7 @@ def validate_user(request, course_code_slug, question_set_slug, token):
                     (question_set_slug, request.path_info))
         return redirect('quest-main-page')
 
+    token = request.session['token']
     token_obj = Token.objects.filter(token_address=token).filter(user=user)
     if not token_obj:
         logger.info('Bad token used: [%s]; request path="%s"' %
@@ -354,7 +355,7 @@ def validate_user(request, course_code_slug, question_set_slug, token):
 
 
 @login_required
-def ask_question_set(request):                 # URL: ``quest-question-set``
+def ask_question_set(request):           # URL: ``quest-question-set``
     """
     Ask which question set to display
     """
@@ -368,7 +369,7 @@ def ask_question_set(request):                 # URL: ``quest-question-set``
     qset_order = [q.ans_time_start for q in qsets]
     qset_order.sort()
 
-    token = request.session['token']
+    #token = request.session['token']
 
     # Show question sets
 
@@ -388,17 +389,17 @@ def ask_question_set(request):                 # URL: ``quest-question-set``
     #r = t.render(c)
     #print(r)
 
-    return redirect('quest-ask-show-questions', '4C3-6C3', 'week-1', token)
+    return redirect('quest-ask-show-questions', '4C3-6C3', 'week-1')
 
-@login_required                                   # URL: ``quest-ask-question``
-def ask_show_questions(request, course_code_slug, question_set_slug,
-                           token):
+@login_required                             # URL: ``quest-ask-show-questions``
+def ask_show_questions(request, course_code_slug, question_set_slug):
     """
     Display questions (and perhaps answers) to questions from a question set
     for a specific student
     """
-    quests = validate_user(request, course_code_slug, question_set_slug, token)
-    if type(quests) in (HttpResponse,):
+
+    quests = validate_user(request, course_code_slug, question_set_slug)
+    if  isinstance(quests, HttpResponse):
         return quests
 
     # Now display the questions
@@ -407,19 +408,40 @@ def ask_show_questions(request, course_code_slug, question_set_slug,
     return render_to_response('question/question-list.html', ctxdict,
                               context_instance=RequestContext(request))
 
-@login_required                                # URL: ``ask-specific-question``
+@login_required                             # URL: ``ask-specific-question``
 def ask_specific_question(request, course_code_slug, question_set_slug,
-                              token, question_id):
+                              question_id):
     """
     Asks a specific question to the user.
     """
-    quests = validate_user(request, course_code_slug, question_set_slug, token)
-    if type(quests) in (HttpResponse,):
+    quests = validate_user(request, course_code_slug, question_set_slug)
+    if isinstance(quests, HttpResponse):
         return quests
 
-    # Now display the questions
-    return render_to_response('single-question.html',
-                              {'quests_lists': quests},
+    # TODO(KGD): Log start time of question (and end time of previous one)
+
+    # Now display the question
+    try:
+        q_id = int(question_id)
+    except ValueError:
+        logger.info('Bad question number request: [%s]; request path="%s"' %
+                    (question_id, request.path_info))
+        return redirect('quest-main-page')
+
+    if q_id < 1 or q_id > len(quests):
+        logger.info('Bad question integer request: [%s]; request path="%s"' %
+                    (question_id, request.path_info))
+        return redirect('quest-ask-show-questions', course_code_slug,
+                        question_set_slug)
+
+    ctxdict = {'quests_lists': quests,
+               'item_id': q_id,
+               'course': course_code_slug,
+               'qset': question_set_slug,
+               'item': quests[q_id-1],
+               'last_question': q_id==len(quests)}
+    ctxdict.update(csrf(request))
+    return render_to_response('question/single-question.html', ctxdict,
                               context_instance=RequestContext(request))
 
 

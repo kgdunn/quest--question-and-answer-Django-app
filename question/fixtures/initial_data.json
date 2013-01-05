@@ -53,6 +53,60 @@
   },
   {
     "pk": 1,
+    "model": "question.qactual",
+    "fields": {
+      "var_dict": "{}",
+      "given_answer": "",
+      "prev_q": null,
+      "next_q": 3,
+      "as_displayed": "<p>If a=1, b=4. What is a*b?</p>\n<hr />\n<p><input type = \"radio\" name=\"sFL3BC4s\" value=\"YRb4\">12</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"nS4q\">4</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"nfrY\">1</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"dNyj\">2</><br></p>",
+      "is_final": false,
+      "qtemplate": 1,
+      "browsers": [],
+      "user": 3,
+      "times_displayed": [],
+      "times_answered": [],
+      "qset": 1
+    }
+  },
+  {
+    "pk": 2,
+    "model": "question.qactual",
+    "fields": {
+      "var_dict": "{}",
+      "given_answer": "",
+      "prev_q": 1,
+      "next_q": 3,
+      "as_displayed": "<p>If a=1, b=4. What is a*b?</p>\n<hr />\n<p><input type = \"radio\" name=\"sFL3BC4s\" value=\"YRb4\">12</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"nS4q\">4</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"nfrY\">1</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"dNyj\">2</><br></p>",
+      "is_final": false,
+      "qtemplate": 1,
+      "browsers": [],
+      "user": 3,
+      "times_displayed": [],
+      "times_answered": [],
+      "qset": 1
+    }
+  },
+  {
+    "pk": 3,
+    "model": "question.qactual",
+    "fields": {
+      "var_dict": "{}",
+      "given_answer": "",
+      "prev_q": 2,
+      "next_q": null,
+      "as_displayed": "<p>If a=1, b=7. What is a*b?</p>\n<hr />\n<p><input type = \"radio\" name=\"jEkryPHe\" value=\"nS4q\">4</><br>\n<input type = \"radio\" name=\"jEkryPHe\" value=\"YRb4\">12</><br>\n<input type = \"radio\" name=\"jEkryPHe\" value=\"dNyj\">2</><br>\n<input type = \"radio\" name=\"jEkryPHe\" value=\"nfrY\">1</><br></p>",
+      "is_final": false,
+      "qtemplate": 1,
+      "browsers": [],
+      "user": 3,
+      "times_displayed": [],
+      "times_answered": [],
+      "qset": 1
+    }
+  },
+  {
+    "pk": 1,
     "model": "course.course",
     "fields": {
       "code": "4C3/6C3",

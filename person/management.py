@@ -37,7 +37,7 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
 
 
     # While we are here (and this isn't user related) check the name of
-    # the site. If it is "example.com", change it to "SciPy-Central.org"
+    # the site. If it is "example.com", change it to actual name
     if app_label == 'sites':
         from django.contrib.sites.models import Site
         site = Site.objects.get_current()

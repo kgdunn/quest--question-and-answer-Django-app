@@ -122,6 +122,7 @@ def deactivate_token_sign_in(request, token):
     # ------------------------------------------------
 
     # Information to store in a cookie
+    # TODO(KGD): don't hard code time
     expires = datetime.datetime.now() + datetime.timedelta(seconds=60*60)
 
     # Temporarily render the question set for the students

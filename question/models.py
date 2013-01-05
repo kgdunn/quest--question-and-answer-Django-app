@@ -28,6 +28,7 @@ try:
 except ImportError:
     import json
 from django.db import models
+from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 from django.core.exceptions import ValidationError
 
@@ -230,7 +231,6 @@ class QActual(models.Model):
 
     # Browser ID
     browsers = models.ManyToManyField(BrowserID)
-
 
 
     def __unicode__(self):

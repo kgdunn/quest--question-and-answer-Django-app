@@ -28,11 +28,11 @@ urlpatterns += patterns('',
 
     url(r'^question-sets/$', ask_question_set, name='quest-question-set'),
 
-    # ://(course-code)/(question-set-slug)/(token)/(question-id)/
-    url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<token>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
+    # ://(course-code)/(question-set-slug)/(question-id)/
+    url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
 
-    # ://(course-code)/(question-set-slug)/(token)
-    url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<token>.+)/', ask_show_questions, name='quest-ask-show-questions'),
+    # ://(course-code)/(question-set-slug)/
+    url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', ask_show_questions, name='quest-ask-show-questions'),
 
 
 
