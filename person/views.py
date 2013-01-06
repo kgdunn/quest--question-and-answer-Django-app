@@ -108,8 +108,7 @@ def deactivate_token_sign_in(request, token):
     user = authenticate(remote_user=user.username)
     login(request, user)
 
-    # Now proceed to show the questions to the student
-    # ------------------------------------------------
+    # Now proceed to show available question sets to the student
 
     # Information to store in a cookie
     # TODO(KGD): don't hard code time

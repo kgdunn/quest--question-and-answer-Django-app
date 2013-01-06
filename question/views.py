@@ -387,33 +387,20 @@ def ask_question_set(request):        # URL: ``quest-question-set``
     """
     user = request.user.profile
     qsets = []
+    idx = 0
+    qsets.append([])
     for course in user.courses.all():
-        # Which course(s) is the user registered for? Get all the QSet's for them
-        qsets.extend(course.qset_set.all())
-
-    # Sort them from most current to earliest (reverse time order)
-    qset_order = [q.ans_time_start for q in qsets]
-    qset_order.sort()
+        # Which course(s) is the user registered for? Get all QSet's for them
+        qsets[idx].extend(course.qset_set.order_by('-ans_time_start'))
+        idx += 1
 
     # Show question sets
+    ctxdict = {'question_set_list': qsets}
+    ctxdict.update(csrf(request))
+    return render_to_response('question/question-sets.html', ctxdict,
+                              context_instance=RequestContext(request))
 
-    # Assume user has clicked on the question set
-    # Show all the questions
-
-    #from django import template
-    #from django.template.defaultfilters import stringfilter
-    #register = template.Library()
-
-    #g = """{% load quest_render_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
-    #g = """{% load quest_render_tags %} x + y = {% quick_eval "x/y" 5 %}"""
-    #g = """{% load quest_render_tags %} x + y = {% quick_eval "x*ln(y)" 5 %}"""
-    #from django.template import Context, Template
-    #t = Template(g)
-    #c = Context({'x':4, 'y':20})
-    #r = t.render(c)
-    #print(r)
-
-    return redirect('quest-ask-show-questions', '4C3-6C3', 'week-1')
+    ##/return redirect('quest-ask-show-questions', '4C3-6C3', 'week-1')
 
 @login_required                          # URL: ``quest-ask-show-questions``
 def ask_show_questions(request, course_code_slug, question_set_slug):
@@ -767,3 +754,18 @@ def auto_grade():
 #fs = etree.SubElement(root, "fieldset")
 #legend
 #s = etree.tostring(root, pretty_print=True)
+
+
+
+#from django import template
+#from django.template.defaultfilters import stringfilter
+#register = template.Library()
+
+#g = """{% load quest_render_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
+#g = """{% load quest_render_tags %} x + y = {% quick_eval "x/y" 5 %}"""
+#g = """{% load quest_render_tags %} x + y = {% quick_eval "x*ln(y)" 5 %}"""
+#from django.template import Context, Template
+#t = Template(g)
+#c = Context({'x':4, 'y':20})
+#r = t.render(c)
+#print(r)

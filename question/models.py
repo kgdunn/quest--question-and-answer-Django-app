@@ -135,7 +135,8 @@ class QSet(models.Model):
                                                          'questions in set'))
 
     # Many-to-many? A QTemplate can be part of multiple QSet objects, and a
-    #               QSet has multiple QTemplate objects:
+    #               QSet has multiple QTemplate objects.
+    # This lists which questions
     qtemplates = models.ManyToManyField(QTemplate)
 
     # Certain question templates might be required to always be present
