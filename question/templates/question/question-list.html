@@ -1,13 +1,13 @@
-{% extends "base.html" %}
+{% extends "question/questions.html" %}
 
 {% block content %}
-
-{% spaceless %}
-<ul>
-{% for quest in quests_lists %}
-    <li><a href="{{forloop.counter}}/">Question {{forloop.counter}} of {{quests_lists|length}}</a> [{{quest.qtemplate.max_grade}} points]</li>
-{% endfor %}
-</ul>
-{% endspaceless %}
-
+    {% spaceless %}
+    <ul>
+    {% for quest in quests_lists %}
+        <li><a href="{{forloop.counter}}/">Question {{forloop.counter}} of
+                  {{quests_lists|length}}</a>
+                  [{{quest.qtemplate.max_grade}} points]</li>
+    {% endfor %}
+    </ul>
+    {% endspaceless %}
 {% endblock %}

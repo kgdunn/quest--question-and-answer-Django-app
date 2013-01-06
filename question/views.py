@@ -338,6 +338,13 @@ def validate_user(request, course_code_slug, question_set_slug,
                     (token, request.path_info))
         return redirect('quest-main-page')
 
+    if token_obj[0].has_been_used:
+        logger.info('Token used: [%s]; session token="%s"' %
+                    (request.path_info, request.session['token']))
+        page_content = {}
+        return render_to_response('person/invalid-expired-token.html',
+                                  page_content)
+
     if request.session['token'] != token:
         logger.info('Token mismatch: [%s]; session token="%s"' %
                     (request.path_info, request.session['token']))
@@ -368,12 +375,10 @@ def validate_user(request, course_code_slug, question_set_slug,
             return redirect('quest-ask-show-questions', course_code_slug,
                             question_set_slug)
 
-
     if question_id:
         return (quests, q_id)
     else:
         return quests
-
 
 @login_required
 def ask_question_set(request):        # URL: ``quest-question-set``
@@ -389,8 +394,6 @@ def ask_question_set(request):        # URL: ``quest-question-set``
     # Sort them from most current to earliest (reverse time order)
     qset_order = [q.ans_time_start for q in qsets]
     qset_order.sort()
-
-    #token = request.session['token']
 
     # Show question sets
 
@@ -439,32 +442,63 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                                  question_id)
     if isinstance(quests, HttpResponse):
         return quests
-
     if isinstance(quests, tuple):
         quests, q_id = quests
 
     # TODO(KGD): Log start time of question (and end time of previous one)
     #times_displayed
 
+    quest = quests[q_id-1]
+    to_display = quest.as_displayed
+    # Has the student answered this question (even temporarily?).
+    if quest.given_answer:
+        if quest.qtemplate.q_type in ('mcq', 'multi', 'tf'):
 
+            to_display = re.sub(r'"'+quest.given_answer+r'"',
+                                r'"'+quest.given_answer+r'" checked',
+                                to_display)
 
     ctxdict = {'quests_lists': quests,
                'item_id': q_id,
                'course': course_code_slug,
                'qset': question_set_slug,
-               'item': quests[q_id-1],
+               'item': quest,
+               'to_display': to_display,
                'last_question': q_id==len(quests)}
     ctxdict.update(csrf(request))
     return render_to_response('question/single-question.html', ctxdict,
                               context_instance=RequestContext(request))
 
-@login_required                          # URL: ``quest-submit-answers``
-def submit_answers(request):
+@login_required                          # URL: ``quest-submit-final-check``
+def submit_answers(request, course_code_slug, question_set_slug):
     """
     Obtain the finalized student answers and store them permanently.
     """
-    pass
+    quests = validate_user(request, course_code_slug, question_set_slug)
+    if isinstance(quests, HttpResponse):
+        return quests
+    if isinstance(quests, tuple):
+        quests, _ = quests
 
+    ctxdict = {'quests_lists': quests,
+                'course': course_code_slug,
+                'qset': question_set_slug,
+                'error_message': ''}
+    ctxdict.update(csrf(request))
+
+    if request.POST:
+        if request.POST.get('honesty-statement', 'NOT_CHECKED') == 'agreed':
+            return redirect('quest-successful-submission', course_code_slug,
+                            question_set_slug)
+        else:
+            ctxdict['error_message'] = 'The work submitted must be your own'
+            return render_to_response('question/final-honesty-check.html',
+                                    ctxdict,
+                                    context_instance=RequestContext(request))
+    else:
+        return render_to_response('question/final-honesty-check.html',
+                                    ctxdict,
+                                    context_instance=RequestContext(request))
 
 @login_required                          # URL: ``quest-store-answer``
 def store_answer(request, course_code_slug, question_set_slug, question_id):
@@ -474,14 +508,35 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
                             question_id)
     if isinstance(quests, HttpResponse):
         return quests
-
     if isinstance(quests, tuple):
         quests, q_id = quests
 
     quests[q_id-1].given_answer = request.GET['entered']
     quests[q_id-1].save()
+
     return HttpResponse('%s: Answer recorded' %
                         datetime.datetime.now().strftime('%H:%M:%S'))
+
+@login_required                          # URL: ``quest-successful-submission``
+def successful_submission(request, course_code_slug, question_set_slug):
+    """
+    User has successfully saved their answers.
+    """
+    quests = validate_user(request, course_code_slug, question_set_slug)
+    if isinstance(quests, HttpResponse):
+        return quests
+
+    token = request.session['token']
+    user = request.user.profile
+    final = quests[0].qset.ans_time_final.strftime('%H:%M:%S on %d %h %Y')
+    token_obj = Token.objects.filter(token_address=token).filter(user=user)
+    t_obj = Token.objects.update(id=token_obj[0].id, user=user.user,
+                                 has_been_used=True,
+                                 token_address=token_obj[0].token_address)
+    ctxdict = {'token': token,
+               'quest_cut_off': final}
+    return render_to_response('question/successfully-submitted.html', ctxdict,
+                                context_instance=RequestContext(request))
 
 
 def render(qt):

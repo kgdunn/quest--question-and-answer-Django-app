@@ -2,7 +2,6 @@ import models
 import logging
 import datetime
 
-from django.conf import settings
 from django.contrib.auth import login, authenticate
 from django.core.context_processors import csrf
 from django.shortcuts import render_to_response, redirect
@@ -100,17 +99,8 @@ def deactivate_token_sign_in(request, token):
         return render_to_response('person/invalid-expired-token.html',
                                   page_content)
 
-
-    # Valid token
+    # Valid token found. Continue on.
     user = token_item[0].user
-
-    # Update the record
-    t_updated = Token(token_item[0].id, has_been_used=True,
-                      token_address=token_item[0].token_address, user=user)
-
-    # Don't deactivate tokens while debugging
-    if not settings.DEBUG:
-        t_updated.save()
 
     # Use Django's auth framework to mark the user as signed-in
     # authenticate() <--- use this in the future to authenticate against
@@ -126,7 +116,7 @@ def deactivate_token_sign_in(request, token):
     expires = datetime.datetime.now() + datetime.timedelta(seconds=60*60)
 
     # Temporarily render the question set for the students
-    if True:
+    if False:
         from question.views import generate_questions
         generate_questions('4C3/6C3', 'Week 1')
 

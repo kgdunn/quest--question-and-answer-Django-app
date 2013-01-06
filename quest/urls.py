@@ -1,7 +1,8 @@
 from django.conf.urls import patterns, include, url
 import person
 from question.views import(ask_question_set, ask_show_questions,
-                           ask_specific_question, store_answer)
+                           ask_specific_question, store_answer,
+                           submit_answers, successful_submission)
 from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
@@ -20,30 +21,26 @@ else:
     urlpatterns = patterns()
 
 urlpatterns += patterns('',
-    # Examples:
-    # url(r'^$', 'quest.views.home', name='home'),
-    # url(r'^quest/', include('quest.foo.urls')),
+
     url(r'^$', person.views.sign_in, name='quest-main-page'),
+
     url(r'^tokens/(.*)/$', person.views.deactivate_token_sign_in),
 
     url(r'^question-sets/$', ask_question_set, name='quest-question-set'),
 
+    url(r'^successfully-submitted/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', successful_submission, name='quest-successful-submission'),
+
+    # The final check and the actual submission of answers go through this URL
+    url(r'^submit-final-check/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', submit_answers, name='quest-submit-final-check'),
+
     # ://store/(course-code)/(question-set-slug)/(question-id)/
-    url(r'^store/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', store_answer, name='quest-store-answer'),
+    url(r'^store/(?P<course_code_slug>.*)/(?P<question_set_slug>.*)/(?P<question_id>.*)/$', store_answer, name='quest-store-answer'),
 
     # ://(course-code)/(question-set-slug)/(question-id)/
     url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
 
-
-
     # ://(course-code)/(question-set-slug)/
     url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', ask_show_questions, name='quest-ask-show-questions'),
-
-
-
-    #url(r'^submit-answers/$', submit_answers, name='quest-submit-answers'),
-
-
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),

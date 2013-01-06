@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block html_headers %}
+{# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
+<script language="javascript" type="text/javascript">
+    $(document).ready(function() {
+        $(':radio').click(function() {
+            var valueSelected = this.value;
+            var buttonSelected = this.id.replace(valueSelected + '_','');
+            //alert('Button Selected: ' + buttonSelected + "\nValue Selected: " + valueSelected);
+            $.ajax({
+                type: "GET",
+                url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + valueSelected,
+                data:  '',
+                cache: false,
+                success: function(result) {
+                    $('#ajaxDiv').html(result);
+                },
+                error: function (response, desc, exception) {
+                    // custom error
+                }
+            });
+
+    });
+});
+</script>
+<script>
+    var interval;
+    var minutes = {{minutes_left}};
+    var seconds = {{seconds_left}};
+    window.onload = function() {
+        countdown('countdown');
+    };
+
+function countdown(element) {
+    interval = setInterval(function() {
+    var el = document.getElementById(element);
+        if(seconds == 0) {
+                if(minutes == 0) {
+                    el.innerHTML = "countdown's over!";
+                    clearInterval(interval);
+                    return;
+                } else {
+                    minutes--;
+                    seconds = 60;
+                }
+            }
+            if(minutes > 0) {
+                var minute_text = minutes + (minutes > 1 ? ' minutes' : ' minute');
+            } else {
+                var minute_text = '';
+            }
+            var second_text = seconds > 1 ? 'seconds' : 'second';
+            el.innerHTML = minute_text + ' ' + seconds + ' ' + second_text + ' remaining';
+            seconds--;
+       }, 1000)
+};
+</script>
+
+{% endblock %}
+
+{% block header %}
+    <div id='countdown'></div>
+    <div id="quest-item-header">
+        <div id="quest-item-header-left">{% if item.prev_q %}
+            <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}</div>
+        <div id="quest-item-header-right">{% if item.next_q %}
+            <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}</div>
+    </div>
+{% endblock %}
+{% block content %}{% endblock %}
+{% block footer %}
+    {% if last_question %}
+        <div id="quest-item-header">
+            <div id="quest-item-header-left">{% if item.prev_q %}
+                <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}</div>
+            <div id="quest-item-header-right">
+                <form action="{% url quest-submit-final-check course_code_slug=course, question_set_slug=qset%}" method="GET" enctype="multipart/form-data">{% csrf_token %}
+					<input type="submit" name="submit-questions" value="Sign and submit answers">
+				</form>
+            </div>
+        </div>
+    {% else %}
+         <div id="quest-item-header-left">{% if item.prev_q %}
+          <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}</div>
+        <div id="quest-item-header-right">{% if item.next_q %}
+          <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}</div>
+    {% endif %}
+    <div id="ajaxDiv"></div>
+{% endblock %}
+
+
+
+

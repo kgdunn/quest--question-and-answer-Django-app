@@ -1,0 +1,25 @@
+{% extends "question/questions.html" %}
+
+{% block content %}
+    <p> It is <b>your responsibility</b> to ensure your answers are correctly recorded to all questions (links will open in a new window):
+    {% spaceless %}
+    <ul>
+    {% for quest in quests_lists %}
+        <li><a href="/{{course}}/{{qset}}/{{forloop.counter}}/" target="_blank">Question {{forloop.counter}} of {{quests_lists|length}}</a> [{{quest.qtemplate.max_grade}} points]</li>
+    {% endfor %}
+    </ul>
+
+     <h2>Electronic signature</h2>
+     <div style="quest-signature-statement">
+        By checking the box below I am signing that this is my own work.
+        I have not been assisted by anyone else and only used aides which are
+        permissible.
+
+        <div style="quest-error-message">{{error_message}}</div>
+        <form action="{% url quest-submit-final-check course_code_slug=course, question_set_slug=qset %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
+            <input type="checkbox" name="honesty-statement" value="agreed">I agree with the above statement, and by marking the checkbox I am signing this statement
+            <input type="submit" value="Final submission of all my answers">
+        </form>
+     </div>
+    {% endspaceless %}
+{% endblock %}
