@@ -11,9 +11,8 @@ from models import Token
 # Our apps:
 from utils import generate_random_token, send_email
 
-# Move to "settings.py" later on
+# Move to "email_suffix.py" later on
 email_suffix = '@mcmaster.ca'  # and make it part of the sign-in-form.html template also
-email_from = 'Quest Website <kevin.dunn@mcmaster.ca>'
 token_prefix = 'http://quest.mcmaster.ca/tokens/'
 
 logger = logging.getLogger('quest')
@@ -32,6 +31,31 @@ def create_new_account(user=None, **kwargs):
         # Create a UserProfile object in the DB
         new_user_profile = models.UserProfile.objects.create(user=new_user)
         new_user_profile.save()
+
+
+def create_sign_in_email(user):
+    """
+    Creates the token and generates the email body and subject for a user.
+    """
+    token_address = generate_random_token()
+    Token.objects.get_or_create(token_address=token_address,
+                                user=user.user,
+                                has_been_used=False)
+    token_address = token_prefix + token_address
+    message = '''\
+    This message has been sent so you may access the Quest website.
+
+    The web address will only work for a single test: ''' + token_address + '''\
+
+
+    You can re-request access as many times as you like. There is no need to log
+    in or log out afterwards - after you submit the test the weblink becomes
+    invalid.
+
+    The http://quest.mcmaster.ca web server.
+    '''
+    subject = 'Access the Quest website'
+    return subject, message, user.user.email
 
 
 def sign_in(request):
@@ -54,12 +78,14 @@ def sign_in(request):
                                       page_content)
 
         else:
-            token_address = generate_random_token()
-            Token.objects.get_or_create(token_address=token_address,
-                                        user=the_student,
-                                        has_been_used=False)
-            token_address = token_prefix + token_address
-            email_token_to_student([the_student.email, ], token_address)
+            subject, message, to_address = create_sign_in_email(user)
+            out = send_email([to_address, ], subject, message)
+            if out:
+                logger.debug('Successfully sent email for sign in')
+            else:
+                logger.error('Unable to send sign-in email to: %s' %
+                            to_address[0])
+
             return render_to_response('person/sent-email.html')
 
     # Non-POST access of the sign-in page: display the login page to the user
@@ -70,25 +96,10 @@ def sign_in(request):
         return render_to_response('person/sign-in-form.html', page_content)
 
 
-def email_token_to_student(to_address, token_address):
-    """ Sends an email to the student with the web address to log in."""
+#def email_token_to_student(to_address, token_address):
+    #""" Sends an email to the student with the web address to log in."""
 
-    message = '''\
-This message has been sent, at your request, to access the Quest website.
 
-The web address will only work ONCE: ''' + token_address + '''\
-
-You can re-request access as many times as you like. There is no need to log
-in or log out afterwards - just close the web page.
-
-The http://quest.mcmaster.ca web server.
-'''
-    subject = 'Access the Quest website'
-    out = send_email(to_address, subject, message, from_address=email_from)
-    if out:
-        logger.debug('Successfully sent email for sign in')
-    else:
-        logger.debug('Unable to send sign-in email to: %s' % to_address[0])
 
 
 def deactivate_token_sign_in(request, token):

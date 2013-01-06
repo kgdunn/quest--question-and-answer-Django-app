@@ -1,5 +1,6 @@
 from django.conf.urls import patterns, include, url
 import person
+import instructor
 from question.views import(ask_question_set, ask_show_questions,
                            ask_specific_question, store_answer,
                            submit_answers, successful_submission)
@@ -22,6 +23,9 @@ else:
 
 urlpatterns += patterns('',
 
+    # Instructor specific URLs
+    url(r'^_admin/', include('instructor.urls')),
+
     url(r'^$', person.views.sign_in, name='quest-main-page'),
 
     url(r'^tokens/(.*)/$', person.views.deactivate_token_sign_in),
@@ -37,10 +41,10 @@ urlpatterns += patterns('',
     url(r'^store/(?P<course_code_slug>.*)/(?P<question_set_slug>.*)/(?P<question_id>.*)/$', store_answer, name='quest-store-answer'),
 
     # ://(course-code)/(question-set-slug)/(question-id)/
-    url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
+    url(r'^question/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
 
     # ://(course-code)/(question-set-slug)/
-    url(r'^(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', ask_show_questions, name='quest-ask-show-questions'),
+    url(r'^set/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', ask_show_questions, name='quest-ask-show-questions'),
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),

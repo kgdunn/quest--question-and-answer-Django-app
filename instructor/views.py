@@ -1,18 +1,24 @@
 # Python and Django imports
 import re
+import csv
 import json
 import random
 import logging
+
+from django.shortcuts import HttpResponse
+from django.contrib.auth.decorators import login_required
 
 # 3rd party imports
 import markdown
 import numpy as np
 
 # Our imports
-from question.models import (QTemplate, QSet, QActual)
-from person.models import (UserProfile,)
+from question.models import (QTemplate, QActual)
+from question.views import validate_user
+from person.models import (UserProfile, User)
+from person.views import create_sign_in_email
 from tagging.views import get_and_create_tags
-from utils import generate_random_token
+from utils import generate_random_token, send_email
 from course.models import Course
 
 logger = logging.getLogger('quest')
@@ -36,8 +42,7 @@ class ParseError(Exception):
     pass
 
 
-
-def split_sections(text):
+def split_sections(text):  # helper
     """
     Splits the problem statement into its sections. Section are denoted by
     double brackets:
@@ -66,7 +71,7 @@ def split_sections(text):
     return out
 
 
-def parse_MCQ_TF_Multi(text):
+def parse_MCQ_TF_Multi(text): # helper
     """
     Multiple choice (MCQ)
     True/False (TF)
@@ -117,7 +122,7 @@ def parse_MCQ_TF_Multi(text):
     return t_question, t_solution, t_grading
 
 
-def parse_question_text(text):
+def parse_question_text(text): # helper
     """
     Parses a question's template text to create our internal question
     representation. For example, for a multiple choice question:
@@ -259,49 +264,82 @@ def create_question_template(text):
 
     return qtemplate
 
-
-def generate_questions(course_code, qset_name):
+@login_required                             # URL: ``admin-generate-questions``
+def generate_questions(request, course_code_slug, question_set_slug):
     """
     1. Generates the questions from the question sets, rendering templates
     2. Emails students in the class the link to sign in and start answering
     """
-    # Remember to copy over the rendered HTML to the question and the q_variables
-    # dict used in the template
-    course = Course.objects.filter(code=course_code)
-    qset = []
-    if course:
-        qset = QSet.objects.filter(name=qset_name).filter(course=course[0])
+    load_class_list(request)
 
-    if not qset:
-    # TODO(KGD): raise error: course and qset not found
-        return
+    course = validate_user(request, course_code_slug, question_set_slug,
+                           admin=True)
+    if isinstance(course, HttpResponse):
+        return course
+    if isinstance(course, tuple):
+        course, qset = course
 
     # Now render, for every student, their questions from the question set
     for user in UserProfile.objects.filter(courses=course):
 
-        # TODO(KGD): handle the randomization of questions here
-
+        # TODO(KGD): handle the randomization of questions order here
+        # TODO(KGD): Remember to copy over the rendered HTML to the question
+        #            and the q_variables dict used in the template
 
         # ``qts`` = question templates
-        qts = qset[0].qtemplates.all()
+        qts = qset.qtemplates.all()
         n_questions = len(qts)
 
+        question_list = []
         for idx, qt in enumerate(qts):
             html, var_dict = render(qt)
+            qa = QActual.objects.create(qtemplate=qt, qset=qset,
+                                        user=user, as_displayed=html,
+                                        var_dict=var_dict)
+            question_list.append(qa)
+            print(qa)
 
+        # Run through a 2nd time to add the previous and next links
+        for idx, qt in enumerate(qts):
             prev_q = next_q = None
             if idx == 0:
                 if n_questions > 1:
-                    next_q = qts[1]
+                    next_q = question_list[1]
             elif idx == n_questions-1:
                 if n_questions > 1:
-                    prev_q = qts[idx-1]
+                    prev_q = question_list[idx-1]
+            else:
+                next_q = question_list[idx+1]
+                prev_q = question_list[idx-1]
 
-            qa = QActual.objects.create(qtemplate=qt, qset=qset[0],
-                                        user=user, as_displayed=html,
-                                        var_dict=var_dict,
-                                        next_q=next_q, prev_q=prev_q)
-            print(qa)
+
+            question_list[idx].next_q = next_q
+            question_list[idx].prev_q = prev_q
+            question_list[idx].save()
+
+
+        logger.info('Rendered question set %s (%s) for [%s]' % (qset.slug,
+                                                                course.slug,
+                                                                user.slug))
+
+    if True:
+        to_list = []
+        message_list = []
+
+        for user in UserProfile.objects.filter(courses=course):
+            subject, message, to_address = create_sign_in_email(user)
+            message_list.append(message)
+            to_list.append(to_address)
+
+        out = send_email(to_list, subject, message_list)
+        if out:
+            logger.debug('Successfully sent multiple emails for sign in to %s'
+                         % str(to_list))
+            #else:
+                #logger.error('Unable to send sign-in email to: %s' %
+                            #to_address[0])
+
+    HttpResponse('All questions generated for all students')
 
 def render(qt):
     """
@@ -385,8 +423,6 @@ def render(qt):
     if qt.t_variables:
         var_dict = create_random_variables(qt.t_variables)
 
-
-
     # 3. Evaluate source code
 
     # 4. Evalute the answer string???
@@ -431,7 +467,6 @@ def create_random_variables(var_dict):
             spec = val
             var_dict[key] = [spec, None]
 
-
         if len(spec) == 3:
             lo, hi, step = spec
             v_type = 'float'
@@ -469,7 +504,9 @@ def create_random_variables(var_dict):
         if dist == 'uniform':
             rnd_val = np.random.uniform()
         elif dist == 'normal':
-            rnd_val = np.random.normal(loc=(hi-lo)/2.0, scale=(hi-lo)/6.0)
+            # Map the range from 0 to 1.0 into the normal distribution centered
+            # at 0.5 and sd=1/6*(1.0 - 0)
+            rnd_val = np.random.normal(loc=0.5, scale=1.0/6.0)
 
         temp = rnd_val * (hi - lo)
         # Randomly round ``temp`` down or round up:
@@ -481,14 +518,26 @@ def create_random_variables(var_dict):
         else:
             temp = np.ceil(temp/(step+0.)) * step + lo
 
+        # Final check on the bounds. This code shouldn't really ever be run
+        if temp > hi:
+            temp = hi
+        if temp < lo:
+            temp = lo
+
+        #from decimal import Decimal, Context
+        #from math import log10, floor
+        #sig_figs = abs(floor(log10(step/1000.0)))
+        #out = Context(prec=sig_figs, Emax=999,).create_decimal(str(temp))
+        #out = out.to_eng_string()
+        #if v_type == 'int':
+        #    var_dict[key][1] = np.int(np.float(out))
+
         if v_type == 'int':
-            var_dict[key][1] = int(temp)
+            var_dict[key][1] = np.int(temp)
         else:
             var_dict[key][1] = float(temp)
 
     return var_dict
-
-
 
 
 def auto_grade():
@@ -498,6 +547,47 @@ def auto_grade():
       graded yet
     """
     pass
+
+@login_required
+def load_class_list(request):
+    """
+    Load a CSV file class list (exported from Avenue via copy/paste to textfile)
+    BENACQUISTA, DAVID,benacqdj,0762086
+    BESNEA, BIANCA,besneab,0942755
+    BOVELL, ANDREW,bovellad,0948647
+    """
+    # These fields require list drop-downs and validation. They are hard coded
+    # for now
+    f_name = '/home/kevindunn/quest/class-list-2013-01-06.csv'
+    course_slug = '4C3-6C3'
+    course = Course.objects.filter(slug=course_slug)[0]
+    email_suffix = '@mcmaster.ca'
+
+    with open(f_name, 'rb') as csvfile:
+        rdr = csv.reader(csvfile, delimiter=',')
+        for row in rdr:
+            last, first, email_id, student_id = row
+            username = '%s-%s' % (first.strip().lower(),
+                                  last.strip().lower())
+            try:
+                obj = User.objects.get(email=email_id+email_suffix)
+            except User.DoesNotExist:
+                obj = User(username=username,
+                           first_name=first.strip(),
+                           last_name=last.strip(),
+                           email=email_id+email_suffix)
+                obj.save()
+
+            profile = obj.get_profile()
+            profile.role = 'Student'
+            profile.student_number = student_id.strip()
+            profile.courses.add(course)
+            profile.save()
+            logger.info('Created student for %s with name: %s' % (course_slug,
+                                                                  username))
+
+
+    return HttpResponse('All students imported')
 
 
 #<form>
@@ -527,14 +617,10 @@ def auto_grade():
   #</fieldset>
 #</form>
 
-
-
 #root = etree.Element("form")
 #fs = etree.SubElement(root, "fieldset")
 #legend
 #s = etree.tostring(root, pretty_print=True)
-
-
 
 #from django import template
 #from django.template.defaultfilters import stringfilter

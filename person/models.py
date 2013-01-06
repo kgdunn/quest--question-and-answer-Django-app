@@ -23,6 +23,8 @@ class UserProfile(models.Model):
     role = models.CharField(choices=role_choice, max_length=20,
                             default='Student')
 
+    student_number = models.CharField(max_length=20, blank=True)
+
     courses = models.ManyToManyField('course.Course')
 
     class Meta:

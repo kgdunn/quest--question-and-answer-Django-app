@@ -2,6 +2,7 @@ from django.template.defaultfilters import slugify
 from django.conf import settings
 from django.core.mail import BadHeaderError
 from django.core.mail import send_mail as _send_mail
+from django.core.mail import send_mass_mail
 
 from pygments import formatters, highlight, lexers
 
@@ -22,6 +23,8 @@ rest_help_extra = """Use <a href="http://sphinx.pocoo.org/latest/rest.html">reSt
 <li class="spc-odd"><tt>\(</tt><tt>e^{i \pi}+1=0</tt><tt>\)</tt> shows as \(e^{i \pi}+1=0\)</li>
 <li class="spc-even"><a href="/markup-help" target="_blank">More help</a> with bulleted lists, math, hyperlinks and other features</li>
 </div>"""
+
+email_from = 'Quest Website <kevin.dunn@mcmaster.ca>'
 
 def ensuredir(path):
     """Ensure that a path exists."""
@@ -159,28 +162,60 @@ def highlight_code(code, lexer=None):
                          formatters.HtmlFormatter(linenos=True,
                                                   linenostep=1,))
 
-def send_email(to_addresses, subject, message, from_address=None):
+def send_email(to_addresses, subject, messages):
     """
     Basic function to send email according to the four required string inputs.
     Let Django send the message; it takes care of opening and closing the
     connection, as well as locking for thread safety.
+
+    If ``messages`` is a list and ``to_addresses`` is a list and both are of
+    the same length, then it uses Django's mass emailing function, where
+    the subject is re-used for all messages.
     """
+    from_address = email_from
     if from_address is None:
         from_address = settings.SERVER_EMAIL
 
-    out = None
-    if subject and message and from_address:
-        try:
-            to_addresses = ['kgdunn@gmail.com',]
-            out = _send_mail(subject, message, from_address, to_addresses,
-                             fail_silently=False)
-        except Exception as e:
-            logger.error(('An error occurred when sending email to %s, with '
-                          'subject [%s]. Error = %s') % (str(to_addresses),
-                                                         subject,
-                                                         str(e)))
+    if isinstance(to_addresses, list) and isinstance(messages, list):
 
-    return out
+        if len(to_addresses) == len(messages):
+            data = []
+            for idx, message in enumerate(messages):
+                if settings.DEBUG:
+                    data.append((subject, message, from_address,
+                                                     ['test@example.com',]))
+                else:
+                    data.append((subject, message, from_address,
+                                                     [to_addresses[idx],]))
+
+        use_mass_email = True
+    else:
+        use_mass_email = False
+        if settings.DEBUG:
+            # Overwrite sender address in debug mode
+            to_addresses = ['test@example.com',]
+
+    #message1 = ('Subject', 'Message', 'from@e.com', ['first@e.com', 'other@e.com'])
+
+    out = None
+    if use_mass_email:
+        try:
+            out = send_mass_mail(tuple(data), fail_silently=False)
+        except Exception as e:
+            logger.error(('An error occurred when sending mass emails [%s]' %
+                          str(e)))
+    else:
+        if subject and messages and from_address:
+            try:
+                out = _send_mail(subject, messages, from_address, to_addresses,
+                                 fail_silently=False)
+            except Exception as e:
+                logger.error(('An error occurred when sending email to %s, with '
+                              'subject [%s]. Error = %s') % (str(to_addresses),
+                                                             subject,
+                                                             str(e)))
+
+        return out
 
 def generate_random_token(token_length=16, base_address=''):
     import random

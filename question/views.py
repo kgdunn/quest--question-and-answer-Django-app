@@ -39,7 +39,7 @@ class ParseError(Exception):
 
 
 def validate_user(request, course_code_slug, question_set_slug,
-                  question_id=None):
+                  question_id=None, admin=False):
     """
     Some validation code that is common to functions below.
     """
@@ -83,7 +83,12 @@ def validate_user(request, course_code_slug, question_set_slug,
                                   context_instance=RequestContext(request))
 
     # Return all the questions for this student
-    quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
+    if admin:
+        # Admin users only (ab)use this function to get the course and
+        # question set objects, as well as to validate the admin user
+        return courses[0], qset[0]
+    else:
+        quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
 
     q_id = question_id
     if question_id:
@@ -135,6 +140,8 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     quests = validate_user(request, course_code_slug, question_set_slug)
     if  isinstance(quests, HttpResponse):
         return quests
+    if isinstance(quests, tuple):
+            quests, _ = quests
 
     # Now display the questions
     ctxdict = {'quests_lists': quests}

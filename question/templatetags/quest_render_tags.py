@@ -1,5 +1,7 @@
 # Built-in and Django imports
 import logging
+from decimal import Decimal, Context
+
 from django import template
 register = template.Library()
 
@@ -112,7 +114,6 @@ class EvaluateString(template.Node):
             #out = str(e)
         else:
             # Clean up the output
-            from decimal import Decimal, Context
             out = Context(prec=self.sig_figs, Emax=999,).create_decimal(str(out))
             out = out.to_eng_string()
 

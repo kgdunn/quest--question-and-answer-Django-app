@@ -40,7 +40,25 @@
       "t_question": "If a={{a}}, b={{b}}. What is a+b?",
       "t_solution": "This is just straightforward addition.",
       "t_grading": "{\"tafw\": [\"lure\", \"4\"], \"ih3f\": [\"key\", \"2\"], \"Nsda\": [\"lure\", \"12\"], \"lO9s\": [\"lure\", \"1\"]}",
-      "t_variables": "{\"a\": [[ -5,   3,   2, \"int\",   \"uniform\"], None], \"b\": [[2.4, 2.7, 0.1, \"float\", \"normal\"], None]}",
+      "t_variables": "{\"a\": [[-5, 3, 2, \"int\", \"uniform\"], null], \"b\": [[2.3999999999999999, 2.7000000000000002, 0.10000000000000001, \"float\", \"normal\"], null]}",
+      "tags": [
+        1
+      ]
+    }
+  },
+  {
+    "pk": 3,
+    "model": "question.qtemplate",
+    "fields": {
+      "contributor": 1,
+      "difficulty": 1,
+      "max_grade": 2,
+      "name": "Basic question",
+      "q_type": "tf",
+      "t_question": "The sun is hot?",
+      "t_solution": "True, the sun is hot.",
+      "t_grading": "{\"tma3\": [\"lure\", \"False\"], \"tB2d\": [\"key\", \"True\"]}",
+      "t_variables": "{}",
       "tags": [
         1
       ]
@@ -56,7 +74,7 @@
         1
       ],
       "qtemplates": [
-        1
+        1, 2, 3
       ],
       "slug": "week-1",
       "random_choice": true,
@@ -76,7 +94,7 @@
       "var_dict": "{}",
       "given_answer": "",
       "prev_q": null,
-      "next_q": 3,
+      "next_q": 2,
       "as_displayed": "<p>If a=1, b=4. What is a*b?</p>\n<hr />\n<p><input type = \"radio\" name=\"sFL3BC4s\" value=\"YRb4\">12</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"nS4q\">4</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"nfrY\">1</><br>\n<input type = \"radio\" name=\"sFL3BC4s\" value=\"dNyj\">2</><br></p>",
       "is_final": false,
       "qtemplate": 1,
@@ -159,6 +177,7 @@
       ],
       "role": "Student",
       "user": 3,
+      "student_number": "123987123",
       "slug": "testingstudent"
     }
   },
@@ -166,7 +185,7 @@
     "pk": 1,
     "model": "person.token",
     "fields": {
-      "user": 3,
+      "user": 1,
       "has_been_used": false,
       "token_address": "EW3b36pYkMwb6EMM"
     }
