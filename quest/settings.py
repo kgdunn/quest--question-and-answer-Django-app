@@ -143,6 +143,8 @@ INSTALLED_APPS = (
     'tagging',
     'question',
     'course',
+    'instructor',
+    'utils',
 )
 
 # Authentication related:

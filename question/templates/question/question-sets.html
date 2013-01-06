@@ -1,0 +1,25 @@
+{% extends "question/questions.html" %}
+{% load humanize %}
+
+{% block content %}
+    {% for qset in question_set_list %}
+        <div id="quest-course-list-container">Course: {{qset.0.course.name}}</div>
+        <table>
+            <tr>
+                <th>Test name</th>
+                <th>Earliest starting time</th>
+                <th>Tests closes at</th>
+            </tr>
+            {% for item in qset %}
+            {% if item.is_active %}
+            <tr>
+                <td><a href="{% url quest-ask-show-questions item.course.slug item.slug %}">{{item.name}}</a>
+                <td>{{item.ans_time_start|date:"d F Y G:i"}}
+                <td>{{item.ans_time_final|date:"d F Y G:i"}}
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </table>
+    {% endfor %}
+    </ul>
+{% endblock %}

@@ -29,6 +29,24 @@
     }
   },
   {
+    "pk": 2,
+    "model": "question.qtemplate",
+    "fields": {
+      "contributor": 1,
+      "difficulty": 2,
+      "max_grade": 4,
+      "name": "Basic addition",
+      "q_type": "mcq",
+      "t_question": "If a={{a}}, b={{b}}. What is a+b?",
+      "t_solution": "This is just straightforward addition.",
+      "t_grading": "{\"tafw\": [\"lure\", \"4\"], \"ih3f\": [\"key\", \"2\"], \"Nsda\": [\"lure\", \"12\"], \"lO9s\": [\"lure\", \"1\"]}",
+      "t_variables": "{\"a\": [[ -5,   3,   2, \"int\",   \"uniform\"], None], \"b\": [[2.4, 2.7, 0.1, \"float\", \"normal\"], None]}",
+      "tags": [
+        1
+      ]
+    }
+  },
+  {
     "pk": 1,
     "model": "question.qset",
     "fields": {

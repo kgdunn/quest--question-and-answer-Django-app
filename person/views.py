@@ -19,6 +19,7 @@ token_prefix = 'http://quest.mcmaster.ca/tokens/'
 logger = logging.getLogger('quest')
 logger.debug('Initializing person::views.py')
 
+
 def create_new_account(user=None, **kwargs):
     """
     Complete creating the new user account: i.e. a new ``User`` object.
@@ -31,6 +32,7 @@ def create_new_account(user=None, **kwargs):
         # Create a UserProfile object in the DB
         new_user_profile = models.UserProfile.objects.create(user=new_user)
         new_user_profile.save()
+
 
 def sign_in(request):
     """
@@ -67,6 +69,7 @@ def sign_in(request):
         page_content.update(csrf(request))
         return render_to_response('person/sign-in-form.html', page_content)
 
+
 def email_token_to_student(to_address, token_address):
     """ Sends an email to the student with the web address to log in."""
 
@@ -86,6 +89,7 @@ The http://quest.mcmaster.ca web server.
         logger.debug('Successfully sent email for sign in')
     else:
         logger.debug('Unable to send sign-in email to: %s' % to_address[0])
+
 
 def deactivate_token_sign_in(request, token):
     """ Deactivates the token and signs the user in for a limited period.
@@ -113,11 +117,6 @@ def deactivate_token_sign_in(request, token):
     # Information to store in a cookie
     # TODO(KGD): don't hard code time
     expires = datetime.datetime.now() + datetime.timedelta(seconds=60*60)
-
-    # Temporarily render the question set for the students
-    if False:
-        from question.views import generate_questions
-        generate_questions('4C3/6C3', 'Week 1')
 
     response = redirect('quest-question-set')
     request.session['token'] = token
