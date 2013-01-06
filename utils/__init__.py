@@ -195,8 +195,6 @@ def send_email(to_addresses, subject, messages):
             # Overwrite sender address in debug mode
             to_addresses = ['test@example.com',]
 
-    #message1 = ('Subject', 'Message', 'from@e.com', ['first@e.com', 'other@e.com'])
-
     out = None
     if use_mass_email:
         try:
@@ -210,16 +208,19 @@ def send_email(to_addresses, subject, messages):
                 out = _send_mail(subject, messages, from_address, to_addresses,
                                  fail_silently=False)
             except Exception as e:
-                logger.error(('An error occurred when sending email to %s, with '
-                              'subject [%s]. Error = %s') % (str(to_addresses),
-                                                             subject,
-                                                             str(e)))
+                logger.error(('An error occurred when sending email to %s, '
+                              'with subject [%s]. Error = %s') % (
+                                  str(to_addresses),
+                                  subject,
+                                  str(e)))
 
-        return out
+    return out
 
 def generate_random_token(token_length=16, base_address=''):
     import random
-    token = ''.join([random.choice('ABCEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz2345689') for i in range(token_length)])
+    token = ''.join([random.choice(('ABCEFGHJKLMNPQRSTUVWXYZ'
+                                    'abcdefghjkmnpqrstuvwxyz2345689'))
+                                               for i in range(token_length)])
     return base_address + token
 
 def convert_percentage_to_letter(grade):

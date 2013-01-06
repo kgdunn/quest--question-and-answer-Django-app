@@ -292,15 +292,19 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
         question_list = []
         for idx, qt in enumerate(qts):
-            html, var_dict = render(qt)
-            qa = QActual.objects.create(qtemplate=qt, qset=qset,
-                                        user=user, as_displayed=html,
-                                        var_dict=var_dict)
-            question_list.append(qa)
-            print(qa)
+            qa = QActual.objects.filter(qtemplate=qt, qset=qset,
+                                        user=user, is_submitted=False)
+            question_list.extend(qa)
+            if len(qa) == 0:
+                html, var_dict = render(qt)
+                qa = QActual.objects.create(qtemplate=qt, qset=qset,
+                                            user=user, as_displayed=html,
+                                            var_dict=var_dict)
+                question_list.append(qa)
+
 
         # Run through a 2nd time to add the previous and next links
-        for idx, qt in enumerate(qts):
+        for idx, qt in enumerate(question_list):
             prev_q = next_q = None
             if idx == 0:
                 if n_questions > 1:
@@ -322,7 +326,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                                                 course.slug,
                                                                 user.slug))
 
-    if True:
+    if False:
         to_list = []
         message_list = []
 
@@ -335,11 +339,11 @@ def generate_questions(request, course_code_slug, question_set_slug):
         if out:
             logger.debug('Successfully sent multiple emails for sign in to %s'
                          % str(to_list))
-            #else:
-                #logger.error('Unable to send sign-in email to: %s' %
-                            #to_address[0])
+        else:
+            logger.error('Unable to send multiple sign-in emails to: %s' %
+                        str(to_list))
 
-    HttpResponse('All questions generated for all students')
+    return HttpResponse('All questions generated for all students')
 
 def render(qt):
     """

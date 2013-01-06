@@ -220,6 +220,7 @@ def submit_answers(request, course_code_slug, question_set_slug):
 @login_required                          # URL: ``quest-store-answer``
 def store_answer(request, course_code_slug, question_set_slug, question_id):
     """
+    The user is submitting their final answer.
     """
     quests = validate_user(request, course_code_slug, question_set_slug,
                             question_id)
@@ -229,6 +230,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
         quests, q_id = quests
 
     quests[q_id-1].given_answer = request.GET['entered']
+    quests[q_id-1].is_submitted = True
     quests[q_id-1].save()
 
     return HttpResponse('%s: Answer recorded' %

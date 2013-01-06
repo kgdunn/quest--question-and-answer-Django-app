@@ -212,7 +212,7 @@ class QActual(models.Model):
     #       event.
 
     # Has the question been submitted yet?
-    is_final = models.BooleanField(default=False)
+    is_submitted = models.BooleanField(default=False)
 
     # Links to the previous and next question in the series
     next_q = models.ForeignKey('self', blank=True, null=True,
