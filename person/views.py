@@ -39,7 +39,7 @@ def create_sign_in_email(user):
     """
     token_address = generate_random_token()
     Token.objects.get_or_create(token_address=token_address,
-                                user=user.user,
+                                user=user,
                                 has_been_used=False)
     token_address = token_prefix + token_address
     message = '''\
@@ -55,7 +55,7 @@ def create_sign_in_email(user):
     The http://quest.mcmaster.ca web server.
     '''
     subject = 'Access the Quest website'
-    return subject, message, user.user.email
+    return subject, message, user.email
 
 
 def sign_in(request):
@@ -66,11 +66,11 @@ def sign_in(request):
     logger.debug('person::sign-in')
     if request.method == 'POST':
         form_email_prefix = request.POST.get('email_prefix', '')
-        email = form_email_prefix + email_suffix
+        email = form_email_prefix
         logger.info('POST::person::sign-in: ' + email)
 
         try:
-            the_student = models.User.objects.get(email=email)
+            user = models.User.objects.get(email=email)
         except models.User.DoesNotExist:
             # If email not in list, tell them they are not registered
             page_content = {}
@@ -96,12 +96,6 @@ def sign_in(request):
         return render_to_response('person/sign-in-form.html', page_content)
 
 
-#def email_token_to_student(to_address, token_address):
-    #""" Sends an email to the student with the web address to log in."""
-
-
-
-
 def deactivate_token_sign_in(request, token):
     """ Deactivates the token and signs the user in for a limited period.
     """
@@ -123,7 +117,7 @@ def deactivate_token_sign_in(request, token):
     user = authenticate(remote_user=user.username)
     login(request, user)
 
-    # Now proceed to show available question sets to the student
+    # Now proceed to show available question sets to the user
 
     # Information to store in a cookie
     # TODO(KGD): don't hard code time

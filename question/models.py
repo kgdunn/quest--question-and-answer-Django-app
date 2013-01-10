@@ -7,20 +7,20 @@ QTemplate: question templates hold the structure of the question, such as MCQ,
 
 QActual:   actual questions are derived from the QTemplate template. The
            placeholders are filled in with specific values. QActual questions
-           are only used once, and they are unique to a student. There will
+           are only used once, and they are unique to a user. There will
            be many of these in the database.
 
 QSet:      defines a set of QTemplate questions from which the system can
            choose to make a set of QActual questions. You might have 16
-           possible questions, but only want students to be randomly given
+           possible questions, but only want users to be randomly given
            N < 16 to answer. There is some flexibility in how questions are
            "randomly" assigned.
 
 Some other terminology:
-* Question: the question asked of the student
+* Question: the question asked of the user
 * Grading:  the internal representation of the answer (not shown, used for
             auto-grading)
-* Solution: the solution displayed to the student
+* Solution: the solution displayed to the user
 """
 # Django and Python imports
 try:
@@ -56,12 +56,13 @@ class QTemplate(models.Model):
     The template for a question.
     """
     question_type = (
-                ('mcq',      'Multiple choice question (including True/False'),
+                ('tf',       'True/False question'),
+                ('mcq',      'Multiple choice question'),
+                ('multi',    'Multi-select'),  # Like MCQ, but multiple options
                 ('short',    'Short answer question'),
                 ('long',     'Long answer question'),
-                ('multi',    'Multi-select'),  # Like MCQ, but multiple options
-                ('fib',      'Fill in the blanks'),
                 ('numeric',  'Numeric answer (with specified sensitivity)'),
+                ('fib',      'Fill in the blanks'),
                 ('multipart','Multipart questions'),
     )
     name = models.CharField(max_length=250)     # e.g. "The misbehaving clock"
@@ -122,7 +123,7 @@ class QSet(models.Model):
     #      guide the random selection
     random_choice = models.BooleanField(default=True,
                                         help_text = ('Randomly choose '
-                                        'questions for the students'))
+                                        'questions for the users'))
     min_total = models.FloatField(verbose_name='Total minimum grade',
                                   help_text = ('Minimum total grades allowed '
                                                'in set'))
@@ -183,7 +184,7 @@ class QSet(models.Model):
 
 class QActual(models.Model):
     """
-    The actual question asked to the student. There are many many of these in
+    The actual question asked to the user. There are many many of these in
     the database.
     """
     # Question origin
@@ -198,20 +199,31 @@ class QActual(models.Model):
     # HTML formatted code that was displayed to the user, so we have an
     # accurate reflection of the question
     as_displayed = models.TextField(blank=True)
+
+    # HTML solution that's to be displayed after the question period is over
+    html_solution = models.TextField(blank=True)
+
     # The variables dictionary used to render the template is also saved
     # To be compatible with our template rendering engine (Jinja2), the
     # variable names in the dict must be strings: [a-zA-Z_][a-zA-Z0-9_]*
     var_dict = models.TextField(blank=True)
 
-    # The student's answer (may be intermediate still)
+    # The user's answer (may be intermediate still)
     given_answer = models.TextField(blank=True)
+    # * list of strings: ['tf', 'mcq', 'multi']    <- refers to QTemplate.question_type
+    # * string: 'short', 'long', 'numeric'         <- string only
+    # * dict: {'fib': '....'; 'multipart': '...'}  <- dict of strings
+
+    # The user's answer (may be intermediate still)
+    user_comments = models.TextField(blank=True)
 
     # NOTE: it is a conscious decision not to assign grades to the ``QActual``
     #       objects. We rather assign grades in a ``grades.Grade`` object;
     #       these are smaller and we can deal with grading as a separate
     #       event.
 
-    # Has the question been submitted yet?
+    # Has the question been submitted yet? True: used actively clicked the
+    # submit button; ``False``: XHR stored answer.
     is_submitted = models.BooleanField(default=False)
 
     # Links to the previous and next question in the series
@@ -226,7 +238,7 @@ class QActual(models.Model):
     times_displayed = models.ManyToManyField(DateTimes,
                                              related_name='displayed')
 
-    # When was the question answered by the students [comma-separated list]
+    # When was the question answered by the users [comma-separated list]
     times_answered = models.ManyToManyField(DateTimes,
                                             related_name='answered')
 

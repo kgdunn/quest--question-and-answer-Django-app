@@ -7,4 +7,5 @@ class Grade(models.Model):
     grade_value = models.FloatField(default=0.0)
     # who graded this? Was it ``Quest Grader`` or a TA or the intstructor?
     given_by = models.ForeignKey('person.User')
-    question = models.ForeignKey('question.QActual')
+    question = models.ForeignKey('question.QActualF')
+    quiz = models.ForeignKey('question.QSet')

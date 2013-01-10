@@ -82,7 +82,7 @@ def validate_user(request, course_code_slug, question_set_slug,
         return render_to_response('question/time-expired.html', ctxdict,
                                   context_instance=RequestContext(request))
 
-    # Return all the questions for this student
+    # Return all the questions for this user
     if admin:
         # Admin users only (ab)use this function to get the course and
         # question set objects, as well as to validate the admin user
@@ -134,7 +134,7 @@ def ask_question_set(request):        # URL: ``quest-question-set``
 def ask_show_questions(request, course_code_slug, question_set_slug):
     """
     Display questions (and perhaps answers) to questions from a question set
-    for a specific student
+    for a specific user
     """
 
     quests = validate_user(request, course_code_slug, question_set_slug)
@@ -144,7 +144,9 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
             quests, _ = quests
 
     # Now display the questions
-    ctxdict = {'quests_lists': quests}
+    ctxdict = {'quests_lists': quests,
+               'course': course_code_slug,
+               'qset': question_set_slug}
     ctxdict.update(csrf(request))
     return render_to_response('question/question-list.html', ctxdict,
                               context_instance=RequestContext(request))
@@ -166,21 +168,29 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
     #times_displayed
 
     quest = quests[q_id-1]
-    to_display = quest.as_displayed
-    # Has the student answered this question (even temporarily?).
+    html_question = quest.as_displayed
+    # Has the user answered this question (even temporarily?).
     if quest.given_answer:
         if quest.qtemplate.q_type in ('mcq', 'multi', 'tf'):
 
-            to_display = re.sub(r'"'+quest.given_answer+r'"',
+            html_question = re.sub(r'"'+quest.given_answer+r'"',
                                 r'"'+quest.given_answer+r'" checked',
-                                to_display)
+                                html_question)
+
+    final_time = quest.qset.ans_time_final.replace(tzinfo=None)
+    if final_time > datetime.datetime.now():   # The testing period is running
+        html_solution = ''                      # don't show the solutions yet
+    else:
+        html_solution = quest.html_solution
+
 
     ctxdict = {'quests_lists': quests,
                'item_id': q_id,
                'course': course_code_slug,
                'qset': question_set_slug,
                'item': quest,
-               'to_display': to_display,
+               'html_question': html_question,
+               'html_solution': html_solution,
                'last_question': q_id==len(quests)}
     ctxdict.update(csrf(request))
     return render_to_response('question/single-question.html', ctxdict,
@@ -189,7 +199,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 @login_required                          # URL: ``quest-submit-final-check``
 def submit_answers(request, course_code_slug, question_set_slug):
     """
-    Obtain the finalized student answers and store them permanently.
+    Obtain the finalized user answers and store them permanently.
     """
     quests = validate_user(request, course_code_slug, question_set_slug)
     if isinstance(quests, HttpResponse):
@@ -230,7 +240,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
         quests, q_id = quests
 
     quests[q_id-1].given_answer = request.GET['entered']
-    quests[q_id-1].is_submitted = True
+    quests[q_id-1].is_submitted = False
     quests[q_id-1].save()
 
     return HttpResponse('%s: Answer recorded' %
@@ -244,6 +254,11 @@ def successful_submission(request, course_code_slug, question_set_slug):
     quests = validate_user(request, course_code_slug, question_set_slug)
     if isinstance(quests, HttpResponse):
         return quests
+
+    # Mark every question as successfully submitted
+    for quest in quests:
+        quest.is_submitted = True
+        quest.save()
 
     token = request.session['token']
     user = request.user.profile

@@ -34,13 +34,24 @@ DIFFICULTY_RE = re.compile(r'^Difficulty:(\s*)(.*)$')
 GRADES_RE = re.compile(r'^Grade:(\s*)(.*)$')
 FEEDBACK_RE = re.compile(r'^Feedback:(\s*)(.*)$')
 
-LURE_RE = re.compile(r'^\&(\s*)(.*)$')
-KEY_RE = re.compile(r'^\^(\s*)(.*)$')
-FINAL_RE = re.compile(r'^\&(\s*)(.*)$')
+LURE_RE = re.compile(r'^\&(\s*)(.*)$')       # & lure answer
+KEY_RE = re.compile(r'^\^(\s*)(.*)$')        # ^ correct answer
+FINALLURE_RE = re.compile(r'^\%(\s*)(.*)$')  # % final MCQ option, but a lure
+FINALKEY_RE = re.compile(r'^\%\^(\s*)(.*)$')   # %^ final MCQ option, correct
 
 class ParseError(Exception):
     pass
 
+
+def get_type(mcq_dict, keytype):
+    """Gets the required ``keytype`` from the MCQ grading dictionary.
+    The ``keytype`` returned only needs to startswith ``keytype``.
+    That we ensure "final-lure" and "final-key" are still returned when
+    requesting "final"
+    """
+    for key, value in mcq_dict.iteritems():
+        if value[0].startswith(keytype):
+            yield value[1], key
 
 def split_sections(text):  # helper
     """
@@ -96,10 +107,19 @@ def parse_MCQ_TF_Multi(text): # helper
         t_grading = dict()
 
         for line in text:
-            if line.startswith('%'):
+
+            # This check must be before the next one
+            if line.startswith('%^'):
                 section_name = generate_random_token(4)
-                t_grading[section_name] = ['final', ]
-                final = FINAL_RE.match(line).group(2)
+                t_grading[section_name] = ['final-key', ]
+                final = FINALKEY_RE.match(line).group(2)
+                t_grading[section_name].append(final)
+                continue
+
+            elif line.startswith('%'):
+                section_name = generate_random_token(4)
+                t_grading[section_name] = ['final-lure', ]
+                final = FINALLURE_RE.match(line).group(2)
                 t_grading[section_name].append(final)
                 continue
 
@@ -241,12 +261,12 @@ def parse_question_text(text): # helper
     return sd
 
 
-def create_question_template(text):
+def create_question_template(text, user=None):
     """
     Creates the QTemplate (question template) and adds it to the database.
     """
     sd = parse_question_text(text)
-    contributor = UserProfile.objects.filter(role='Grader')[0] or None
+    contributor = user or UserProfile.objects.filter(role='Grader')[0]
 
     qtemplate = QTemplate.objects.create(name=sd['name'], q_type=sd['type'],
                              contributor=contributor,
@@ -264,11 +284,39 @@ def create_question_template(text):
 
     return qtemplate
 
+@login_required                       # URL: ``admin-load-question-templates``
+def load_question_templates(request, course_code_slug, question_set_slug):
+    """
+    Given a text file, loads various question templates for a course.
+
+    Each question is split by "#----" in the text file
+    """
+    # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
+
+    f_name = '/home/kevindunn/quest/Visualization.week1.qset'
+    course = validate_user(request, course_code_slug, question_set_slug,
+                           admin=True)
+    if isinstance(course, HttpResponse):
+        return course
+    if isinstance(course, tuple):
+        course, qset = course
+
+    f_handle = open(f_name, 'r')
+    questions = f_handle.read().split('#----')
+    f_handle.close()
+
+    for question in questions:
+        template = create_question_template(question, user=request.user)
+        # add this template to qset
+
+
+    return HttpResponse('All questions loaded')
+
 @login_required                             # URL: ``admin-generate-questions``
 def generate_questions(request, course_code_slug, question_set_slug):
     """
     1. Generates the questions from the question sets, rendering templates
-    2. Emails students in the class the link to sign in and start answering
+    2. Emails users in the class the link to sign in and start answering
     """
     load_class_list(request)
 
@@ -279,7 +327,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
     if isinstance(course, tuple):
         course, qset = course
 
-    # Now render, for every student, their questions from the question set
+    # Now render, for every user, their questions from the question set
     for user in UserProfile.objects.filter(courses=course):
 
         # TODO(KGD): handle the randomization of questions order here
@@ -296,9 +344,10 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                         user=user, is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
-                html, var_dict = render(qt)
+                html_q, html_a, var_dict = render(qt)
                 qa = QActual.objects.create(qtemplate=qt, qset=qset,
-                                            user=user, as_displayed=html,
+                                            user=user, as_displayed=html_q,
+                                            html_solution=html_a,
                                             var_dict=var_dict)
                 question_list.append(qa)
 
@@ -343,7 +392,8 @@ def generate_questions(request, course_code_slug, question_set_slug):
             logger.error('Unable to send multiple sign-in emails to: %s' %
                         str(to_list))
 
-    return HttpResponse('All questions generated for all students')
+    return HttpResponse('All questions generated for all users')
+
 
 def render(qt):
     """
@@ -355,8 +405,8 @@ def render(qt):
 
     To maintain integrity, rendering from ``QTemplate`` to a ``QActual`` is
     only and ever done ONCE (at rendering time). Later, when the question is
-    graded, or reloaded by the student, they will always see the same question.
-    This is because questions may contain random values specific to the student
+    graded, or reloaded by the user, they will always see the same question.
+    This is because questions may contain random values specific to the user
     so they must be rendered only once, including the correct solution, which
     often is dependent on the randomly selected values.
 
@@ -369,14 +419,10 @@ def render(qt):
         6 Convert this markup to HTML.
 
     """
-    def get_type(mcq_dict, keytype):
-        """Gets the required key type(s) from the MCQ grading dictionary"""
-        for key, value in mcq_dict.iteritems():
-            if value[0] == keytype:
-                yield value[1], key
+
     #----------------
 
-    def render_mcq(qt):
+    def render_mcq_question(qt):
         """Renders a multiple choice question to HTML."""
 
         if qt.q_type in ('mcq', 'tf'):
@@ -409,6 +455,10 @@ def render(qt):
         return lst
     #----------------
 
+    def render_mcq_answer(qt):
+        """Renders a multiple choice answer to HTML."""
+        pass
+
     # 1. First convert strings to dictionaries:
     if isinstance(qt.t_grading, basestring):
         qt.t_grading = json.loads(qt.t_grading)
@@ -419,7 +469,7 @@ def render(qt):
     if qt.q_type in ('mcq', 'tf', 'multi'):
         rndr.append(qt.t_question)
         rndr.append('- - -')
-        rndr.extend(render_mcq(qt))
+        rndr.extend(render_mcq_question(qt))
 
 
     # 2. Random variables, if required.
@@ -430,14 +480,17 @@ def render(qt):
     # 3. Evaluate source code
 
     # 4. Evalute the answer string???
+    solution = ''
 
     # 5. Now call Jinja to render any templates
     rndr_str = '\n'.join(rndr)
 
     # 6. Then call Markdown
-    html = markdown.markdown(rndr_str)
+    html_q = markdown.markdown(rndr_str)
+    html_a = markdown.markdown(solution)
+    var_dict_str = json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
 
-    return html, json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
+    return html_q, html_a, var_dict_str
 
 
 def create_random_variables(var_dict):
@@ -562,7 +615,7 @@ def load_class_list(request):
     """
     # These fields require list drop-downs and validation. They are hard coded
     # for now
-    f_name = '/home/kevindunn/quest/class-list-2013-01-06.csv'
+    f_name = '/home/kevindunn/quest/class-list-test.csv'
     course_slug = '4C3-6C3'
     course = Course.objects.filter(slug=course_slug)[0]
     email_suffix = '@mcmaster.ca'
@@ -587,11 +640,11 @@ def load_class_list(request):
             profile.student_number = student_id.strip()
             profile.courses.add(course)
             profile.save()
-            logger.info('Created student for %s with name: %s' % (course_slug,
+            logger.info('Created user for %s with name: %s' % (course_slug,
                                                                   username))
 
 
-    return HttpResponse('All students imported')
+    return HttpResponse('All user imported')
 
 
 #<form>

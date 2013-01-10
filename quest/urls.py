@@ -40,7 +40,7 @@ urlpatterns += patterns('',
     # ://store/(course-code)/(question-set-slug)/(question-id)/
     url(r'^store/(?P<course_code_slug>.*)/(?P<question_set_slug>.*)/(?P<question_id>.*)/$', store_answer, name='quest-store-answer'),
 
-    # ://(course-code)/(question-set-slug)/(question-id)/
+    # ://question/(course-code)/(question-set-slug)/(question-id)/
     url(r'^question/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
 
     # ://(course-code)/(question-set-slug)/

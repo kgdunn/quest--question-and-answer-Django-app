@@ -22,7 +22,7 @@ reconnect to Wing IDE once you request a page load in your browser that leads
 to one of your import wingdbstub statements.
 """
 
-# TODO: sign in student and make sure they only see the questions they
+# TODO: sign in user and make sure they only see the questions they
 #       are supposed to see, i.e. not the full question set, just the subset
 
 try:
@@ -33,7 +33,7 @@ except ImportError:
 import wingdbstub
 from django.test import TestCase
 from question.models import QTemplate
-from views import create_question_template
+from views import create_question_template, get_type
 
 
 class SimpleTests(TestCase):
@@ -105,7 +105,6 @@ If a=1, b=2. What is a*b?
         self.assertEqual(vals, [[u'key', u'2'], [u'lure', u'1'],
                                 [u'lure', u'12'], [u'lure', u'4']])
 
-
 class RenderTests(TestCase):
     fixtures = ['initial_data',]
     def test_tf_basic(self):
@@ -124,7 +123,69 @@ The sun is hot.
         qtemplate = create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
-        html, var_dict = render(qt)
+        html_q, html_a, var_dict = render(qt)
+
+        key, value = get_type(qt.t_grading, 'key').next()
+        self.assertTrue(key.startswith('True'))
+        start = html_q.find(value)
+        self.assertEqual(html_q[start+6:start+10], 'True')
+
+        key, value = get_type(qt.t_grading, 'lure').next()
+        self.assertTrue(key.startswith('False'))
+        start = html_q.find(value)
+        self.assertEqual(html_q[start+6:start+11], 'False')
+
+
+    def test_tf_final_incorrect(self):
+        """
+        Lures and an incorrect option that must be shown as the last option.
+        """
+        some_text = """
+[[type]]
+TF
+[[question]]
+The sun is ....
+--
+& Cold
+& Luke warm
+^ Hot
+% None of the above.
+        """
+        qtemplate = create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+        from views import render
+        html_q, html_a, var_dict = render(qt)
+
+        key, value = get_type(qt.t_grading, 'final-lure').next()
+        self.assertTrue(key.startswith('None of the above.'))
+        start = html_q.find(value)
+        self.assertEqual(html_q[start+6:start+10], 'None')
+
+    def test_tf_final_correct(self):
+            """
+            Lures and an CORRECT option that must be shown as the last option.
+            """
+            some_text = """
+[[type]]
+TF
+[[question]]
+The sun is ....
+--
+& Cold
+& Luke warm
+& Warm
+%^ None of the above.
+            """
+            qtemplate = create_question_template(some_text)
+            qt = QTemplate.objects.get(id=qtemplate.id)
+            from views import render
+            html_q, html_a, var_dict = render(qt)
+
+            key, value = get_type(qt.t_grading, 'final-key').next()
+            self.assertTrue(key.startswith('None of the above.'))
+            start = html_q.find(value)
+            self.assertEqual(html_q[start+6:start+10], 'None')
+
 
     def test_mcq_basic(self):
         """
@@ -156,4 +217,4 @@ b: [5, 9, 1, int]
         qtemplate = create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
-        html, var_dict = render(qt)
+        html_q, html_a, var_dict = render(qt)

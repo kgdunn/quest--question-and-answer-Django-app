@@ -12,6 +12,8 @@ urlpatterns = patterns('',
 
     url(r'generate-questions/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', views.generate_questions, name='admin-generate-questions'),
 
+    url(r'load-from-template/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', views.load_question_templates, name='admin-load-question-templates'),
+
     ## The final check and the actual submission of answers go through this URL
     #url(r'^submit-final-check/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', submit_answers, name='quest-submit-final-check'),
 
