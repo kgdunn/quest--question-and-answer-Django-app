@@ -33,7 +33,7 @@ except ImportError:
 import wingdbstub
 from django.test import TestCase
 from question.models import QTemplate
-from views import create_question_template, get_type
+import views
 
 
 class SimpleTests(TestCase):
@@ -63,7 +63,7 @@ If a=1, b=2. What is a*b?
 ^2
 & 4
         """
-        qtemplate = create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text)
         q = QTemplate.objects.get(id=qtemplate.id)
         self.assertEqual(q.difficulty, 1)
         self.assertEqual(q.q_type, 'mcq')
@@ -93,12 +93,12 @@ If a=1, b=2. What is a*b?
 & 1
 ^2
 & 4"""
-        qtemplate = create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text)
         q = QTemplate.objects.get(id=qtemplate.id)
         self.assertEqual(q.difficulty, 2)
         self.assertEqual(q.max_grade, 3)
         self.assertEqual(q.enable_feedback, False)
-        self.assertEqual(q.t_solution, u'')
+        self.assertEqual(q.t_solution, u'The solution is: "2"')
         t_grading = json.loads(q.t_grading)
         vals = t_grading.values()
         vals.sort()
@@ -120,17 +120,17 @@ The sun is hot.
 & False
 ^True
         """
-        qtemplate = create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
         html_q, html_a, var_dict = render(qt)
 
-        key, value = get_type(qt.t_grading, 'key').next()
+        key, value = views.get_type(qt.t_grading, 'key').next()
         self.assertTrue(key.startswith('True'))
         start = html_q.find(value)
         self.assertEqual(html_q[start+6:start+10], 'True')
 
-        key, value = get_type(qt.t_grading, 'lure').next()
+        key, value = views.get_type(qt.t_grading, 'lure').next()
         self.assertTrue(key.startswith('False'))
         start = html_q.find(value)
         self.assertEqual(html_q[start+6:start+11], 'False')
@@ -151,12 +151,12 @@ The sun is ....
 ^ Hot
 % None of the above.
         """
-        qtemplate = create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
         html_q, html_a, var_dict = render(qt)
 
-        key, value = get_type(qt.t_grading, 'final-lure').next()
+        key, value = views.get_type(qt.t_grading, 'final-lure').next()
         self.assertTrue(key.startswith('None of the above.'))
         start = html_q.find(value)
         self.assertEqual(html_q[start+6:start+10], 'None')
@@ -176,15 +176,17 @@ The sun is ....
 & Warm
 %^ None of the above.
             """
-            qtemplate = create_question_template(some_text)
+            qtemplate = views.create_question_template(some_text)
             qt = QTemplate.objects.get(id=qtemplate.id)
             from views import render
             html_q, html_a, var_dict = render(qt)
 
-            key, value = get_type(qt.t_grading, 'final-key').next()
+            key, value = views.get_type(qt.t_grading, 'final-key').next()
             self.assertTrue(key.startswith('None of the above.'))
             start = html_q.find(value)
             self.assertEqual(html_q[start+6:start+10], 'None')
+            self.assertEqual(qt.t_solution, ('The solution is: "None of the '
+                                             'above."'))
 
 
     def test_mcq_basic(self):
@@ -214,7 +216,45 @@ If a={{a}}, b={{b}}. What is a*b?
 a: [2, 5, 0.5, float]
 b: [5, 9, 1, int]
         """
-        qtemplate = create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
         html_q, html_a, var_dict = render(qt)
+
+
+    def test_mcq_bad_specified(self):
+        """
+        Two correct options for an MCQ.
+        """
+        some_text = """
+[[type]]
+MCQ
+[[question]]
+The sun is ....
+--
+^ Cold
+& Luke warm
+^ Hot
+% None of the above.
+        """
+        with self.assertRaises(views.ParseError):
+            views.create_question_template(some_text)
+
+    def test_mcq_bad_specified(self):
+        """
+        Two correct options for an MCQ.
+        """
+        some_text = """
+[[type]]
+MCQ
+[[question]]
+The sun is ....
+--
+^ Cold
+& Luke warm
+^ Hot
+% None of the above.
+        """
+        with self.assertRaises(views.ParseError):
+            views.create_question_template(some_text)
+

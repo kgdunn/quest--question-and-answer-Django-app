@@ -53,6 +53,7 @@ def get_type(mcq_dict, keytype):
         if value[0].startswith(keytype):
             yield value[1], key
 
+
 def split_sections(text):  # helper
     """
     Splits the problem statement into its sections. Section are denoted by
@@ -82,7 +83,7 @@ def split_sections(text):  # helper
     return out
 
 
-def parse_MCQ_TF_Multi(text): # helper
+def parse_MCQ_TF_Multi(text, q_type): # helper
     """
     Multiple choice (MCQ)
     True/False (TF)
@@ -102,8 +103,8 @@ def parse_MCQ_TF_Multi(text): # helper
     if text[0].strip() == '--':
         t_solution = ''
         t_grading = '<function>'
+        # TODO(KGD): complete this still
     else:
-        t_solution = ''
         t_grading = dict()
 
         for line in text:
@@ -139,6 +140,54 @@ def parse_MCQ_TF_Multi(text): # helper
 
             t_grading[section_name][1] += '\n' + line
 
+    # Do a sanity check: MCQ and TF must have a single correct answer
+    #                    MULTI must have more than one correct answer
+    if q_type in ('tf', 'mcq'):
+        found_one = False
+        for key, value in t_grading.iteritems():
+            if value[0] in ('final-key', 'key'):
+                if found_one:
+                    raise ParseError(('Only one option can be correct in an '
+                                      'MCQ or TF question'))
+                else:
+                    found_one = True
+
+    if q_type in ('multi',):
+        # None [0] -> False [1 correct answer] -> True [2 or more correct]
+        found_many = None
+        for key, value in t_grading.iteritems():
+            if value[0] in ('final-key', 'key'):
+                if found_many is None:
+                    found_many = False
+                elif found_many is False:
+                    found_many = True
+
+        if found_many is not True:
+            raise ParseError(('Multi-answer checkbox questions require two '
+                              'or more correct answers'))
+
+
+    # Cleaning: for T/F question, strip away newlines, leaving only 1 answer
+    if q_type == 'tf':
+        for key, value in t_grading.iteritems():
+            value[1] = value[1].strip()
+            t_grading[key] = value
+
+    # Generate the solution string for MCQ/TF/MULTI questions
+    if q_type in ('mcq', 'tf', 'multi'):
+        soln_str = 'The solution is: "%s"'
+        if q_type in ('mcq', 'tf'):
+            try:
+                key, _ = get_type(t_grading, keytype='key').next()
+            except StopIteration:
+                key, _ = get_type(t_grading, keytype='final-key').next()
+            t_solution = soln_str % key
+
+        if q_type in ('multi',):
+            # KGD(TODO): serious
+            t_solution = 'TODO STILL'
+
+
     return t_question, t_solution, t_grading
 
 
@@ -165,8 +214,11 @@ def parse_question_text(text): # helper
     & 1     <-- distractor
     ^2      <-- correct answer(s) begin with "^"
     & 4     <-- distractor
-    % None  <-- an option that must be presented last begins with "%"
+    % None  <-- option that's presented last (but is wrong) begins with "%"
 
+    %^ 2    <-- use this if you want the correct answer presented last
+                usually used when "All of the above" or "None of the above"
+                is the correct answer.
     [[variables]]
 
     """
@@ -189,7 +241,8 @@ def parse_question_text(text): # helper
         sd['type'] = sd['type'].strip().lower()
 
     if sd['type'] in ('tf', 'mcq', 'multi'):
-        t_question, t_solution, t_grading = parse_MCQ_TF_Multi(sd['question'])
+        t_question, t_solution, t_grading = parse_MCQ_TF_Multi(sd['question'],
+                                                               sd['type'])
         sd.pop('question')
 
     sd['contributor'] = 1
@@ -221,7 +274,7 @@ def parse_question_text(text): # helper
         # Remove this key: not required anymore
         sd.pop('attribs')
 
-    # Process the variables
+    # Process the variables:
     var_dict = {}
     if sd.get('variables', ''):
         var_re = re.compile(r'(\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*):(.*)')
@@ -419,9 +472,6 @@ def render(qt):
         6 Convert this markup to HTML.
 
     """
-
-    #----------------
-
     def render_mcq_question(qt):
         """Renders a multiple choice question to HTML."""
 
@@ -455,10 +505,6 @@ def render(qt):
         return lst
     #----------------
 
-    def render_mcq_answer(qt):
-        """Renders a multiple choice answer to HTML."""
-        pass
-
     # 1. First convert strings to dictionaries:
     if isinstance(qt.t_grading, basestring):
         qt.t_grading = json.loads(qt.t_grading)
@@ -479,15 +525,16 @@ def render(qt):
 
     # 3. Evaluate source code
 
-    # 4. Evalute the answer string???
-    solution = ''
+    # 4. Evalute the solution string,
+    #
+    # Process it more, if required: qt.t_solution
 
     # 5. Now call Jinja to render any templates
     rndr_str = '\n'.join(rndr)
 
     # 6. Then call Markdown
     html_q = markdown.markdown(rndr_str)
-    html_a = markdown.markdown(solution)
+    html_a = markdown.markdown(qt.t_solution)
     var_dict_str = json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
 
     return html_q, html_a, var_dict_str
