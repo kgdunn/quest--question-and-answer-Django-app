@@ -148,7 +148,8 @@ def parse_MCQ_TF_Multi(text, q_type): # helper
             if value[0] in ('final-key', 'key'):
                 if found_one:
                     raise ParseError(('Only one option can be correct in an '
-                                      'MCQ or TF question'))
+                                      'MCQ or TF question. Maybe you intended '
+                                      'a MULTI answer question?'))
                 else:
                     found_one = True
 
@@ -184,9 +185,20 @@ def parse_MCQ_TF_Multi(text, q_type): # helper
             t_solution = soln_str % key
 
         if q_type in ('multi',):
-            # KGD(TODO): serious
-            t_solution = 'TODO STILL'
+            soln_str = ['The correct answers are: ',]
+            final_soln = ''
+            solutions = t_grading.values()
+            solutions.sort()
+            if solutions[0][0] == 'final-key':
+                final_soln = solutions.pop(0)
+            for item in solutions:
+                if item[0] == 'key':
+                    soln_str.append('*\t%s' % item[1])
 
+            if final_soln:
+                soln_str.append('*\t%s' % final_soln[1])
+
+            t_solution = '\n'.join(soln_str)
 
     return t_question, t_solution, t_grading
 
@@ -332,6 +344,11 @@ def create_question_template(text, user=None):
                              t_variables = sd['t_variables']
                             )
 
+    # TODO(KGD): skip adding duplicate questions that are by
+    #  * the same contributor
+    #  * the same .name
+    #  * the same .q_type
+
     for tag in get_and_create_tags(sd['tags']):
         qtemplate.tags.add(tag)
 
@@ -359,7 +376,12 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     f_handle.close()
 
     for question in questions:
-        template = create_question_template(question, user=request.user)
+        template = create_question_template(question,
+                                            user=request.user.get_profile())
+
+        qset.qtemplates.add(template)
+        qset.save()
+
         # add this template to qset
 
 
