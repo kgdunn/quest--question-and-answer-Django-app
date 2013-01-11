@@ -210,8 +210,8 @@ If a={{a}}, b={{b}}. What is a*b?
 --
 & {{a}}{{b}}
 &1
-^{% evaluate "a*b" %}
-& {% evaluate "a+b" %}
+^{% quick_eval "a*b" %}
+& {% quick_eval "a+b" %}
 [[variables]]
 a: [2, 5, 0.5, float]
 b: [5, 9, 1, int]

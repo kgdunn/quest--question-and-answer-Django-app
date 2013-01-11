@@ -4,6 +4,7 @@
 import re
 import logging
 import datetime
+from math import floor
 from django.core.context_processors import csrf
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import (render_to_response, redirect, RequestContext,
@@ -171,15 +172,27 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
     html_question = quest.as_displayed
     # Has the user answered this question (even temporarily?).
     if quest.given_answer:
-        if quest.qtemplate.q_type in ('mcq', 'multi', 'tf'):
-
+        if quest.qtemplate.q_type in ('mcq', 'tf'):
             html_question = re.sub(r'"'+quest.given_answer+r'"',
                                 r'"'+quest.given_answer+r'" checked',
                                 html_question)
 
+        if quest.qtemplate.q_type in ('multi', ):
+            for selection in quest.given_answer.split(','):
+                html_question = re.sub(r'"'+selection+r'"',
+                                                r'"'+selection+r'" checked',
+                                                html_question)
+
     final_time = quest.qset.ans_time_final.replace(tzinfo=None)
-    if final_time > datetime.datetime.now():   # The testing period is running
+    now_time = datetime.datetime.now()
+    min_remain = 0
+    sec_remain = 0
+    if final_time > now_time:                  # The testing period is running
         html_solution = ''                      # don't show the solutions yet
+        delta = final_time - now_time
+        min_remain = int(floor(delta.seconds/60.0))
+        sec_remain = int(delta.seconds - min_remain*60)
+
     else:
         html_solution = quest.html_solution
 
@@ -187,11 +200,14 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         html_question = re.sub(r'<input', r'<input disabled="true"',
                                 html_question)
 
+    #quests[0].qset.ans_time_final
     ctxdict = {'quests_lists': quests,
                'item_id': q_id,
                'course': course_code_slug,
                'qset': question_set_slug,
                'item': quest,
+               'minutes_left': min_remain,
+               'seconds_left': sec_remain,
                'html_question': html_question,
                'html_solution': html_solution,
                'last_question': q_id==len(quests)}
@@ -267,9 +283,13 @@ def successful_submission(request, course_code_slug, question_set_slug):
     user = request.user.profile
     final = quests[0].qset.ans_time_final.strftime('%H:%M:%S on %d %h %Y')
     token_obj = Token.objects.filter(token_address=token).filter(user=user)
-    _ = Token.objects.update(id=token_obj[0].id, user=user.user,
-                             has_been_used=True,
-                             token_address=token_obj[0].token_address)
+
+    # TODO(KGD): should we check we have a token_obj[0]
+    token_obj[0].has_been_used = True
+    token_obj[0].save()
+    #_ = Token.objects.update(id=token_obj[0].id, user=user.user,
+    #                         has_been_used=True,
+    #                         token_address=token_obj[0].token_address)
     ctxdict = {'token': token,
                'quest_cut_off': final}
     return render_to_response('question/successfully-submitted.html', ctxdict,

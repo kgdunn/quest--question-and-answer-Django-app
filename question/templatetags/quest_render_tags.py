@@ -1,6 +1,6 @@
 # Built-in and Django imports
 import logging
-from decimal import Decimal, Context
+from decimal import Context  # , Decimal
 
 from django import template
 register = template.Library()
@@ -43,8 +43,8 @@ safe_dict['complex'] = complex
 
 # Now fix up some confusion:
 safe_dict['ln'] = safe_dict['log']   # "ln" is the usual log to the base "e"
-safe_dict['log10']                    # "log10" is made to be to the base "10"
-safe_dict.pop('log')                  # remove "log" to avoid any confusion
+safe_dict.pop('log')                 # "log10" is made to be to the base "10"
+                                      # remove "log" to avoid any confusion
 
 
 @register.tag
@@ -57,7 +57,8 @@ def quick_eval(parser, token):
         # split_contents() knows not to split quoted strings.
     out = token.split_contents()
     #except ValueError:
-    #    raise template.TemplateSyntaxError("%r tag requires a single #argument" % token.contents.split()[0])
+    #    raise template.TemplateSyntaxError("%r tag requires a single
+    #argument" % token.contents.split()[0])
 
     if len(out) == 2:
         tag_name, format_string = out
@@ -66,11 +67,13 @@ def quick_eval(parser, token):
         tag_name, format_string, sig_figs = out
         sig_figs = int(sig_figs.strip(' ').strip(','))
     else:
-        template.TemplateSyntaxError("%r tag requires either 1 or 2 arguments")
+        template.TemplateSyntaxError(("%r tag requires either 1 or 2 "
+                                      "arguments"))
 
     if not (format_string[0] == format_string[-1] and \
                                              format_string[0] in ('"', "'")):
-        raise template.TemplateSyntaxError("%r tag's argument should be in quotes" % tag_name)
+        raise template.TemplateSyntaxError(("%r tag's argument should be in "
+                                            "quotes" % tag_name))
 
     return EvaluateString(format_string[1:-1], sig_figs)
 
@@ -114,7 +117,8 @@ class EvaluateString(template.Node):
             #out = str(e)
         else:
             # Clean up the output
-            out = Context(prec=self.sig_figs, Emax=999,).create_decimal(str(out))
+            out = Context(prec=self.sig_figs, Emax=999,)\
+                                                     .create_decimal(str(out))
             out = out.to_eng_string()
 
         return out

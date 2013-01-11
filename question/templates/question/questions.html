@@ -3,25 +3,40 @@
 {# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
 <script language="javascript" type="text/javascript">
     $(document).ready(function() {
+        $(':checkbox').click(function() {
+		    var selected = new Array();
+			$('.quest-item-question input:checked').each(function() {
+			    selected.push($(this).attr('value'));
+		  	});
+			 //alert('Selected: ' + selected);
+            var valueSelected = this.value;
+            var buttonSelected = this.id.replace(valueSelected + '_','');
+            $.ajax({
+				type: "GET",
+              url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + selected,
+              data:  '',
+              cache: false,
+              success: function(result) {$('#ajaxDiv').html(result);},
+				error: function (response, desc, exception) {// custom error
+			    }
+          });
+		});
+	});
+	$(document).ready(function() {
         $(':radio').click(function() {
             var valueSelected = this.value;
             var buttonSelected = this.id.replace(valueSelected + '_','');
-            //alert('Button Selected: ' + buttonSelected + "\nValue Selected: " + valueSelected);
             $.ajax({
-                type: "GET",
-                url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + valueSelected,
-                data:  '',
-                cache: false,
-                success: function(result) {
-                    $('#ajaxDiv').html(result);
-                },
-                error: function (response, desc, exception) {
-                    // custom error
-                }
-            });
-
-    });
-});
+				type: "GET",
+              url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + valueSelected,
+              data:  '',
+              cache: false,
+              success: function(result) {$('#ajaxDiv').html(result);},
+				error: function (response, desc, exception) {// custom error
+			    }
+          });
+		});
+	});
 </script>
 <script>
     var interval;

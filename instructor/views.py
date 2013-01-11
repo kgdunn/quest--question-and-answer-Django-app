@@ -153,19 +153,22 @@ def parse_MCQ_TF_Multi(text, q_type): # helper
                 else:
                     found_one = True
 
-    if q_type in ('multi',):
-        # None [0] -> False [1 correct answer] -> True [2 or more correct]
-        found_many = None
-        for key, value in t_grading.iteritems():
-            if value[0] in ('final-key', 'key'):
-                if found_many is None:
-                    found_many = False
-                elif found_many is False:
-                    found_many = True
+    # Maybe the instructor wants to "trick" the user and there is only
+    # one valid option
 
-        if found_many is not True:
-            raise ParseError(('Multi-answer checkbox questions require two '
-                              'or more correct answers'))
+    #if q_type in ('multi',):
+        ## None [0] -> False [1 correct answer] -> True [2 or more correct]
+        #found_many = None
+        #for key, value in t_grading.iteritems():
+            #if value[0] in ('final-key', 'key'):
+                #if found_many is None:
+                    #found_many = False
+                #elif found_many is False:
+                    #found_many = True
+
+        #if found_many is not True:
+            #raise ParseError(('Multi-answer checkbox questions require two '
+                              #'or more correct answers'))
 
 
     # Cleaning: for T/F question, strip away newlines, leaving only 1 answer
@@ -495,6 +498,7 @@ def render(qt):
         6 Convert this markup to HTML.
 
     """
+    #---------
     def render_mcq_question(qt):
         """Renders a multiple choice question to HTML."""
 
@@ -526,7 +530,7 @@ def render(qt):
             lst.append(template % (q_type, name, value, final))
 
         return lst
-    #----------------
+    #---------
     def call_markdown(text):
         """
         Calls the Markdown library http://daringfireball.net/projects/markdown
@@ -548,12 +552,10 @@ def render(qt):
         qt.t_variables = json.loads(qt.t_variables)
 
     rndr = []
-
     if qt.q_type in ('mcq', 'tf', 'multi'):
         rndr.append(qt.t_question)
         rndr.append('- - -')
         rndr.extend(render_mcq_question(qt))
-
 
     # 2. Random variables, if required.
     var_dict = {}
@@ -561,17 +563,36 @@ def render(qt):
         var_dict = create_random_variables(qt.t_variables)
 
     # 3. Evaluate source code
+    # TODO(KGD)
 
-    # 4. Evalute the solution string,
+    # 4. Evalute the solution string
     rndr_solution = qt.t_solution
 
-    # 5. Now call Jinja to render any templates
-    rndr_question = '\n'.join(rndr)
+    # 5. Now call Django's template engine to render any templates, only if
+    #    there are variables to be rendered
+    if var_dict:
+        rndr.insert(0, '{% load quest_render_tags %}')
+        rndr_question = '\n'.join(rndr)
+        var_dict_rendered = {}
+        for key, values in var_dict.iteritems():
+            var_dict_rendered[key] = values[1]
+
+
+        from django import template
+        from django.template import Context, Template
+        register = template.Library()
+
+        t = Template(rndr_question)
+        c = Context(var_dict_rendered)
+        rndr_question = t.render(c)
+
+    else:
+        rndr_question = '\n'.join(rndr)
+
 
     # 6. Then call Markdown
     html_q = call_markdown(rndr_question)
     html_a = call_markdown(rndr_solution)
-
 
     # 7. Dump the dictionary to a string for storage
     var_dict_str = json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
