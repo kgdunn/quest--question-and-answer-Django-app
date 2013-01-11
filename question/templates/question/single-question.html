@@ -5,12 +5,12 @@
 
     <div id="quest-itemdisp-container">
         <div class="quest-item-question">
-            {% if html_solution %}The question was:{% endif %}
+            {% if html_solution %}<i>The question was</i>:{% endif %}
+            <br>
             {{html_question|safe}}
         </div>
         <div class="quest-item-solution">
-            {% if html_solution %}The solution is:
-            <br>
+            {% if html_solution %}
             {{html_solution|safe}}
             {% endif %}
         </div>

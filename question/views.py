@@ -183,6 +183,9 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
     else:
         html_solution = quest.html_solution
 
+        # Make the inputs disabled when displaying solutions:
+        html_question = re.sub(r'<input', r'<input disabled="true"',
+                                html_question)
 
     ctxdict = {'quests_lists': quests,
                'item_id': q_id,

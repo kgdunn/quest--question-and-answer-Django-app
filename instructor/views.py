@@ -185,7 +185,7 @@ def parse_MCQ_TF_Multi(text, q_type): # helper
             t_solution = soln_str % key
 
         if q_type in ('multi',):
-            soln_str = ['The correct answers are: ',]
+            soln_str = ['The correct answers are: ', '']
             final_soln = ''
             solutions = t_grading.values()
             solutions.sort()
@@ -394,6 +394,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
     2. Emails users in the class the link to sign in and start answering
     """
     load_class_list(request)
+    load_question_templates(request, course_code_slug, question_set_slug)
 
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
@@ -411,7 +412,6 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
         # ``qts`` = question templates
         qts = qset.qtemplates.all()
-        n_questions = len(qts)
 
         question_list = []
         for idx, qt in enumerate(qts):
@@ -426,6 +426,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                             var_dict=var_dict)
                 question_list.append(qa)
 
+        n_questions = len(qts)
 
         # Run through a 2nd time to add the previous and next links
         for idx, qt in enumerate(question_list):
@@ -509,23 +510,37 @@ def render(qt):
         # on the page.
         # The ``value`` defines what will be submitted to the server.
 
-        tplt = """<input type = "%s" name="%s" value="%s">%s</><br>"""
+        template = """<input type="%s" name="%s" value="%s">%s</><br>"""
 
         lst = []
         name = generate_random_token(8)
 
         for (key, value) in get_type(qt.t_grading, keytype='key'):
-            lst.append(tplt % (q_type, name, value, key))
+            lst.append(template % (q_type, name, value, key))
 
         for (lure, value) in get_type(qt.t_grading, keytype='lure'):
-            lst.append(tplt % (q_type, name, value, lure))
+            lst.append(template % (q_type, name, value, lure))
 
         random.shuffle(lst)
         for (final, value) in get_type(qt.t_grading, keytype='final'):
-            lst.append(tplt % (q_type, name, value, final))
+            lst.append(template % (q_type, name, value, final))
 
         return lst
     #----------------
+    def call_markdown(text):
+        """
+        Calls the Markdown library http://daringfireball.net/projects/markdown
+        """
+        # Special filter: to ensure "\\" in the current string actually comes
+        # out as intended, as "\\"
+        text = text.replace('\\', r'\\\\')
+
+        # Call Markdown to do the HTML formatting for us
+        out = markdown.markdown(text)
+
+        # Undo the filtering in the HTML
+        return out.replace('\\\\', '\\')
+    #---------
 
     # 1. First convert strings to dictionaries:
     if isinstance(qt.t_grading, basestring):
@@ -548,15 +563,17 @@ def render(qt):
     # 3. Evaluate source code
 
     # 4. Evalute the solution string,
-    #
-    # Process it more, if required: qt.t_solution
+    rndr_solution = qt.t_solution
 
     # 5. Now call Jinja to render any templates
-    rndr_str = '\n'.join(rndr)
+    rndr_question = '\n'.join(rndr)
 
     # 6. Then call Markdown
-    html_q = markdown.markdown(rndr_str)
-    html_a = markdown.markdown(qt.t_solution)
+    html_q = call_markdown(rndr_question)
+    html_a = call_markdown(rndr_solution)
+
+
+    # 7. Dump the dictionary to a string for storage
     var_dict_str = json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
 
     return html_q, html_a, var_dict_str
