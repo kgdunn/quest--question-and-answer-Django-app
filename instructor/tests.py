@@ -220,7 +220,9 @@ b: [5, 9, 1, int]
         qt = QTemplate.objects.get(id=qtemplate.id)
         from views import render
         html_q, html_a, var_dict = render(qt)
-
+        var_dict = json.loads(var_dict)
+        true_answer = var_dict['a'][1] * var_dict['b'][1]
+        self.assertEqual(html_a, '<p>The solution is: "%s"</p>' % true_answer)
 
     def test_mcq_bad_specified(self):
         """

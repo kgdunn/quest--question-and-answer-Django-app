@@ -5,8 +5,11 @@ import json
 import random
 import logging
 
+from django import template
 from django.shortcuts import HttpResponse
+from django.template import Context, Template
 from django.contrib.auth.decorators import login_required
+register = template.Library()
 
 # 3rd party imports
 import markdown
@@ -545,6 +548,25 @@ def render(qt):
         # Undo the filtering in the HTML
         return out.replace('\\\\', '\\')
     #---------
+    def insert_evaluate_variables(text, var_dict):
+        """
+        Uses the Django template library to insert and evaluate expressions.
+        A list of strings and the variable dictionary of key-value pairs to
+        insert must be provided.
+        """
+        if isinstance(text, list):
+            text.insert(0, '{% load quest_render_tags %}')
+            rndr_string = '\n'.join(text)
+        else:
+            rndr_string = r'{% load quest_render_tags %}' + text
+
+        var_dict_rendered = {}
+        for key, values in var_dict.iteritems():
+            var_dict_rendered[key] = values[1]
+
+        tmplte = Template(rndr_string)
+        cntxt = Context(var_dict_rendered)
+        return tmplte.render(cntxt)
 
     # 1. First convert strings to dictionaries:
     if isinstance(qt.t_grading, basestring):
@@ -571,20 +593,8 @@ def render(qt):
     # 5. Now call Django's template engine to render any templates, only if
     #    there are variables to be rendered
     if var_dict:
-        rndr.insert(0, '{% load quest_render_tags %}')
-        rndr_question = '\n'.join(rndr)
-        var_dict_rendered = {}
-        for key, values in var_dict.iteritems():
-            var_dict_rendered[key] = values[1]
-
-
-        from django import template
-        from django.template import Context, Template
-        register = template.Library()
-
-        t = Template(rndr_question)
-        c = Context(var_dict_rendered)
-        rndr_question = t.render(c)
+        rndr_question = insert_evaluate_variables(rndr, var_dict)
+        rndr_solution = insert_evaluate_variables(rndr_solution, var_dict)
 
     else:
         rndr_question = '\n'.join(rndr)
@@ -786,15 +796,3 @@ def load_class_list(request):
 #legend
 #s = etree.tostring(root, pretty_print=True)
 
-#from django import template
-#from django.template.defaultfilters import stringfilter
-#register = template.Library()
-
-#g = """{% load quest_render_tags %} x + y = {% evaluate %}\n a=x+y\n b=a+4\n return b {% endeval %}"""
-#g = """{% load quest_render_tags %} x + y = {% quick_eval "x/y" 5 %}"""
-#g = """{% load quest_render_tags %} x + y = {% quick_eval "x*ln(y)" 5 %}"""
-#from django.template import Context, Template
-#t = Template(g)
-#c = Context({'x':4, 'y':20})
-#r = t.render(c)
-#print(r)
