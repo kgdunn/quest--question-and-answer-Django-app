@@ -57,7 +57,7 @@ def get_type(mcq_dict, keytype):
             yield value[1], key
 
 
-def split_sections(text):  # helper
+def split_sections(text):                                          # helper
     """
     Splits the problem statement into its sections. Section are denoted by
     double brackets:
@@ -86,7 +86,7 @@ def split_sections(text):  # helper
     return out
 
 
-def parse_MCQ_TF_Multi(text, q_type): # helper
+def parse_MCQ_TF_Multi(text, q_type):                             # helper
     """
     Multiple choice (MCQ)
     True/False (TF)
@@ -144,7 +144,7 @@ def parse_MCQ_TF_Multi(text, q_type): # helper
             t_grading[section_name][1] += '\n' + line
 
     # Do a sanity check: MCQ and TF must have a single correct answer
-    #                    MULTI must have more than one correct answer
+    #                    MULTI must have more than one correct answer<-NO
     if q_type in ('tf', 'mcq'):
         found_one = False
         for key, value in t_grading.iteritems():
@@ -209,7 +209,33 @@ def parse_MCQ_TF_Multi(text, q_type): # helper
     return t_question, t_solution, t_grading
 
 
-def parse_question_text(text): # helper
+def parse_SHORT_LONG(text, solution, grading, q_type):             # helper
+    """
+    Short and long answer questions are parsed and processed here.
+    The solution test and grading text are also checked and returned.
+
+    A short answer region is given by [{1}] these brackets.
+
+    While a long answer region should be provided for these brackets:
+    [{{2}}]
+
+    Multiple instances of such brackets may appear within the question. The
+    grading for the question must supply answers for the brackets, in the same
+    order. For example, the [[grading]] portion of the template could be:
+
+    [[grading]]
+    {1}bar
+    {1}BAR     <-- multiple answers can be given, including regular expressions
+    {2}grading text can be provided for long answer questions, but will never
+       be used
+    """
+    t_question = text
+    t_solutions = solution
+    t_grading = grading
+    return t_question, t_solution, t_grading
+
+
+def parse_question_text(text):                                    # helper
     """
     Parses a question's template text to create our internal question
     representation. For example, for a multiple choice question:
@@ -228,6 +254,7 @@ def parse_question_text(text): # helper
     [[question]]
     If a=1, b=2. What is a*b?
     --
+    [[grading]]
     & 12    <-- distractors (lures) begin with "&"
     & 1     <-- distractor
     ^2      <-- correct answer(s) begin with "^"
@@ -238,7 +265,8 @@ def parse_question_text(text): # helper
                 usually used when "All of the above" or "None of the above"
                 is the correct answer.
     [[variables]]
-
+    [[solution]]
+    From multiplication rules we have that a*b = 2.
     """
     # Force it into a list of strings.
     if isinstance(text, basestring):
@@ -262,6 +290,21 @@ def parse_question_text(text): # helper
         t_question, t_solution, t_grading = parse_MCQ_TF_Multi(sd['question'],
                                                                sd['type'])
         sd.pop('question')
+
+    if sd['type'] in ('short', 'long'):
+        if not sd.has_key('solution'):
+            raise ParseError('[[solution]] section not given')
+        if not sd.has_key('grading'):
+            raise ParseError('[[grading]] section not given')
+
+        # This function really doesn't do anything. Placeholder for now
+        # Remmber that ``parse_question_text()`` is intended only to load
+        # text templates into our internal representation. Text templates
+        # match our internal representation closely anyway.
+        t_question, t_solution, t_grading = parse_SHORT_LONG(sd['question'],
+                                                             sd['solution'],
+                                                             sd['grading'],
+                                                             sd['type'])
 
     sd['contributor'] = 1
     sd['tags'] = ''
