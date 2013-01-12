@@ -115,6 +115,7 @@ class QSet(models.Model):
     """
     name = models.CharField(max_length=250)    # e.g. "Week 1"
     slug = models.SlugField(editable=False)
+    announcement = models.TextField(blank=True)
 
     # Should questions be randomly chosen from a set of questions?
     # If False, then all questions in ``qtemplates`` will be asked.
@@ -145,9 +146,11 @@ class QSet(models.Model):
     forced_q = models.ManyToManyField(QTemplate, related_name='forced',
                                       blank=True)
 
+    # Which questions are for bonus grades
     bonus_q = models.ManyToManyField(QTemplate, related_name='bonus',
                                      blank=True, null=True)
 
+    # Which course is this qset used in
     course = models.ForeignKey('course.Course')
 
     # When are questions first available and finally available for answering?

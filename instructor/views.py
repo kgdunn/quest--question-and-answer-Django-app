@@ -5,11 +5,10 @@ import json
 import random
 import logging
 
-from django import template
 from django.shortcuts import HttpResponse
-from django.template import Context, Template
+from django.template import Context, Template, Library
 from django.contrib.auth.decorators import login_required
-register = template.Library()
+register = Library()
 
 # 3rd party imports
 import markdown
@@ -229,9 +228,15 @@ def parse_SHORT_LONG(text, solution, grading, q_type):             # helper
     {2}grading text can be provided for long answer questions, but will never
        be used
     """
-    t_question = text
-    t_solutions = solution
-    t_grading = grading
+    if q_type == 'long':
+        # The space is the list join() is intentional; to ensure imported text
+        # that spans lines gets correctly spaced; double spaces are handled
+        # well in HTML anyway, so 2 spaces won't show up badly.
+        # Strip off trailing and starting newlines.
+        t_question = u' \n'.join(text).strip('\n')
+        t_solution = u' \n'.join(solution).strip('\n')
+        t_grading = u' \n'.join(grading).strip('\n')
+
     return t_question, t_solution, t_grading
 
 
@@ -365,7 +370,7 @@ def parse_question_text(text):                                    # helper
 
     # Final checks before returning
     if not sd.has_key('name'):
-        sd['name'] = t_question
+        sd['name'] = t_question.replace('\n','').strip()
 
     sd['t_question'] = t_question
     sd['t_solution'] = t_solution

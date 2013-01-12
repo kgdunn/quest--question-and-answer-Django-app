@@ -9,6 +9,7 @@
                 <th>Test name</th>
                 <th>Earliest starting time</th>
                 <th>Tests closes at</th>
+                <th>Announcements</th>
             </tr>
             {% for item in qset %}
             {% if item.is_active %}
@@ -16,6 +17,7 @@
                 <td><a href="{% url quest-ask-show-questions item.course.slug item.slug %}">{{item.name}}</a>
                 <td>{{item.ans_time_start|date:"d F Y G:i"}}
                 <td>{{item.ans_time_final|date:"d F Y G:i"}}
+                <td>{{item.announcement}}
             </tr>
             {% endif %}
             {% endfor %}
