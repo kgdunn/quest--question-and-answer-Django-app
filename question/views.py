@@ -35,6 +35,8 @@ LURE_RE = re.compile(r'^\&(\s*)(.*)$')
 KEY_RE = re.compile(r'^\^(\s*)(.*)$')
 FINAL_RE = re.compile(r'^\&(\s*)(.*)$')
 
+TEXAREA_RE = re.compile(r'\<textarea (.*?)\>(?P<filled>.*?)\</textarea\>')
+
 class ParseError(Exception):
     pass
 
@@ -170,18 +172,27 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
     quest = quests[q_id-1]
     html_question = quest.as_displayed
+    q_type = quest.qtemplate.q_type
     # Has the user answered this question (even temporarily?).
     if quest.given_answer:
-        if quest.qtemplate.q_type in ('mcq', 'tf'):
+        if q_type in ('mcq', 'tf'):
             html_question = re.sub(r'"'+quest.given_answer+r'"',
                                 r'"'+quest.given_answer+r'" checked',
                                 html_question)
 
-        if quest.qtemplate.q_type in ('multi', ):
+        if q_type in ('multi', ):
             for selection in quest.given_answer.split(','):
                 html_question = re.sub(r'"'+selection+r'"',
                                                 r'"'+selection+r'" checked',
                                                 html_question)
+
+        if q_type in ('long'):
+            re_exp = TEXAREA_RE.search(html_question)
+            if re_exp:
+                html_question = '%s%s%s' % (html_question[0:re_exp.start(2)],
+                                            quest.given_answer,
+                                            html_question[re_exp.end(2):])
+
 
     final_time = quest.qset.ans_time_final.replace(tzinfo=None)
     now_time = datetime.datetime.now()
@@ -206,6 +217,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                'course': course_code_slug,
                'qset': question_set_slug,
                'item': quest,
+               'timeout_time': 1000,       # in the HTML template, XHR timeout
                'minutes_left': min_remain,
                'seconds_left': sec_remain,
                'html_question': html_question,

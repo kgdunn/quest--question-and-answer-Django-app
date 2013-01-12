@@ -2,24 +2,25 @@
 {% block html_headers %}
 {# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
 <script language="javascript" type="text/javascript">
-    $(document).ready(function() {
-        $(':checkbox').click(function() {
-		    var selected = new Array();
+	$(document).ready(function() {
+		$(':checkbox').click(function() {
+			var selected = new Array();
 			$('.quest-item-question input:checked').each(function() {
-			    selected.push($(this).attr('value'));
-		  	});
-			 //alert('Selected: ' + selected);
-            var valueSelected = this.value;
-            var buttonSelected = this.id.replace(valueSelected + '_','');
-            $.ajax({
+				selected.push($(this).attr('value'));
+			});
+			//alert('Selected: ' + selected);
+			var valueSelected = this.value;
+			var buttonSelected = this.id.replace(valueSelected + '_','');
+			$.ajax(
+			{
 				type: "GET",
-              url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + selected,
-              data:  '',
-              cache: false,
-              success: function(result) {$('#ajaxDiv').html(result);},
+				url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + selected,
+				data:  '',
+				cache: false,
+				success: function(result) {$('#ajaxDiv').html(result);},
 				error: function (response, desc, exception) {// custom error
-			    }
-          });
+				}
+			});
 		});
 	});
 	$(document).ready(function() {
@@ -37,7 +38,45 @@
           });
 		});
 	});
+	$(document).ready(function() {
+		var timer = null;
+		$('.quest-item-question').find('textarea').keydown(function() {
+			itemValue = encodeURIComponent($(this).val());
+			if (timer){
+				window.clearTimeout(timer);
+			};
+			timer = window.setTimeout(function()
+			{
+				$.ajax(
+				{
+					type: "GET",
+					url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,
+					data:  '',
+					cache: false,
+					success: function(result) {$('#ajaxDiv').html(result);},
+					error: function (response, desc, exception) {// custom error
+					}
+				});
+			}, {{timeout_time}});
+		});
+		$('.quest-item-question').find('textarea').change(function() {
+			itemValue = encodeURIComponent($(this).val());
+			$.ajax(
+			{
+				type: "GET",
+				url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,
+				data:  '',
+				cache: false,
+				success: function(result) {$('#ajaxDiv').html(result);},
+				error: function (response, desc, exception) {// custom error
+				}
+			});
+		});
+	});
+{# http://stackoverflow.com/questions/1620602/javascript-jquery-make-an-ajax-request-when-a-user-is-typing-in-a-textarea    http://stackoverflow.com/questions/10018437/jquery-ajax-autosave-for-textareas #}
+
 </script>
+
 <script>
     var interval;
     var minutes = {{minutes_left}};

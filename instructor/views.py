@@ -541,7 +541,7 @@ def render(qt):
     often is dependent on the randomly selected values.
 
     Rendering order:
-        1 Convert our internal representation to Markdown (or ReST)
+        1 Convert our internal representation to HTML
         2 Pick random values for any variables in the question
         3 And/or evaluate any source code to obtain variables and solutions
         4 t_grading['answer'] string is run through rendering as well
@@ -621,11 +621,17 @@ def render(qt):
         qt.t_grading = json.loads(qt.t_grading)
         qt.t_variables = json.loads(qt.t_variables)
 
-    rndr = []
+    rndr_question = []
+    rndr_question.append(qt.t_question)
+    #rndr_question.append('- - -')
     if qt.q_type in ('mcq', 'tf', 'multi'):
-        rndr.append(qt.t_question)
-        rndr.append('- - -')
-        rndr.extend(render_mcq_question(qt))
+        rndr_question.extend(render_mcq_question(qt))
+    elif qt.q_type in ('long',):
+        ans_str = ('<textarea name="%s" cols="100" rows="10" '
+                   'autofocus="true", required="true" placeholder="%s">'
+                   '</textarea>') % (generate_random_token(8),
+                                     'Enter your answer here ...')
+        rndr_question.append(ans_str)
 
     # 2. Random variables, if required.
     var_dict = {}
@@ -641,11 +647,11 @@ def render(qt):
     # 5. Now call Django's template engine to render any templates, only if
     #    there are variables to be rendered
     if var_dict:
-        rndr_question = insert_evaluate_variables(rndr, var_dict)
+        rndr_question = insert_evaluate_variables(rndr_question, var_dict)
         rndr_solution = insert_evaluate_variables(rndr_solution, var_dict)
 
     else:
-        rndr_question = '\n'.join(rndr)
+        rndr_question = '\n'.join(rndr_question)
 
 
     # 6. Then call Markdown
