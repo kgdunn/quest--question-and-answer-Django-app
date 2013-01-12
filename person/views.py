@@ -4,7 +4,7 @@ import datetime
 
 from django.contrib.auth import login, authenticate
 from django.core.context_processors import csrf
-from django.shortcuts import render_to_response, redirect
+from django.shortcuts import render_to_response, redirect, RequestContext
 
 from models import Token
 
@@ -74,8 +74,10 @@ def sign_in(request):
         except models.User.DoesNotExist:
             # If email not in list, tell them they are not registered
             page_content = {}
-            return render_to_response('person/not-registered.html',
-                                      page_content)
+            ctxdict = {}
+            ctxdict.update(csrf(request))
+            return render_to_response('person/not-registered.html', ctxdict,
+                                    context_instance=RequestContext(request))
 
         else:
             subject, message, to_address = create_sign_in_email(user)
@@ -86,15 +88,18 @@ def sign_in(request):
                 logger.error('Unable to send sign-in email to: %s' %
                             to_address[0])
 
-            return render_to_response('person/sent-email.html')
+            ctxdict = {}
+            ctxdict.update(csrf(request))
+            return render_to_response('person/sent-email.html', ctxdict,
+                                    context_instance=RequestContext(request))
 
     # Non-POST access of the sign-in page: display the login page to the user
     else:
         logger.debug('Non-POST sign-in page request')
-        page_content = {}
-        page_content.update(csrf(request))
-        return render_to_response('person/sign-in-form.html', page_content)
-
+        ctxdict = {}
+        ctxdict.update(csrf(request))
+        return render_to_response('person/sign-in-form.html', ctxdict,
+                                  context_instance=RequestContext(request))
 
 def deactivate_token_sign_in(request, token):
     """ Deactivates the token and signs the user in for a limited period.
@@ -105,8 +110,11 @@ def deactivate_token_sign_in(request, token):
     if len(token_item) == 0 or token_item[0].has_been_used:
         logger.info('Invalid/expired token received: ' + token)
         page_content = {}
+        ctxdict = {}
+        ctxdict.update(csrf(request))
         return render_to_response('person/invalid-expired-token.html',
-                                  page_content)
+                                  ctxdict,
+                                  context_instance=RequestContext(request))
 
     # Valid token found. Continue on.
     user = token_item[0].user

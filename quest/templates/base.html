@@ -1,42 +1,34 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
    <head>
-      <title>McMaster::Chemical Engineering::Quest</title>
-      <link href="/media/PATH/HERE/stylesheet.css" rel="stylesheet" type="text/css">
-      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-      <meta http-equiv="Content-Style-Type" content="text/css" />
-      <META HTTP-EQUIV="Pragma" CONTENT="no-cache">
-      <META HTTP-EQUIV="Expires" CONTENT="-1">
-      <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+      <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+      <meta http-equiv="Content-Language" content="en-us" />
+      <meta HTTP-EQUIV="Pragma" CONTENT="no-cache">
+      <meta HTTP-EQUIV="Expires" CONTENT="-1">
+      <title>{% block title %} | Chem Eng Quest{% endblock %}</title>
+      <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Inconsolata">
+      <link rel="stylesheet" href="{{MEDIA_URL}}quest-main.css?{{VERSION}}" type="text/css" media="Screen"/>
+      <link rel="stylesheet" href="{{MEDIA_URL}}pygments.css?{{VERSION}}" type="text/css" />
+      <script type="text/javascript" src="{{JQUERY_URL}}"></script>
+      <script type="text/javascript" src="{{JQUERYUI_URL}}"></script>
       <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-      <script type="text/javascript">
-        var _gaq = _gaq || [];
-        _gaq.push(['_setAccount', 'UA-33423920-6']);
-        _gaq.push(['_trackPageview']);
+      {{ANALYTICS_SNIPPET|safe}}
 
-        (function() {
-          var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-          ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-          var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-        })();
-      </script>
-{% block html_headers %}{% endblock%}
-<!-- (c) Quest website, Kevin Dunn, January 2013, http://learnche.mcmaster.ca -->
-</head>
-<body>
-<div id="globalWrapper">
-   <div id="column-content">
-      <div id="content">
-         {% block header %}{% endblock %}
-         {% block content %}{% endblock %}
-         {% block footer %}{% endblock %}
-      </div> <!-- content -->
-   </div> <!-- column-content -->
-</div> <!-- globalWrapper -->
+      {% block html_headers %}{% endblock%}
+      <!-- (c) Quest website, Kevin Dunn, January 2013, http://learnche.mcmaster.ca -->
+   </head>
+   <body>
+      <div id="globalWrapper">
+         <div id="column-content">
+            <div id="content">
+               {% block header %}{% endblock %}
+               {% block content %}{% endblock %}
+               {% block footer %}{% endblock %}
+            </div> <!-- content -->
+         </div> <!-- column-content -->
+      </div> <!-- globalWrapper -->
 
-<script type="text/javascript">if (window.runOnloadHook) runOnloadHook();</script>
-
-
-
-</body>
+      <script type="text/javascript">if (window.runOnloadHook) runOnloadHook();</script>
+   </body>
 </html>

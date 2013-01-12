@@ -7,7 +7,7 @@
 # easy_install -U numpy      <--- version 1.6.2 used during development
 
 import os
-
+import django.conf.global_settings as DEFAULT_SETTINGS
 DEBUG = True
 #TEMPLATE_DEBUG = DEBUG
 TEMPLATE_DEBUG = True
@@ -54,12 +54,17 @@ USE_TZ = True
 
 # Absolute filesystem path to the directory that will hold user-uploaded files.
 # Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = ''
+if DEBUG:
+    MEDIA_ROOT = os.path.dirname(__file__) + os.sep + 'media' + os.sep
+else:
+    # For production: you'll want to copy the <base>/media/* files to your
+    # static location and modify this path to match your server.
+    MEDIA_ROOT = '<your path here>'
 
 # URL that handles the media served from MEDIA_ROOT. Make sure to use a
 # trailing slash.
 # Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
-MEDIA_URL = ''
+MEDIA_URL = '/media/'
 
 # Absolute path to the directory static files should be collected to.
 # Don't put anything in this directory yourself; store your static files
@@ -121,6 +126,11 @@ TEMPLATE_DIRS = (
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
     os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates')),
+)
+
+# To get access to some global variables used in the templates
+TEMPLATE_CONTEXT_PROCESSORS = DEFAULT_SETTINGS.TEMPLATE_CONTEXT_PROCESSORS + (
+    'question.context_processors.global_template_variables',
 )
 
 INSTALLED_APPS = (
