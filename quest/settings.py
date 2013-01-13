@@ -116,7 +116,7 @@ AUTHENTICATION_BACKENDS = (
 )
 LOGIN_URL = '/'
 
-ROOT_URLCONF = 'quest.urls'
+ROOT_URLCONF = 'urls'
 
 # Python dotted path to the WSGI application used by Django's runserver.
 WSGI_APPLICATION = 'quest.wsgi.application'

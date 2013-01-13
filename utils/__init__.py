@@ -199,7 +199,7 @@ def send_email(to_addresses, subject, messages):
     if use_mass_email:
         try:
             out = send_mass_mail(tuple(data), fail_silently=False)
-        except Exception as e:
+        except Exception, e:
             logger.error(('An error occurred when sending mass emails [%s]' %
                           str(e)))
     else:
@@ -207,7 +207,7 @@ def send_email(to_addresses, subject, messages):
             try:
                 out = _send_mail(subject, messages, from_address, to_addresses,
                                  fail_silently=False)
-            except Exception as e:
+            except Exception, e:
                 logger.error(('An error occurred when sending email to %s, '
                               'with subject [%s]. Error = %s') % (
                                   str(to_addresses),
