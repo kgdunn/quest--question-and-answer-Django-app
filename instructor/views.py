@@ -789,28 +789,30 @@ def load_class_list(request):
     course = Course.objects.filter(slug=course_slug)[0]
     email_suffix = '@mcmaster.ca'
 
-    #with open(f_name, 'rb') as csvfile:
-        #rdr = csv.reader(csvfile, delimiter=',')
-        #for row in rdr:
-            #last, first, email_id, student_id = row
-            #username = '%s-%s' % (first.strip().lower(),
-                                  #last.strip().lower())
-            #try:
-                #obj = User.objects.get(email=email_id+email_suffix)
-            #except User.DoesNotExist:
-                #obj = User(username=username,
-                           #first_name=first.strip(),
-                           #last_name=last.strip(),
-                           #email=email_id+email_suffix)
-                #obj.save()
+    f_handle = open(f_name, 'rb')
 
-            #profile = obj.get_profile()
-            #profile.role = 'Student'
-            #profile.student_number = student_id.strip()
-            #profile.courses.add(course)
-            #profile.save()
-            #logger.info('Created user for %s with name: %s' % (course_slug,
-                                                                  #username))
+    #with open(f_name, 'rb') as csvfile:
+    rdr = csv.reader(f_handle, delimiter=',')
+    for row in rdr:
+        last, first, email_id, student_id = row
+        username = '%s-%s' % (first.strip().lower(),
+                              last.strip().lower())
+        try:
+            obj = User.objects.get(email=email_id+email_suffix)
+        except User.DoesNotExist:
+            obj = User(username=username,
+                       first_name=first.strip(),
+                       last_name=last.strip(),
+                       email=email_id+email_suffix)
+            obj.save()
+
+        profile = obj.get_profile()
+        profile.role = 'Student'
+        profile.student_number = student_id.strip()
+        profile.courses.add(course)
+        profile.save()
+        logger.info('Created user for %s with name: %s' % (course_slug,
+                                                              username))
 
 
     return HttpResponse('All user imported')

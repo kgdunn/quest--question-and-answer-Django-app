@@ -9,7 +9,7 @@
 
 import os
 import django.conf.global_settings as DEFAULT_SETTINGS
-DEBUG = False
+DEBUG = True
 #TEMPLATE_DEBUG = DEBUG
 TEMPLATE_DEBUG = True
 
