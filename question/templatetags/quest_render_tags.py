@@ -102,16 +102,15 @@ class EvaluateString(template.Node):
         #code = compile(self.format_string, "<internal>", "eval")
         try:
             out = eval(self.format_string, safe_dict, context_dict)
-        except NameError as e_log:
+        except NameError, e_log:
             if e_log.args[0] == "name 'log' is not defined":
                 out = ('The log() function is ambiguous. Please use ln() for '
                        'the base "e", or use log10() for base 10 logarithms.')
                 raise (out)
                 # TODO(KGD): make sure this doesn't pass unraised
             else:
-
                 raise(e_log)
-        except Exception as e:
+        except Exception, e:
             # TODO(KGD): make sure this doesn't pass unraised
             raise(e)
             #out = str(e)
