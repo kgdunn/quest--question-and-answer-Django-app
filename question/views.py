@@ -79,10 +79,19 @@ def validate_user(request, course_code_slug, question_set_slug,
         return redirect('quest-main-page')
 
     if expiry_check and not(admin):
-        if request.session['expires'].replace(tzinfo=None) \
-                                                    < datetime.datetime.now():
-            exp = request.session['expires'].strftime('%H:%M:%S on %d %h %Y')
-            ctxdict = {'time_expired': exp}
+        t_objs = Timing.objects.filter(user=request.user.profile, qset=qset)
+        if t_objs:
+            old_time = t_objs[0].final_time
+        else:
+            old_time = datetime.datetime(1901,1,1,0,0,0)
+        expiry_time = request.session.get('expires', old_time)
+        if expiry_time  < datetime.datetime.now():
+            # Either the user doesn't have the expiry date set in their
+            # session (i.e. they logged out and then refreshed the page)
+            # or the expiry has past the current time
+            exp = expiry_time.strftime('%H:%M:%S on %d %h %Y')
+            ctxdict = {'time_expired': exp,
+                       'solution_time': qset[0].ans_time_final}
             ctxdict.update(csrf(request))
             return render_to_response('question/time-expired.html', ctxdict,
                                       context_instance=RequestContext(request))
@@ -194,9 +203,12 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
                     final_time = min(indend_finish,
                         quests[0].qset.ans_time_final)
 
+                token = request.session['token']
+                token_obj = Token.objects.filter(token_address=token)
                 Timing.objects.create(user=request.user.profile, qset=qset,
                                       start_time=start_time,
-                                      final_time=final_time)
+                                      final_time=final_time,
+                                      token=token_obj[0])
 
         request.session['expires'] = final_time
         request.session.save()
@@ -351,8 +363,12 @@ def successful_submission(request, course_code_slug, question_set_slug):
         quest.save()
 
     token = request.session['token']
-    del request.session['expires']
+    try:
+        del request.session['expires']
+    except KeyError:
+        pass
     request.session.save()  # consider using SESSION_SAVE_EVERY_REQUEST=True
+
     user = request.user.profile
     final = quests[0].qset.ans_time_final.strftime('%H:%M:%S on %d %h %Y')
     token_obj = Token.objects.filter(token_address=token).filter(user=user)

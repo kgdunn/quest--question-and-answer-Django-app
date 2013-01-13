@@ -1,0 +1,11 @@
+{% extends "question/questions.html" %}
+
+{% block title %}Not started yet{% endblock %}
+
+{% block content %}
+
+<p>This test may not be started until {{time_to_start|date:"d F Y G:i"}}.
+
+<p>Return back to <a href="{% url quest-question-set %}">list of available questions</a>.
+
+{% endblock %}

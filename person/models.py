@@ -64,6 +64,7 @@ class Timing(models.Model):
     start_time = models.DateTimeField()
     final_time = models.DateTimeField()
     qset = models.ForeignKey('question.QSet')
+    token = models.ForeignKey(Token)
 
     def __unicode__(self):
         return 'User %s -- Start: [%s] and Final [%s]' % \
