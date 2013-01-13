@@ -68,7 +68,7 @@
     "pk": 1,
     "model": "question.qset",
     "fields": {
-      "ans_time_start": "2012-12-29T18:04:38Z",
+      "ans_time_start": "2012-12-29T18:04:38",
       "name": "Week 1",
       "forced_q": [
         1
@@ -79,7 +79,7 @@
       "slug": "week-1",
       "random_choice": true,
       "min_total": 20.0,
-      "ans_time_final": "2013-01-13T18:04:42Z",
+      "ans_time_final": "2013-01-13T18:04:42",
       "course": 1,
       "max_total": 24.0,
       "min_num": 2,
@@ -106,12 +106,12 @@
       "is_active": true,
       "is_superuser": false,
       "is_staff": false,
-      "last_login": "2012-12-29T17:55:46Z",
+      "last_login": "2012-12-29T17:55:46",
       "groups": [],
       "user_permissions": [],
       "password": "pbkdf2_sha256$10000$JuMwVjyoKT2N$tpy+E6impuWOSeU+5DvMm4ahsSy0zgocs8vzETy4lOQ=",
       "email": "dunnkg@mcmaster.ca",
-      "date_joined": "2012-12-29T17:55:46Z"
+      "date_joined": "2012-12-29T17:55:46"
     }
   },
   {

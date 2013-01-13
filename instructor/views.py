@@ -621,7 +621,7 @@ def render(qt):
 
     rndr_question = []
     rndr_question.append(qt.t_question)
-    #rndr_question.append('- - -')
+    rndr_question.append('\n')
     if qt.q_type in ('mcq', 'tf', 'multi'):
         rndr_question.extend(render_mcq_question(qt))
     elif qt.q_type in ('long',):

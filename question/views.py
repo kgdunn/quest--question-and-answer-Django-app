@@ -181,8 +181,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
                 # User is signing in during the test time frame and they have
                 # not signed in before. How much time remaining = min(test
                 # duration, test cut off-time)
-                from django.utils.timezone import LocalTimezone
-                final = qset.max_duration.replace(tzinfo=LocalTimezone())
+                final = qset.max_duration
                 right_now = datetime.datetime.now()
                 indend_finish = right_now + \
                                 datetime.timedelta(hours=final.hour) + \
@@ -193,13 +192,8 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
                     final_time = quests[0].qset.ans_time_final
                 else:
                     final_time = min(indend_finish,
-                        quests[0].qset.ans_time_final.replace(tzinfo=None))
+                        quests[0].qset.ans_time_final)
 
-
-
-
-                final_time.replace(tzinfo=LocalTimezone())
-                start_time.replace(tzinfo=LocalTimezone())
                 Timing.objects.create(user=request.user.profile, qset=qset,
                                       start_time=start_time,
                                       final_time=final_time)
