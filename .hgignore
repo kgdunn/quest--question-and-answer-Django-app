@@ -5,3 +5,5 @@ quest/local_settings.py
 wingdbstub.py
 snippets.py
 logfile*
+mod.wsgi
+
