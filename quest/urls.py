@@ -19,7 +19,7 @@ if settings.DEBUG:
          'django.views.static.serve', {'document_root': settings.MEDIA_ROOT}),
     )
 else:
-    urlpatterns = patterns()
+    urlpatterns = patterns('')
 
 urlpatterns += patterns('',
 

@@ -1,16 +1,27 @@
-"""
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
-"""
-
 from django.test import TestCase
+from django.test.client import Client
+import wingdbstub
+
+class LoginTest(TestCase):
+    def test_login_before_start(self):
+        c = Client(enforce_csrf_checks=True,
+                   HTTP_USER_AGENT='ABC')
+        response = c.get('/')#, {'username': 'john', 'password': 'smith'})
+        self.assertEquals(response.templates[0].name,
+                          'person/sign-in-form.html')
+        self.assertEquals(response.status_code, 200)
+        response = c.post('/', {'user_mail_address': 'dunnkg@mcmaster.ca'})
 
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.assertEqual(1 + 1, 2)
+    def test_login_after_final(self):
+        pass
+
+    def test_login_during_time(self):
+        pass
+
+    def test_login_during_second_time(self):
+        pass
+
+    def test_login_during_second_time_different_browser(self):
+        pass
+

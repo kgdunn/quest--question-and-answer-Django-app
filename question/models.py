@@ -161,6 +161,8 @@ class QSet(models.Model):
     # Maximum test duration, e.g. 1 hour is "01:00:00". If 00:00, then allow the
     # test to be completed anytime between ``ans_time_start`` and
     # ``ans_time_final``.
+    # WRONG: Store as a DateTimeField. Working with time objects is hard, and there
+    # is no way to store as time-deltas
     max_duration = models.TimeField(default="00:00:00")
 
     is_active = models.BooleanField(default=True)

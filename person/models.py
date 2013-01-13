@@ -54,3 +54,20 @@ class Token(models.Model):
     def __unicode__(self):
         return u'%s, %s, %s' % (str(self.has_been_used), str(self.user),
                                 self.token_address)
+
+
+class Timing(models.Model):
+    """
+    Manages the start and end times of various tests
+    """
+    user = models.ForeignKey(UserProfile)
+    start_time = models.DateTimeField()
+    final_time = models.DateTimeField()
+    qset = models.ForeignKey('question.QSet')
+
+    def __unicode__(self):
+        return 'User %s -- Start: [%s] and Final [%s]' % \
+                            (self.user.user.username,
+                             self.start_time.strftime('%H:%M:%S on %d %h %Y'),
+                             self.final_time.strftime('%H:%M:%S on %d %h %Y'))
+

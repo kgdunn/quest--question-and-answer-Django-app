@@ -71,8 +71,7 @@ def sign_in(request):                             # URL: 'quest-main-page'
     """
     logger.debug('person::sign-in')
     if request.method == 'POST':
-        form_email_prefix = request.POST.get('email_prefix', '')
-        email = form_email_prefix
+        email = request.POST.get('user_mail_address', '')
         logger.info('POST::person::sign-in: ' + email)
 
         try:

@@ -15,7 +15,7 @@ from django.shortcuts import (render_to_response, redirect, RequestContext,
 
 # Our imports
 from models import (QSet, QActual)
-from person.models import Token
+from person.models import Token, Timing
 from course.models import Course
 
 logger = logging.getLogger('quest')
@@ -78,8 +78,9 @@ def validate_user(request, course_code_slug, question_set_slug,
                     (request.path_info, request.session['token']))
         return redirect('quest-main-page')
 
-    if expiry_check:
-        if request.session['expires'] < datetime.datetime.now():
+    if expiry_check and not(admin):
+        if request.session['expires'].replace(tzinfo=None) \
+                                                    < datetime.datetime.now():
             exp = request.session['expires'].strftime('%H:%M:%S on %d %h %Y')
             ctxdict = {'time_expired': exp}
             ctxdict.update(csrf(request))
@@ -147,20 +148,67 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     if isinstance(quests, tuple):
             quests, _ = quests
 
-    # Information to store in a cookie
+    # Information to store
     if quests:
-        if quests[0].qset.max_duration == datetime.time(0, 0, 0):
-            request.session['expires'] = quests[0].qset.ans_time_final
+        qset = quests[0].qset
+        # Has the user started this QSet already? If not, create a DB entry
+        # NOTE: there can only be one DB entry per user per Qset
+        exist = Timing.objects.filter(user=request.user.profile, qset=qset)
+        start_time = datetime.datetime.now()
+        if exist:
+            final_time = exist[0].final_time
         else:
-            # Has the user started this QSet already? If not, create a DB
-            # entry
-            request.session['expires']
-        #quests[0].qset.
-        #expires = datetime.datetime.now() + datetime.timedelta(seconds=60*60)
-        #request.session['expires'] = expires
+            done_timing = False
+
+            # Test has not started yet
+            if qset.ans_time_start.replace(tzinfo=None) \
+                                                    > datetime.datetime.now():
+
+                ctxdict = {'time_to_start': qset.ans_time_start}
+                ctxdict.update(csrf(request))
+                return render_to_response('question/not-started-yet.html',
+                            ctxdict, context_instance=RequestContext(request))
+
+            # Test has finished: give the user 60 mins to review the solutions
+            # after that they need to sign in again.
+            if qset.ans_time_final.replace(tzinfo=None) \
+                                                   <= datetime.datetime.now():
+                final_time = datetime.datetime.now() + \
+                                       datetime.timedelta(seconds=60*60)
+                done_timing = True
+
+            if not done_timing:
+                # User is signing in during the test time frame and they have
+                # not signed in before. How much time remaining = min(test
+                # duration, test cut off-time)
+                from django.utils.timezone import LocalTimezone
+                final = qset.max_duration.replace(tzinfo=LocalTimezone())
+                right_now = datetime.datetime.now()
+                indend_finish = right_now + \
+                                datetime.timedelta(hours=final.hour) + \
+                                datetime.timedelta(minutes=final.minute) + \
+                                datetime.timedelta(seconds=final.second)
+
+                if qset.max_duration == datetime.time(0, 0, 0):
+                    final_time = quests[0].qset.ans_time_final
+                else:
+                    final_time = min(indend_finish,
+                        quests[0].qset.ans_time_final.replace(tzinfo=None))
+
+
+
+
+                final_time.replace(tzinfo=LocalTimezone())
+                start_time.replace(tzinfo=LocalTimezone())
+                Timing.objects.create(user=request.user.profile, qset=qset,
+                                      start_time=start_time,
+                                      final_time=final_time)
+
+        request.session['expires'] = final_time
+        request.session.save()
 
     # Now display the questions
-    ctxdict = {'quests_list': quests,   # list of QActual items
+    ctxdict = {'quest_list': quests,   # list of QActual items
                'course': course_code_slug,
                'qset': question_set_slug}
     ctxdict.update(csrf(request))
@@ -222,6 +270,10 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
         # Make the inputs disabled when displaying solutions:
         html_question = re.sub(r'<input', r'<input disabled="true"',
+                                html_question)
+
+        if q_type in ('long'):
+            html_question = re.sub(r'<textarea', r'<textarea disabled="true"',
                                 html_question)
 
     #quests[0].qset.ans_time_final
@@ -305,6 +357,8 @@ def successful_submission(request, course_code_slug, question_set_slug):
         quest.save()
 
     token = request.session['token']
+    del request.session['expires']
+    request.session.save()  # consider using SESSION_SAVE_EVERY_REQUEST=True
     user = request.user.profile
     final = quests[0].qset.ans_time_final.strftime('%H:%M:%S on %d %h %Y')
     token_obj = Token.objects.filter(token_address=token).filter(user=user)
