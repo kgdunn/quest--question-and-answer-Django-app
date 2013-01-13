@@ -1,5 +1,5 @@
 from django.contrib import admin
-from models import QSet, QTemplate
+from models import QSet, QTemplate, QActual
 
 class QTemplateAdmin(admin.ModelAdmin):
     list_display = ('id', 'name',)
@@ -13,6 +13,15 @@ class QSetAdmin(admin.ModelAdmin):
     list_per_page = 1000
     ordering = ('id',)
 
+class QActualAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'as_displayed', 'given_answer',
+                    'is_submitted')
+    list_display_links = ('user', )
+    list_per_page = 1000
+    ordering = ('id',)
+
+
 admin.site.register(QTemplate, QTemplateAdmin)
 admin.site.register(QSet, QSetAdmin)
+admin.site.register(QActual, QActualAdmin)
 

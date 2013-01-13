@@ -241,7 +241,7 @@ class QActual(models.Model):
 
     # Tracking on the question
     # ---------------------------
-    # When was the question displayed in the browser [comma-separated list]
+    # TODO When was the question displayed in the browser [comma-separated list]
     times_displayed = models.ManyToManyField(DateTimes,
                                              related_name='displayed')
 
