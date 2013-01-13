@@ -28,7 +28,7 @@ urlpatterns += patterns('',
 
     url(r'^$', person.views.sign_in, name='quest-main-page'),
 
-    url(r'^tokens/(.*)/$', person.views.deactivate_token_sign_in),
+    url(r'^tokens/(.*)/$', person.views.deactivate_token_sign_in, name='quest-deactivate'),
 
     url(r'^question-sets/$', ask_question_set, name='quest-question-set'),
 

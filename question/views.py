@@ -42,7 +42,7 @@ class ParseError(Exception):
 
 
 def validate_user(request, course_code_slug, question_set_slug,
-                  question_id=None, admin=False):
+                  question_id=None, admin=False, expiry_check=True):
     """
     Some validation code that is common to functions below.
     """
@@ -78,12 +78,13 @@ def validate_user(request, course_code_slug, question_set_slug,
                     (request.path_info, request.session['token']))
         return redirect('quest-main-page')
 
-    if request.session['expires'] < datetime.datetime.now():
-        exp = request.session['expires'].strftime('%H:%M:%S on %d %h %Y')
-        ctxdict = {'time_expired': exp}
-        ctxdict.update(csrf(request))
-        return render_to_response('question/time-expired.html', ctxdict,
-                                  context_instance=RequestContext(request))
+    if expiry_check:
+        if request.session['expires'] < datetime.datetime.now():
+            exp = request.session['expires'].strftime('%H:%M:%S on %d %h %Y')
+            ctxdict = {'time_expired': exp}
+            ctxdict.update(csrf(request))
+            return render_to_response('question/time-expired.html', ctxdict,
+                                      context_instance=RequestContext(request))
 
     # Return all the questions for this user
     if admin:
@@ -139,15 +140,27 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     Display questions (and perhaps answers) to questions from a question set
     for a specific user
     """
-
-    quests = validate_user(request, course_code_slug, question_set_slug)
+    quests = validate_user(request, course_code_slug, question_set_slug,
+                           expiry_check=False)
     if  isinstance(quests, HttpResponse):
         return quests
     if isinstance(quests, tuple):
             quests, _ = quests
 
+    # Information to store in a cookie
+    if quests:
+        if quests[0].qset.max_duration == datetime.time(0, 0, 0):
+            request.session['expires'] = quests[0].qset.ans_time_final
+        else:
+            # Has the user started this QSet already? If not, create a DB
+            # entry
+            request.session['expires']
+        #quests[0].qset.
+        #expires = datetime.datetime.now() + datetime.timedelta(seconds=60*60)
+        #request.session['expires'] = expires
+
     # Now display the questions
-    ctxdict = {'quests_lists': quests,
+    ctxdict = {'quests_list': quests,   # list of QActual items
                'course': course_code_slug,
                'qset': question_set_slug}
     ctxdict.update(csrf(request))

@@ -36,9 +36,11 @@ class DateTimes(models.Model):
     """ Date and times something was accessed or created."""
     dt = models.DateTimeField()
 
+
 class IPAddresses(models.Model):
     """ IP addresses used to access material. """
     ip = models.GenericIPAddressField(blank=True)
+
 
 class BrowserID(models.Model):
     """ Collects information about the user so we can track and enhance
@@ -48,7 +50,6 @@ class BrowserID(models.Model):
     http_accept = models.CharField(max_length=100, blank=True)# HTTP_ACCEPT
     resolution = models.CommaSeparatedIntegerField(max_length=50, blank=True)
     timezone = models.SmallIntegerField(blank=True)
-
 
 
 class QTemplate(models.Model):
@@ -157,9 +158,10 @@ class QSet(models.Model):
     ans_time_start = models.DateTimeField(blank=True, null=True)
     ans_time_final = models.DateTimeField(blank=True, null=True)
 
-    # Maximum test duration. If 0, then allow the test to be completed anytime
-    # up till ``ans_time_final``.
-    max_duration = models.TimeField(default="00:00")
+    # Maximum test duration, e.g. 1 hour is "01:00:00". If 00:00, then allow the
+    # test to be completed anytime between ``ans_time_start`` and
+    # ``ans_time_final``.
+    max_duration = models.TimeField(default="00:00:00")
 
     is_active = models.BooleanField(default=True)
 

@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+
+{% block title %}Question {{item_id}} of {{quests_lists|length}}{% endblock %}
+
 {% block html_headers %}
 {# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
 <script language="javascript" type="text/javascript">
@@ -74,7 +77,6 @@
 		});
 	});
 {# http://stackoverflow.com/questions/1620602/javascript-jquery-make-an-ajax-request-when-a-user-is-typing-in-a-textarea    http://stackoverflow.com/questions/10018437/jquery-ajax-autosave-for-textareas #}
-
 </script>
 
 <script>

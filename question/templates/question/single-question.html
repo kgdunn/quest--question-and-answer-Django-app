@@ -1,5 +1,7 @@
 {% extends "question/questions.html" %}
 
+{% block title %}Question {{item_id}} of {{quests_lists|length}}{% endblock %}
+
 {% block content %}
     <h2>Question {{item_id}} of {{quests_lists|length}}</h2>
 

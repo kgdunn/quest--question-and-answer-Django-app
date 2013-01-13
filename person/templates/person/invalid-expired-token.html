@@ -1,11 +1,13 @@
 {% extends "base.html" %}
 
+{% block title %}Invalid sign in{% endblock %}
+
 {% block content %}
 <p>That web address has expired or is invalid. Sign-in emails are only valid
-for a single use. You may <a href="/">request a new web address</a>
-to sign in again.
+for a single use. You may <a href="{% url quest-main-page%}">request a new
+web address</a> to sign in again.
 
-<p>If you think there is some other problem, please contact Kevin at
-kevin.dunn@mcmaster.ca (please state the approximate date and time in
+<p>If you think there is some other problem, please contact {{ADMIN_NAME}} at
+{{ADMIN_EMAIL}} (please state the approximate date and time in
 your email).
 {% endblock %}

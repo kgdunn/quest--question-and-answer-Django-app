@@ -2,18 +2,24 @@ import models
 import logging
 import datetime
 
-from django.contrib.auth import login, authenticate
+from django.conf import settings
+from django.core.urlresolvers import reverse
 from django.core.context_processors import csrf
+from django.contrib.auth import login, authenticate
 from django.shortcuts import render_to_response, redirect, RequestContext
 
-from models import Token
-
 # Our apps:
+from models import Token
 from utils import generate_random_token, send_email
 
-# Move to "email_suffix.py" later on
-email_suffix = '@mcmaster.ca'  # and make it part of the sign-in-form.html template also
-token_prefix = 'http://quest.mcmaster.ca/tokens/'
+# http://quest.mcmaster.ca/tokens/
+# The Django ``reverse`` function is one of the hardest functions to get
+# working. Here's my attempt (not working):
+#    token_addr = reverse('quest-deactivate', 'quest', args=['random_token'])
+token_addr = 'tokens'
+token_prefix = 'http://%s/%s/' % (settings.QUEST['FULL_DOMAIN_NO_HTTP'],
+                                  token_addr)
+
 
 logger = logging.getLogger('quest')
 logger.debug('Initializing person::views.py')
@@ -58,7 +64,7 @@ def create_sign_in_email(user):
     return subject, message, user.email
 
 
-def sign_in(request):
+def sign_in(request):                             # URL: 'quest-main-page'
     """
     Verifies the user. If they are registered, then they are emailed a
     token to sign in.
@@ -96,12 +102,14 @@ def sign_in(request):
     # Non-POST access of the sign-in page: display the login page to the user
     else:
         logger.debug('Non-POST sign-in page request')
-        ctxdict = {}
+        ctxdict = {'email_placeholder': 'xxxxxxxx%s'  %
+                                         settings.QUEST['email_placeholder']}
         ctxdict.update(csrf(request))
         return render_to_response('person/sign-in-form.html', ctxdict,
                                   context_instance=RequestContext(request))
 
-def deactivate_token_sign_in(request, token):
+
+def deactivate_token_sign_in(request, token):  # URL: 'quest-deactivate'
     """ Deactivates the token and signs the user in for a limited period.
     """
     logger.debug('About to process received token: ' + str(token))
@@ -126,12 +134,6 @@ def deactivate_token_sign_in(request, token):
     login(request, user)
 
     # Now proceed to show available question sets to the user
-
-    # Information to store in a cookie
-    # TODO(KGD): don't hard code time
-    expires = datetime.datetime.now() + datetime.timedelta(seconds=60*60)
-
     response = redirect('quest-question-set')
     request.session['token'] = token
-    request.session['expires'] = expires
     return response

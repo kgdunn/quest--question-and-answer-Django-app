@@ -42,6 +42,7 @@ class UserProfile(models.Model):
     def __unicode__(self):
         return 'Profile for: ' + self.user.username
 
+
 class Token(models.Model):
     """
     Manages the unique sign-in tokens

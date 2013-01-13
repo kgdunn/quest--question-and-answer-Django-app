@@ -1,6 +1,8 @@
 {% extends "question/questions.html" %}
 {% load humanize %}
 
+{% block title %}All questions available{% endblock %}
+
 {% block content %}
     {% for qset in question_set_list %}
         <div id="quest-course-list-container">Course: {{qset.0.course.name}}</div>

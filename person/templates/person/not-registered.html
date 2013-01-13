@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 
+{% block title %}Not registered{% endblock %}
+
 {% block content %}
 <p>Sorry - you are not registered to use the Quest website.
 
 <p>If you think you should be registered, please contact the site administrator,
-Kevin Dunn, at kevin.dunn@mcmaster.ca, with your full name and student number.
+{{ADMIN_NAME}}, at {{ADMIN_EMAIL}}, with your full name and student number.
 {% endblock %}

@@ -461,8 +461,6 @@ def generate_questions(request, course_code_slug, question_set_slug):
     for user in UserProfile.objects.filter(courses=course):
 
         # TODO(KGD): handle the randomization of questions order here
-        # TODO(KGD): Remember to copy over the rendered HTML to the question
-        #            and the q_variables dict used in the template
 
         # ``qts`` = question templates
         qts = qset.qtemplates.all()

@@ -1,12 +1,13 @@
 {% extends "question/questions.html" %}
 
+{% block title %}quest_lists.0.qset.course.code{% endblock %}
+
 {% block content %}
     {% spaceless %}
     <ul>
-    {% for quest in quests_lists %}
-        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}" target="_blank">Question {{forloop.counter}} of
-                  {{quests_lists|length}}</a>
-                  [{{quest.qtemplate.max_grade}} points]</li>
+    {% for quest in quest_lists %}
+        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}" target="_blank">
+            Question {{forloop.counter}} of {{quest_lists|length}}</a> [{{quest.qtemplate.max_grade}} points]</li>
     {% endfor %}
     </ul>
     <div class="quest-printing-options">

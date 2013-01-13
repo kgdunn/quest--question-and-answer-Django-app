@@ -40,10 +40,11 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
     # the site. If it is "example.com", change it to actual name
     if app_label == 'sites':
         from django.contrib.sites.models import Site
+        from django.conf import settings
         site = Site.objects.get_current()
         if site.name == 'example.com':
-            site.name = 'Quest'
-            site.domain = 'quest.mcmaster.ca'
+            site.name = settings.QUEST['SITE_NAME']
+            site.domain = settings.QUEST['FULL_DOMAIN_NO_HTTP']
             site.save()
 
 
