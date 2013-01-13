@@ -1,7 +1,10 @@
 # Python and Django imports
 import re
 import csv
-import json
+try:
+    import simplejson as json
+except ImportError:
+    import json
 import random
 import logging
 
