@@ -136,7 +136,7 @@ def split_strip(string, delimiter=u','):
     Ported from Jonathan Buchanan's `django-tagging
     <http://django-tagging.googlecode.com/>`_
 
-    SPC: took this code from:
+    This code from:
         https://github.com/alex/django-taggit/blob/master/taggit/utils.py
     """
     if not string:

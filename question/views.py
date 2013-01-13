@@ -283,7 +283,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                                 html_question)
 
     #quests[0].qset.ans_time_final
-    ctxdict = {'quests_lists': quests,
+    ctxdict = {'quest_list': quests,
                'item_id': q_id,
                'course': course_code_slug,
                'qset': question_set_slug,
@@ -309,7 +309,7 @@ def submit_answers(request, course_code_slug, question_set_slug):
     if isinstance(quests, tuple):
         quests, _ = quests
 
-    ctxdict = {'quests_lists': quests,
+    ctxdict = {'quest_list': quests,
                 'course': course_code_slug,
                 'qset': question_set_slug,
                 'error_message': ''}

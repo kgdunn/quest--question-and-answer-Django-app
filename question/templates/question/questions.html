@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Question {{item_id}} of {{quests_lists|length}}{% endblock %}
+{% block title %}Question {{item_id}} of {{quest_list|length}}{% endblock %}
 
 {% block html_headers %}
 {# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
@@ -106,7 +106,7 @@ function countdown(element) {
                 var minute_text = '';
             }
             var second_text = seconds > 1 ? 'seconds' : 'second';
-            el.innerHTML = minute_text + ' ' + seconds + ' ' + second_text + ' remaining';
+            el.innerHTML = 'Time remaining: ' + minute_text + ' ' + seconds + ' ' + second_text;
             seconds--;
        }, 1000)
 };
@@ -114,38 +114,6 @@ function countdown(element) {
 
 {% endblock %}
 
-{% block header %}
-    <div id='countdown'></div>
-    <div id="quest-item-header">
-        <div id="quest-item-header-left">{% if item.prev_q %}
-            <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}</div>
-        <div id="quest-item-header-right">{% if item.next_q %}
-            <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}</div>
-    </div>
-{% endblock %}
+{% block headerleft %}{% endblock %}
 {% block content %}{% endblock %}
-{% block footer %}
-    {% if last_question %}
-        <div id="quest-item-header">
-            <div id="quest-item-header-left">{% if item.prev_q %}
-                <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}</div>
-            <div id="quest-item-header-right">
-				{% if not html_solution %}
-                <form action="{% url quest-submit-final-check course_code_slug=course, question_set_slug=qset%}" method="GET" enctype="multipart/form-data">{% csrf_token %}
-					<input type="submit" name="submit-questions" value="Submit answers and sign-out">
-				</form>
-				{% endif %}
-            </div>
-        </div>
-    {% else %}
-         <div id="quest-item-header-left">{% if item.prev_q %}
-          <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}</div>
-        <div id="quest-item-header-right">{% if item.next_q %}
-          <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}</div>
-    {% endif %}
-    <div id="ajaxDiv"></div>
-{% endblock %}
-
-
-
-
+{% block footer %}<div id="ajaxDiv"></div>{% endblock %}

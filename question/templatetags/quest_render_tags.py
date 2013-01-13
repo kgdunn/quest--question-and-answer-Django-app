@@ -50,7 +50,7 @@ safe_dict.pop('log')                 # "log10" is made to be to the base "10"
 @register.tag
 def quick_eval(parser, token):
     """
-    Set up up the "{% evaluate %}" tag for use in the templates.
+    Set up up the "{% quick_eval %}" tag for use in the templates.
     Code from Django's documentation
     """
     #try:

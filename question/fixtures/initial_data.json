@@ -39,7 +39,7 @@
       "q_type": "mcq",
       "t_question": "If a={{a}}, b={{b}}. What is a+b?",
       "t_solution": "This is just straightforward addition.",
-      "t_grading": "{\"tafw\": [\"lure\", \"4\"], \"ih3f\": [\"key\", \"{{a}}+{{b}}\"], \"Nsda\": [\"lure\", \"12\"], \"lO9s\": [\"lure\", \"1\"]}",
+      "t_grading": "{\"tafw\": [\"lure\", \"4\"], \"ih3f\": [\"key\", \"quick_eval a+b\"], \"Nsda\": [\"lure\", \"12\"], \"lO9s\": [\"lure\", \"1\"]}",
       "t_variables": "{\"a\": [[-5, 3, 2, \"int\", \"uniform\"], null], \"b\": [[2.3999999999999999, 2.7000000000000002, 0.10000000000000001, \"float\", \"normal\"], null]}",
       "tags": [
         1

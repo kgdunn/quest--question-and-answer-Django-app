@@ -261,9 +261,9 @@ The sun is ....
         Basic question template. Really the minimal possible example.
 
         NOTE: it would be much cleaner to have
-                    {{ a+b |evaluate }}
+                    {{ a+b |quick_eval }}
               instead of
-                    {% evaluate "a+b" %}
+                    {% quick_eval "a+b" %}
               unfortunately the former (a Django template filter) evaluates
               "a" and "b" directly and does not pass the context dictionary.
               The latter (a Django template tag) is far more powerful and

@@ -19,16 +19,37 @@
       <!-- (c) Quest website, Kevin Dunn, January 2013, http://learnche.mcmaster.ca -->
    </head>
    <body>
-      <div id="globalWrapper">
-         <div id="column-content">
-            <div id="content">
-               {% block header %}{% endblock %}
-               {% block content %}{% endblock %}
-               {% block footer %}{% endblock %}
-            </div> <!-- content -->
-         </div> <!-- column-content -->
-      </div> <!-- globalWrapper -->
+	  <div id="quest-document-container">
+		 <div id="quest-header">
+			<div class="quest-header-row" id="quest-top-menu">
+			   {% block header %}{% endblock %}
+			</div>
+			<div style="clear:both;"></div>
+			<div class="quest-header-left">{% block headerleft %}{% endblock %}</div>
+			<div class="quest-header-right">{% block headerright %}{% endblock %}</div>
+			<div class="quest-header-row" id="quest-site-title">
+			<h1>{{SITE_NAME}}</h1>
+			</div>
+		 </div> <!--#quest-header-->
+		 <div id='countdown'></div>
+		 <div style="clear:both;"></div>
+		 <div id="quest-contentwrap">
+			<div id="quest-content-main">
+			   <div id="quest-border">
+				  <div id="quest-section-body">
+					 {% block content %}{% endblock %}
+				  </div><!--#quest-section-body-->
+			   </div><!--#quest-border-->
+			</div><!--quest-content-main-->
+		 </div><!--#quest-contentwrap-->
 
-      <script type="text/javascript">if (window.runOnloadHook) runOnloadHook();</script>
+		 <div id="quest-footer">
+			{% block footer %}{% endblock %}
+			<div class="quest-footer-left"></div>
+			<div class="quest-footer-right"></div>
+
+		 </div> <!--#quest-footer-->
+	  </div> <!--quest-container-->
+	  <script type="text/javascript">if (window.runOnloadHook) runOnloadHook();</script>
    </body>
 </html>
