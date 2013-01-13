@@ -172,17 +172,13 @@ class QSet(models.Model):
         # Call the "real" save() method.
 
         slug = slugify(self.name)
-
         # happens if the slug is totally unicode characters
         if len(slug) == 0:
             raise ValidationError('QSet slug contains invalid characters')
 
-        if QSet.objects.filter(slug=slug):
-            return
-        else:
-            # Call the "real" save() method.
-            self.slug = slug
-            super(QSet, self).save(*args, **kwargs)
+        # Call the "real" save() method.
+        self.slug = slug
+        super(QSet, self).save(*args, **kwargs)
 
 
     def __unicode__(self):
