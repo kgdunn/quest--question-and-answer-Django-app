@@ -543,7 +543,7 @@ def render(qt):
         2 Pick random values for any variables in the question
         3 And/or evaluate any source code to obtain variables and solutions
         4 t_grading['answer'] string is run through rendering as well
-        5 Render any variables using Jinja templates.
+        5 Render any variables using our templates.
         6 Convert this markup to HTML.
 
     """
@@ -789,28 +789,28 @@ def load_class_list(request):
     course = Course.objects.filter(slug=course_slug)[0]
     email_suffix = '@mcmaster.ca'
 
-    with open(f_name, 'rb') as csvfile:
-        rdr = csv.reader(csvfile, delimiter=',')
-        for row in rdr:
-            last, first, email_id, student_id = row
-            username = '%s-%s' % (first.strip().lower(),
-                                  last.strip().lower())
-            try:
-                obj = User.objects.get(email=email_id+email_suffix)
-            except User.DoesNotExist:
-                obj = User(username=username,
-                           first_name=first.strip(),
-                           last_name=last.strip(),
-                           email=email_id+email_suffix)
-                obj.save()
+    #with open(f_name, 'rb') as csvfile:
+        #rdr = csv.reader(csvfile, delimiter=',')
+        #for row in rdr:
+            #last, first, email_id, student_id = row
+            #username = '%s-%s' % (first.strip().lower(),
+                                  #last.strip().lower())
+            #try:
+                #obj = User.objects.get(email=email_id+email_suffix)
+            #except User.DoesNotExist:
+                #obj = User(username=username,
+                           #first_name=first.strip(),
+                           #last_name=last.strip(),
+                           #email=email_id+email_suffix)
+                #obj.save()
 
-            profile = obj.get_profile()
-            profile.role = 'Student'
-            profile.student_number = student_id.strip()
-            profile.courses.add(course)
-            profile.save()
-            logger.info('Created user for %s with name: %s' % (course_slug,
-                                                                  username))
+            #profile = obj.get_profile()
+            #profile.role = 'Student'
+            #profile.student_number = student_id.strip()
+            #profile.courses.add(course)
+            #profile.save()
+            #logger.info('Created user for %s with name: %s' % (course_slug,
+                                                                  #username))
 
 
     return HttpResponse('All user imported')
