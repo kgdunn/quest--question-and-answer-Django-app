@@ -155,7 +155,10 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     if  isinstance(quests, HttpResponse):
         return quests
     if isinstance(quests, tuple):
-            quests, _ = quests
+        quests, _ = quests
+
+    min_remain = 0
+    sec_remain = 0
 
     # Information to store
     if quests:
@@ -213,10 +216,25 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
         request.session['expires'] = final_time
         request.session.save()
 
+        exist = Timing.objects.filter(user=request.user.profile, qset=qset)
+        if exist:
+            final_time = exist[0].final_time
+        else:
+            final_time = quest.qset.ans_time_final
+
+        now_time = datetime.datetime.now()
+        if final_time > now_time:        # The testing period is running
+            delta = final_time - now_time
+            min_remain = int(floor(delta.seconds/60.0))
+            sec_remain = int(delta.seconds - min_remain*60)
+
+
     # Now display the questions
     ctxdict = {'quest_list': quests,   # list of QActual items
                'course': course_code_slug,
-               'qset': question_set_slug}
+               'qset': question_set_slug,
+               'minutes_left': min_remain,
+               'seconds_left': sec_remain}
     ctxdict.update(csrf(request))
     return render_to_response('question/question-list.html', ctxdict,
                               context_instance=RequestContext(request))
