@@ -15,8 +15,7 @@ class QSetAdmin(admin.ModelAdmin):
     ordering = ('id',)
 
 class QActualAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'as_displayed', 'given_answer',
-                    'is_submitted')
+    list_display = ('id', 'user', 'given_answer', 'is_submitted')
     list_display_links = ('user', )
     list_per_page = 1000
     ordering = ('id',)
