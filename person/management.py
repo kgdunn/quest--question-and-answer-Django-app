@@ -28,7 +28,8 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
             user.role = 'Superuser'
             user.save()
 
-        auto_user = User.objects.create(username='Quest Grader',
+        auto_user = User.objects.create(username='quest-grader',
+                                        email='quest.grader@example.com',
                                         is_active=False)
         auser = user_class.objects.create(user=auto_user)
         auser.role = 'Grader'
