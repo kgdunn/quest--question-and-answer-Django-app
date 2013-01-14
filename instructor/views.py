@@ -421,6 +421,7 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
 
     f_name = '/home/kevindunn/quest/Visualization.week1.qset'
+    f_name = '/home/kevindunn/quest/week-1.qset'
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
     if isinstance(course, HttpResponse):
@@ -506,7 +507,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                                                 course.slug,
                                                                 user.slug))
 
-    if False:
+    if True:
         to_list = []
         message_list = []
 
@@ -787,7 +788,7 @@ def load_class_list(request):
     """
     # These fields require list drop-downs and validation. They are hard coded
     # for now
-    f_name = '/home/kevindunn/quest/class-list-test.csv'
+    f_name = '/home/kevindunn/quest/class-list.csv'
     course_slug = '4C3-6C3'
     course = Course.objects.filter(slug=course_slug)[0]
     email_suffix = '@mcmaster.ca'
