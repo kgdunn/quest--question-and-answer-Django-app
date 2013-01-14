@@ -280,20 +280,20 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
 
     qset = quests[0].qset
-    exist = Timing.objects.filter(user=request.user.profile, qset=qset)
-    if exist:
-        final_time = exist[0].final_time
-    else:
-        final_time = quest.qset.ans_time_final.replace(tzinfo=None)
     now_time = datetime.datetime.now()
+    exist = Timing.objects.filter(user=request.user.profile, qset=qset)
     min_remain = 0
     sec_remain = 0
+    if exist:
+        final_time = exist[0].final_time
+        if final_time > now_time:
+            delta = final_time - now_time
+            min_remain = int(floor(delta.seconds/60.0))
+            sec_remain = int(delta.seconds - min_remain*60)
+
+    final_time = quest.qset.ans_time_final.replace(tzinfo=None)
     if final_time > now_time:                  # The testing period is running
         html_solution = ''                      # don't show the solutions yet
-        delta = final_time - now_time
-        min_remain = int(floor(delta.seconds/60.0))
-        sec_remain = int(delta.seconds - min_remain*60)
-
     else:
         html_solution = quest.html_solution
 
