@@ -390,24 +390,36 @@ def create_question_template(text, user=None):
     sd = parse_question_text(text)
     contributor = user or UserProfile.objects.filter(role='Grader')[0]
 
-    qtemplate = QTemplate.objects.create(name=sd['name'], q_type=sd['type'],
-                             contributor=contributor,
-                             difficulty=sd['difficulty'],
-                             max_grade = sd['max_grade'],
-                             enable_feedback = sd['feedback'],
-                             t_question = sd['t_question'],
-                             t_solution = sd['t_solution'],
-                             t_grading = sd['t_grading'],
-                             t_variables = sd['t_variables']
-                            )
+    # Maybe we've imported this template before. Update the previous ones.
+    exist = QTemplate.objects.filter(name=sd['name'], contributor=contributor,
+                                     q_type=sd['type'])
+    if exist:
 
-    # TODO(KGD): skip adding duplicate questions that are by
-    #  * the same contributor
-    #  * the same .name
-    #  * the same .q_type
+        # DO NOT EVER OVERWRITE AN EXISTING QTEMPLATE.
+        # It will break the grading for questions that are in progress, but
+        # not graded yet.
 
-    for tag in get_and_create_tags(sd['tags']):
-        qtemplate.tags.add(tag)
+        logger.info(('Found an existing question with the same/similar '
+                     'template. Skipping it: [%s]') % sd['name'])
+
+        # Return only the first instance of the template (there should only
+        # be one anyway)
+        qtemplate = exist[0]
+
+    else:
+        qtemplate = QTemplate.objects.create(name=sd['name'],
+                            q_type=sd['type'],
+                            contributor=contributor,
+                            difficulty=sd['difficulty'],
+                            max_grade = sd['max_grade'],
+                            enable_feedback = sd['feedback'],
+                            t_question = sd['t_question'],
+                            t_solution = sd['t_solution'],
+                            t_grading = sd['t_grading'],
+                            t_variables = sd['t_variables'] )
+
+        for tag in get_and_create_tags(sd['tags']):
+            qtemplate.tags.add(tag)
 
     return qtemplate
 
@@ -440,7 +452,7 @@ def load_question_templates(request, course_code_slug, question_set_slug):
         qset.qtemplates.add(template)
         qset.save()
 
-        # add this template to qset
+
 
 
     return HttpResponse('All questions loaded')
@@ -451,7 +463,8 @@ def generate_questions(request, course_code_slug, question_set_slug):
     1. Generates the questions from the question sets, rendering templates
     2. Emails users in the class the link to sign in and start answering
     """
-    load_class_list(request)
+    fname = '/home/kevindunn/quest/class-list.csv'
+    users_added = load_class_list(fname, course_code_slug)
     load_question_templates(request, course_code_slug, question_set_slug)
 
     course = validate_user(request, course_code_slug, question_set_slug,
@@ -462,7 +475,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
         course, qset = course
 
     # Now render, for every user, their questions from the question set
-    for user in UserProfile.objects.filter(courses=course):
+    for user in users_added:
 
         # TODO(KGD): handle the randomization of questions order here
 
@@ -472,12 +485,15 @@ def generate_questions(request, course_code_slug, question_set_slug):
         question_list = []
         for idx, qt in enumerate(qts):
             qa = QActual.objects.filter(qtemplate=qt, qset=qset,
-                                        user=user, is_submitted=False)
+                                        user=user.get_profile(),
+                                        is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
                 html_q, html_a, var_dict = render(qt)
-                qa = QActual.objects.create(qtemplate=qt, qset=qset,
-                                            user=user, as_displayed=html_q,
+                qa = QActual.objects.create(qtemplate=qt,
+                                            qset=qset,
+                                            user=user.get_profile(),
+                                            as_displayed=html_q,
                                             html_solution=html_a,
                                             var_dict=var_dict)
                 question_list.append(qa)
@@ -497,22 +513,21 @@ def generate_questions(request, course_code_slug, question_set_slug):
                 next_q = question_list[idx+1]
                 prev_q = question_list[idx-1]
 
-
             question_list[idx].next_q = next_q
             question_list[idx].prev_q = prev_q
             question_list[idx].save()
 
 
         logger.info('Rendered question set %s (%s) for [%s]' % (qset.slug,
-                                                                course.slug,
-                                                                user.slug))
+                                                    course.slug,
+                                                    user.get_profile().slug))
 
     if True:
         to_list = []
         message_list = []
 
-        for user in UserProfile.objects.filter(courses=course):
-            subject, message, to_address = create_sign_in_email(user.user)
+        for user in users_added:
+            subject, message, to_address = create_sign_in_email(user)
             message_list.append(message)
             to_list.append(to_address)
 
@@ -778,8 +793,8 @@ def auto_grade():
     """
     pass
 
-@login_required
-def load_class_list(request):
+
+def load_class_list(f_name, course_slug):
     """
     Load a CSV file class list (exported from Avenue via copy/paste to textfile)
     BENACQUISTA, DAVID,benacqdj,0762086
@@ -788,38 +803,43 @@ def load_class_list(request):
     """
     # These fields require list drop-downs and validation. They are hard coded
     # for now
-    f_name = '/home/kevindunn/quest/class-list.csv'
-    course_slug = '4C3-6C3'
+    #     =
+
     course = Course.objects.filter(slug=course_slug)[0]
     email_suffix = '@mcmaster.ca'
 
     f_handle = open(f_name, 'rb')
-
     #with open(f_name, 'rb') as csvfile:
+    users_added = []
     rdr = csv.reader(f_handle, delimiter=',')
     for row in rdr:
         last, first, email_id, student_id = row
         username = '%s-%s' % (first.strip().lower(),
                               last.strip().lower())
+
+        if '@' not in email_id:
+            email = email_id+email_suffix
+        else:
+            email = email_id
         try:
-            obj = User.objects.get(email=email_id+email_suffix)
+            obj = User.objects.get(email=email)
         except User.DoesNotExist:
             obj = User(username=username,
                        first_name=first.strip(),
                        last_name=last.strip(),
                        email=email_id+email_suffix)
             obj.save()
+            logger.info('Created user for %s with name: %s' % (course_slug,
+                                                               username))
+            users_added.append(obj)
 
         profile = obj.get_profile()
         profile.role = 'Student'
         profile.student_number = student_id.strip()
         profile.courses.add(course)
         profile.save()
-        logger.info('Created user for %s with name: %s' % (course_slug,
-                                                              username))
 
-
-    return HttpResponse('All user imported')
+    return users_added
 
 
 #<form>

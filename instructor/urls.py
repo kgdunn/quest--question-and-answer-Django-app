@@ -7,7 +7,7 @@ urlpatterns = patterns('',
     # NOTE: all these URLs are preceded by "_admin/"
 
 
-    url(r'load-class-list/$', views.load_class_list, name='admin-load-class-list'),
+    #url(r'load-class-list/$', views.load_class_list, name='admin-load-class-list'),
 
 
     url(r'generate-questions/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', views.generate_questions, name='admin-generate-questions'),
