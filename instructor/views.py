@@ -512,7 +512,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
         message_list = []
 
         for user in UserProfile.objects.filter(courses=course):
-            subject, message, to_address = create_sign_in_email(user)
+            subject, message, to_address = create_sign_in_email(user.user)
             message_list.append(message)
             to_list.append(to_address)
 
