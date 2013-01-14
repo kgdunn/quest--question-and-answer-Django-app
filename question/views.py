@@ -261,7 +261,12 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                                             html_question[re_exp.end(2):])
 
 
-    final_time = quest.qset.ans_time_final.replace(tzinfo=None)
+    qset = quests[0].qset
+    exist = Timing.objects.filter(user=request.user.profile, qset=qset)
+    if exist:
+        final_time = exist[0].final_time
+    else:
+        final_time = quest.qset.ans_time_final.replace(tzinfo=None)
     now_time = datetime.datetime.now()
     min_remain = 0
     sec_remain = 0
