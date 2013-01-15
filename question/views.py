@@ -85,7 +85,11 @@ def validate_user(request, course_code_slug, question_set_slug,
         else:
             old_time = datetime.datetime(1901,1,1,0,0,0)
         expiry_time = request.session.get('expires', old_time)
-        if expiry_time  < datetime.datetime.now():
+	#logger.debug(str(request.session._session_key))
+        #logger.debug(str(t_objs))
+
+	if False:
+        #if expiry_time  < datetime.datetime.now():
             # Either the user doesn't have the expiry date set in their
             # session (i.e. they logged out and then refreshed the page)
             # or the expiry has past the current time
@@ -292,6 +296,10 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
             sec_remain = int(delta.seconds - min_remain*60)
 
     final_time = quest.qset.ans_time_final.replace(tzinfo=None)
+    #logger.debug(str(final_time))
+    #logger.debug(str(now_time))
+    #logger.debug(str(quest.html_solution))
+
     if final_time > now_time:                  # The testing period is running
         html_solution = ''                      # don't show the solutions yet
     else:
