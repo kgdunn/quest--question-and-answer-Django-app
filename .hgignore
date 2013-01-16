@@ -6,4 +6,4 @@ wingdbstub.py
 snippets.py
 logfile*
 mod.wsgi
-
+apache-logs
