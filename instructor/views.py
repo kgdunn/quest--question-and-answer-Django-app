@@ -525,13 +525,14 @@ def generate_questions(request, course_code_slug, question_set_slug):
     if True:
         to_list = []
         message_list = []
-
+        out = subject = ''
         for user in users_added:
             subject, message, to_address = create_sign_in_email(user)
             message_list.append(message)
             to_list.append(to_address)
 
-        out = send_email(to_list, subject, message_list)
+        if to_list:
+            out = send_email(to_list, subject, message_list)
         if out:
             logger.debug('Successfully sent multiple emails for sign in to %s'
                          % str(to_list))
@@ -582,11 +583,10 @@ def render(qt):
         # on the page.
         # The ``value`` defines what will be submitted to the server.
 
-        template = """<input type="%s" name="%s" value="%s">%s</><br>"""
+        template = '<label><input type="%s" name="%s" value="%s"/>%s</label>'
 
-        lst = []
         name = generate_random_token(8)
-
+        lst = []
         for (key, value) in get_type(qt.t_grading, keytype='key'):
             lst.append(template % (q_type, name, value, key))
 

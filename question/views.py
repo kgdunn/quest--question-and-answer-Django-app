@@ -85,10 +85,10 @@ def validate_user(request, course_code_slug, question_set_slug,
         else:
             old_time = datetime.datetime(1901,1,1,0,0,0)
         expiry_time = request.session.get('expires', old_time)
-	#logger.debug(str(request.session._session_key))
+        #logger.debug(str(request.session._session_key))
         #logger.debug(str(t_objs))
 
-	if False:
+        if False:
         #if expiry_time  < datetime.datetime.now():
             # Either the user doesn't have the expiry date set in their
             # session (i.e. they logged out and then refreshed the page)
@@ -118,8 +118,8 @@ def validate_user(request, course_code_slug, question_set_slug,
             return redirect('quest-main-page')
 
         if q_id < 1 or q_id > len(quests):
-            logger.info('Bad question integer request: [%s]; request path="%s"' %
-                        (question_id, request.path_info))
+            logger.info('Bad question integer request: [%s]; request path='
+                        '"%s"' % (question_id, request.path_info))
             return redirect('quest-ask-show-questions', course_code_slug,
                             question_set_slug)
 
@@ -224,7 +224,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
         if exist:
             final_time = exist[0].final_time
         else:
-            final_time = quest.qset.ans_time_final
+            final_time = quests[0].qset.ans_time_final
 
         now_time = datetime.datetime.now()
         if final_time > now_time:        # The testing period is running
@@ -313,7 +313,6 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
             html_question = re.sub(r'<textarea', r'<textarea disabled="true"',
                                 html_question)
 
-    #quests[0].qset.ans_time_final
     ctxdict = {'quest_list': quests,
                'item_id': q_id,
                'course': course_code_slug,

@@ -6,6 +6,7 @@ div: quest-notice (general notices: e.g. submission requested is invalid)
 
 */
 
+
 /* -------------------------------------------------------------------------*/
 /* Basic layout of the document: no styling - that is applied further down. */
 /* -------------------------------------------------------------------------*/
@@ -618,6 +619,13 @@ div .quest-itemdisp-mainlink{
 	float: left;
 }
 
+.quest-item-solution{
+  border: 1px solid #DDD;
+  overflow: auto;
+  padding: 5px;
+  background-color: #FFF; /*  #EEE  */
+}
+
 div#quest-itemdisp-container h1, h2, h3, h4, h5, h6{
     font-weight: normal;
     border-bottom: 1px solid #ccc;}
@@ -721,3 +729,19 @@ div#quest-itemdisp-container h6 { font-size: 100%; }
 /* ---------------------- */
 /* Miscellaneous elements */
 /* ---------------------- */
+
+label {
+    display: block;
+    padding-left: 23px;
+    text-indent: -23px;
+}
+input {
+    width: 23px;
+    height: 13px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    top: -4px;
+    *overflow: hidden;
+}
