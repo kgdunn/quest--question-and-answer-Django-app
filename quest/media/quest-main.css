@@ -172,6 +172,22 @@ input, select, textarea{
 	margin-bottom: 1em;
 }
 
+.quest-question-mcq label{
+    display: block;
+    padding-left: 23px;
+    text-indent: -23px;
+}
+.quest-question-mcq input{
+    width: 23px;
+    height: 13px;
+    padding: 0;
+    margin:0;
+    vertical-align: bottom;
+    position: relative;
+    top: -4px;
+    *overflow: hidden;
+}
+
 /* Styling for hyperlinks */
 div#quest-section-body a{
 	text-decoration: none;
@@ -730,18 +746,3 @@ div#quest-itemdisp-container h6 { font-size: 100%; }
 /* Miscellaneous elements */
 /* ---------------------- */
 
-label {
-    display: block;
-    padding-left: 23px;
-    text-indent: -23px;
-}
-input {
-    width: 23px;
-    height: 13px;
-    padding: 0;
-    margin:0;
-    vertical-align: bottom;
-    position: relative;
-    top: -4px;
-    *overflow: hidden;
-}

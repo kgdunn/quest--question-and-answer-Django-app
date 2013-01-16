@@ -583,10 +583,11 @@ def render(qt):
         # on the page.
         # The ``value`` defines what will be submitted to the server.
 
-        template = '<label><input type="%s" name="%s" value="%s"/>%s</label>'
+        template = ('<label><input type="%s" name="%s" '
+                    'value="%s"/>%s</label>')
 
-        name = generate_random_token(8)
         lst = []
+        name = generate_random_token(8)
         for (key, value) in get_type(qt.t_grading, keytype='key'):
             lst.append(template % (q_type, name, value, key))
 
@@ -597,13 +598,16 @@ def render(qt):
         for (final, value) in get_type(qt.t_grading, keytype='final'):
             lst.append(template % (q_type, name, value, final))
 
+        # Do not use <div> tags: content inside it is ignore by Markdown
+        lst.insert(0, '<span class="quest-question-mcq">')
+        lst.append('</span>')
         return lst
     #---------
     def call_markdown(text):
         """
         Calls the Markdown library http://daringfireball.net/projects/markdown
         """
-        # Special filter: to ensure "\\" in the current string actually comes
+        # Special filter: to ensure "\\" in the input string actually comes
         # out as intended, as "\\"
         text = text.replace('\\', r'\\\\')
 
