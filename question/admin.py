@@ -1,5 +1,5 @@
 from django.contrib import admin
-from models import QSet, QTemplate, QActual
+from models import QSet, QTemplate, QActual, Inclusion
 
 class QTemplateAdmin(admin.ModelAdmin):
     list_display = ('id', 'name',)
@@ -10,7 +10,13 @@ class QTemplateAdmin(admin.ModelAdmin):
 class QSetAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'min_total', 'max_total', 'course',
                     'ans_time_start', 'ans_time_final')
-    list_display_links = ('name', )
+    list_display_links = ('name', 'ans_time_start', 'ans_time_final' )
+    list_per_page = 1000
+    ordering = ('id',)
+
+class InclusionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'qset', 'qtemplate', 'weight', )
+    list_display_links = ('qset', 'qtemplate', 'weight' )
     list_per_page = 1000
     ordering = ('id',)
 
@@ -23,5 +29,6 @@ class QActualAdmin(admin.ModelAdmin):
 
 admin.site.register(QTemplate, QTemplateAdmin)
 admin.site.register(QSet, QSetAdmin)
+admin.site.register(Inclusion, InclusionAdmin)
 admin.site.register(QActual, QActualAdmin)
 

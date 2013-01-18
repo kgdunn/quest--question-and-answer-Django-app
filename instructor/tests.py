@@ -69,7 +69,6 @@ If a=1, b=2. What is a*b?
         self.assertEqual(q.q_type, 'mcq')
         self.assertEqual(q.name, 'If a=1, b=2. What is a*b?')
 
-
     def test_mcq_more_details(self):
         """
         More complete template
@@ -136,7 +135,6 @@ There is no solution for this question.
                                          'question. '))
         #self.assertEqual(q.t_question,
 
-
     def test_short_answer_question(self):
         """
         Template test for a short answer question
@@ -172,6 +170,31 @@ These would be bar plots.
         #self.assertEqual(keys, ['1', '2']) # <--- keys are strings
         #self.assertEqual(vals, [['bar', 'BAR'], ['box']])
 
+    def test_variables_with_choices(self):
+        some_text="""
+[[type]]
+multipart
+[[question]]
+Plot a time series plot using rows {{row_start}} to
+{% quick_eval "row_start+1000" %} for the `{{variable_name}}` variable.
+Save the plot as a JPEG or PNG file and upload it here {[:upload:]}
+[[variables]]
+row_start:[1, 2000, 100, int]
+variable_name: {'choices': ['Opt1', 'Opt2', 'Opt3']}
+[[solution]]
+Some solution text would go here.
+[[grading]]
+Some grading text would go here.
+        """
+        qtemplate = views.create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+
+        from views import render
+        html_q, html_a, var_dict = render(qt)
+        start = html_q.find('for the <code>')
+        self.assertTrue(html_q[start+14:start+18] in ('Opt1', 'Opt2', 'Opt3'))
+
+
 class RenderTests(TestCase):
     fixtures = ['initial_data',]
     def test_tf_basic(self):
@@ -195,12 +218,12 @@ The sun is hot.
         key, value = views.get_type(qt.t_grading, 'key').next()
         self.assertTrue(key.startswith('True'))
         start = html_q.find(value)
-        self.assertEqual(html_q[start+6:start+10], 'True')
+        self.assertEqual(html_q[start+7:start+11], 'True')
 
         key, value = views.get_type(qt.t_grading, 'lure').next()
         self.assertTrue(key.startswith('False'))
         start = html_q.find(value)
-        self.assertEqual(html_q[start+6:start+11], 'False')
+        self.assertEqual(html_q[start+7:start+12], 'False')
 
 
     def test_tf_final_incorrect(self):
@@ -226,7 +249,7 @@ The sun is ....
         key, value = views.get_type(qt.t_grading, 'final-lure').next()
         self.assertTrue(key.startswith('None of the above.'))
         start = html_q.find(value)
-        self.assertEqual(html_q[start+6:start+10], 'None')
+        self.assertEqual(html_q[start+7:start+11], 'None')
 
     def test_tf_final_correct(self):
             """
@@ -251,7 +274,7 @@ The sun is ....
             key, value = views.get_type(qt.t_grading, 'final-key').next()
             self.assertTrue(key.startswith('None of the above.'))
             start = html_q.find(value)
-            self.assertEqual(html_q[start+6:start+10], 'None')
+            self.assertEqual(html_q[start+7:start+11], 'None')
             self.assertEqual(qt.t_solution, ('The solution is: "None of the '
                                              'above."'))
 

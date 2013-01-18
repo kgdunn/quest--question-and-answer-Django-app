@@ -70,12 +70,6 @@
     "fields": {
       "ans_time_start": "2012-12-29T18:04:38",
       "name": "Week 1",
-      "forced_q": [
-        1
-      ],
-      "qtemplates": [
-        1, 2, 3
-      ],
       "slug": "week-1",
       "random_choice": true,
       "min_total": 20.0,
@@ -88,12 +82,38 @@
     }
   },
   {
+    "pk": 2,
+    "model": "question.qset",
+    "fields": {
+      "ans_time_start": "2013-02-15T18:04:38",
+      "name": "Week 2",
+      "slug": "week-2",
+      "random_choice": true,
+      "min_total": 20.0,
+      "ans_time_final": "2013-01-19T18:04:42",
+      "course": 1,
+      "max_total": 25.0,
+      "min_num": 3,
+      "max_num": 5,
+      "is_active": true
+    }
+  },
+  {
     "pk": 1,
     "model": "course.course",
     "fields": {
       "code": "4C3/6C3",
-      "name": "Statistics for Engineering, 4C3/6C3",
-      "slug": "4C3-6C3"
+      "name": "Statistics for Engineering, 4C3",
+      "slug": "statistics-for-engineering-4c3"
+    }
+  },
+  {
+    "pk": 2,
+    "model": "course.course",
+    "fields": {
+      "code": "4C3/6C3",
+      "name": "Statistics for Engineering, 6C3",
+      "slug": "statistics-for-engineering-6c3"
     }
   },
    {

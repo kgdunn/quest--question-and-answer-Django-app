@@ -9,6 +9,7 @@ import random
 import logging
 
 from django.shortcuts import HttpResponse
+from django.core.exceptions import ValidationError
 from django.template import Context, Template, Library
 from django.contrib.auth.decorators import login_required
 register = Library()
@@ -18,7 +19,7 @@ import markdown
 import numpy as np
 
 # Our imports
-from question.models import (QTemplate, QActual)
+from question.models import (QTemplate, QActual, Inclusion)
 from question.views import validate_user
 from person.models import (UserProfile, User)
 from person.views import create_sign_in_email
@@ -211,27 +212,25 @@ def parse_MCQ_TF_Multi(text, q_type):                             # helper
     return t_question, t_solution, t_grading
 
 
-def parse_SHORT_LONG(text, solution, grading, q_type):             # helper
+def parse_OTHER(text, solution, grading, q_type):             # helper
     """
     Short and long answer questions are parsed and processed here.
     The solution test and grading text are also checked and returned.
 
-    A short answer region is given by [{1}] these brackets.
-
-    While a long answer region should be provided for these brackets:
-    [{{2}}]
+    A short answer region is given by {[var_short]} these brackets.
+    A long answer region is indicated by {[[var_long]]} these brackets.
 
     Multiple instances of such brackets may appear within the question. The
     grading for the question must supply answers for the brackets, in the same
     order. For example, the [[grading]] portion of the template could be:
 
     [[grading]]
-    {1}bar
-    {1}BAR     <-- multiple answers can be given, including regular expressions
-    {2}grading text can be provided for long answer questions, but will never
-       be used
+    {var_short}: bar
+    {var_short}: BAR     <-- multiple answers can be given,
+    {var_long}: Grading text can be provided for long answer questions,
+    but will never be used
     """
-    if q_type == 'long':
+    if q_type in ('short', 'long', 'multipart'):
         # The space is the list join() is intentional; to ensure imported text
         # that spans lines gets correctly spaced; double spaces are handled
         # well in HTML anyway, so 2 spaces won't show up badly.
@@ -276,6 +275,7 @@ def parse_question_text(text):                                    # helper
     [[solution]]
     From multiplication rules we have that a*b = 2.
     """
+    t_question = t_solution = t_grading = var_dict = ''
     # Force it into a list of strings.
     if isinstance(text, basestring):
         text = text.split('\n')
@@ -299,20 +299,24 @@ def parse_question_text(text):                                    # helper
                                                                sd['type'])
         sd.pop('question')
 
-    if sd['type'] in ('short', 'long'):
+    if sd['type'] in ('short', 'long', 'multipart'):
         if not sd.has_key('solution'):
-            raise ParseError('[[solution]] section not given')
+            raise ParseError(('[[solution]] section not given for %s question'
+                              ' [%s...]') % (sd['type'],
+                                            str(sd['question'])[0:30]))
         if not sd.has_key('grading'):
-            raise ParseError('[[grading]] section not given')
+            raise ParseError(('[[grading]] section not given for %s question'
+                              ' [%s...]. Required to assist person grading') %\
+                            (sd['type'], str(sd['question'])[0:30]))
 
         # This function really doesn't do anything. Placeholder for now
         # Remmber that ``parse_question_text()`` is intended only to load
         # text templates into our internal representation. Text templates
         # match our internal representation closely anyway.
-        t_question, t_solution, t_grading = parse_SHORT_LONG(sd['question'],
-                                                             sd['solution'],
-                                                             sd['grading'],
-                                                             sd['type'])
+        t_question, t_solution, t_grading = parse_OTHER(sd['question'],
+                                                        sd['solution'],
+                                                        sd['grading'],
+                                                        sd['type'])
 
     sd['contributor'] = 1
     sd['tags'] = ''
@@ -354,8 +358,27 @@ def parse_question_text(text):                                    # helper
                 # Strip away the brackets and split the string apart at the
                 # commas; store as a list
                 val = val.strip()
-                val = [item.strip() for item in val.strip('[]').split(',')]
 
+                # Likely is a ``choices`` tag, as in
+                # variable:{'choices': ['Opt1', 'Opt2', 'Opt3']}
+
+                if val.startswith('{'):
+                    val = val.replace("'", '"')
+                    try:
+                        choice_dict = json.loads(val)
+                    except ValueError, e:
+                        raise BadVariableSpecification('Could not decode: %s'%
+                                                       line)
+
+                    if len(choice_dict) != 1 and \
+                                        choice_dict.keys()!=['choices']:
+                        raise BadVariableSpecification("""A "choices" \
+variable  must be specified as "{'choices': ['option a', 'option b', 'etc']}"\
+""")
+                    var_dict[key] = [choice_dict, None]
+                    continue
+
+                val = [item.strip() for item in val.strip('[]').split(',')]
                 if len(val) in (3, 4, 5):
                     for idx, entry in enumerate(val[0:3]):
                         val[idx] = np.float(entry)
@@ -366,7 +389,9 @@ def parse_question_text(text):                                    # helper
                 var_dict[key] = val
             else:
                 # TODO(KGD?): silently fail on variable lines that don't match
-                pass
+                if line.strip() != '':
+                    raise BadVariableSpecification('Could not decode: %s' %\
+                                                    line)
 
         sd.pop('variables')
 
@@ -423,6 +448,33 @@ def create_question_template(text, user=None):
 
     return qtemplate
 
+
+def choose_random_questions(qset, user):
+    """
+    Returns a list of QTemplates, ``qts``, where the questions in that list
+    were randomly selected according to rules defined by the ``qset`` object.
+
+    Also ensures the questions chosen haven't been previously seen by the user.
+    """
+    r_tries = 20
+
+    # Retrieve all previous questions attempted by the user and remove
+    # these from consideration.
+
+
+    # Add mandatory questions to the list
+    mandatory = qset.inclusion_set.all()
+
+    for attempt in range(r_tries):
+        qts = []
+        N_quest = np.random.random_integers(qset.min_num, qset.max_num)
+
+
+    # Finally, randomize (permute) the list order
+    np.random.shuffle(qts)
+    return qts
+
+
 @login_required                       # URL: ``admin-load-question-templates``
 def load_question_templates(request, course_code_slug, question_set_slug):
     """
@@ -432,8 +484,7 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     """
     # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
 
-    f_name = '/home/kevindunn/quest/Visualization.week1.qset'
-    f_name = '/home/kevindunn/quest/week-1.qset'
+    f_name = '/home/kevindunn/quest/week-2.qset'
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
     if isinstance(course, HttpResponse):
@@ -448,12 +499,12 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     for question in questions:
         template = create_question_template(question,
                                             user=request.user.get_profile())
-
-        qset.qtemplates.add(template)
-        qset.save()
-
-
-
+        included_item = Inclusion(qset=qset, qtemplate=template)
+        try:
+            included_item.save()
+        except ValidationError, e:
+            logger.error(('This template [%d] has already been included in '
+                         'this question set [%s]') % (template.id, qset.name))
 
     return HttpResponse('All questions loaded')
 
@@ -475,12 +526,13 @@ def generate_questions(request, course_code_slug, question_set_slug):
         course, qset = course
 
     # Now render, for every user, their questions from the question set
-    for user in users_added:
+    which_users = UserProfile.objects.filter(courses=course)
+    for user in [userP.user for userP in which_users]:
 
-        # TODO(KGD): handle the randomization of questions order here
-
-        # ``qts`` = question templates
-        qts = qset.qtemplates.all()
+        if qset.random_choice:
+            qts = choose_random_questions(qset, user)
+        else:
+            qts = qset.include.all()
 
         question_list = []
         for idx, qt in enumerate(qts):
@@ -710,8 +762,11 @@ def create_random_variables(var_dict):
     that if a non-None already exists there it will be simply overwritten.
     """
     for key, val in var_dict.iteritems():
-        if type(val[0]) in (list,):
+        if isinstance(val[0], list):
             spec = val[0]
+        elif isinstance(val[0], dict):
+            spec = val[0]
+            var_dict[key] = [spec, None]
         else:
             spec = val
             var_dict[key] = [spec, None]
@@ -725,6 +780,10 @@ def create_random_variables(var_dict):
             dist = 'uniform'
         elif len(spec) == 5:
             lo, hi, step, v_type, dist = spec
+        elif len(spec) == 1:
+            # It's a "choices" dict. Randomly choose one of the entries in it
+            var_dict[key][1] = random.choice(spec['choices'])
+            continue
         else:
             raise BadVariableSpecification(('Specification list should be 3 '
                                             'or more entries'))
@@ -801,14 +860,10 @@ def auto_grade():
 def load_class_list(f_name, course_slug):
     """
     Load a CSV file class list (exported from Avenue via copy/paste to textfile)
-    BENACQUISTA, DAVID,benacqdj,0762086
-    BESNEA, BIANCA,besneab,0942755
-    BOVELL, ANDREW,bovellad,0948647
+    LASTNAME, FIRSTNAME,email.prefix,0001231  <-- student number
     """
     # These fields require list drop-downs and validation. They are hard coded
     # for now
-    #     =
-
     course = Course.objects.filter(slug=course_slug)[0]
     email_suffix = '@mcmaster.ca'
 
@@ -845,36 +900,4 @@ def load_class_list(f_name, course_slug):
 
     return users_added
 
-
-#<form>
-  #<fieldset>
-   #<legend>Selecting elements</legend>
-   #<p>
-      #<label>Radio buttons</label>
-      #<input type = "radio"
-             #name = "radSize"
-             #id = "sizeSmall"
-             #value = "small"
-             #checked = "checked" />
-      #<label for = "sizeSmall">small</label>
-
-      #<input type = "radio"
-             #name = "radSize"
-             #id = "sizeMed"
-             #value = "medium" />
-      #<label for = "sizeMed">medium</label>
-
-      #<input type = "radio"
-             #name = "radSize"
-             #id = "sizeLarge"
-             #value = "large" />
-      #<label for = "sizeLarge">large</label>
-    #</p>
-  #</fieldset>
-#</form>
-
-#root = etree.Element("form")
-#fs = etree.SubElement(root, "fieldset")
-#legend
-#s = etree.tostring(root, pretty_print=True)
 

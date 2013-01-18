@@ -1,9 +1,12 @@
-# Built-in and Django imports
+from __future__ import division   # yes, this is required, to get sensible /
+
+# Built-in and Django importsa
 import logging
 from decimal import Context  # , Decimal
 
 from django import template
 register = template.Library()
+
 
 # 3rd party imports
 import numpy as np
@@ -11,7 +14,8 @@ logger = logging.getLogger('quest')
 
 # Idea from: http://lybniz2.sourceforge.net/safeeval.html
 from math import *
-safe_list = ['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh',
+safe_list = []
+safe_list.extend(['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh',
              'ceil', 'copysign', 'cos', 'cosh', 'degrees', 'e',
              'exp', 'fabs', 'factorial', 'floor', 'fmod', 'frexp', 'fsum',
              'hypot', 'isinf', 'isnan', 'ldexp',
@@ -19,7 +23,7 @@ safe_list = ['acos', 'acosh', 'asin', 'asinh', 'atan', 'atan2', 'atanh',
              'log10',# log to the base "10"
              'log1p',
              'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt',
-             'tan', 'tanh', 'trunc']
+             'tan', 'tanh', 'trunc'])
 safe_dict = dict([ (k, locals().get(k, None)) for k in safe_list ])
 safe_dict['all'] = all
 safe_dict['abs'] = abs
@@ -90,9 +94,16 @@ class EvaluateString(template.Node):
         # Use the most recent context to evaluate the template.
         context_dict = context.dicts[-1].copy()
 
-        # TODO(KGD): convert every entry to Numpy floats (even ints)
-        for key, val in context_dict.iteritems():
-            context_dict[key] = np.float(val)
+        # Convert every entry to Numpy floats (even ints), except for literal
+        # text (exceptional case?)
+        # DO NOT DO THIS, sometime we really do want ints in our evaluation.
+        # The only reason to convert to float is to avoid the unexpected
+        # Python operation of 9/2 = 4  instead of 4.5
+        #for key, val in context_dict.iteritems():
+            #try:
+                #context_dict[key] = np.float(val)
+            #except ValueError:
+                #context_dict[key] = val
 
         # TODO(KGD): http://lucumr.pocoo.org/2011/2/1/exec-in-python/
 

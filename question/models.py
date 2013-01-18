@@ -119,10 +119,11 @@ class QSet(models.Model):
     announcement = models.TextField(blank=True)
 
     # Should questions be randomly chosen from a set of questions?
-    # If False, then all questions in ``qtemplates`` will be asked.
+    # If False, then all questions in ``include`` will be asked.
+    #
     # If True, then the questions will be randomly selected using rules
-    #      in ``min_total``, ``max_total``, ``min_num`` and ``max_num`` to
-    #      guide the random selection
+    # based on ``min_total``, ``max_total``, ``min_num`` and ``max_num`` to
+    # guide the random selection
     random_choice = models.BooleanField(default=True,
                                         help_text = ('Randomly choose '
                                         'questions for the users'))
@@ -137,19 +138,22 @@ class QSet(models.Model):
     max_num = models.PositiveIntegerField(verbose_name=('Most number of '
                                                          'questions in set'))
 
+    min_difficulty = models.FloatField(verbose_name='Min average difficulty',
+              help_text = ('Minimum average difficulty across all questions'),
+              default=0.0, blank=True)
+
+    max_difficulty = models.FloatField(verbose_name='Max average difficulty',
+              help_text = ('Maximum average difficulty across all questions'),
+              default=0.0, blank=True)
+
     # Many-to-many? A QTemplate can be part of multiple QSet objects, and a
     #               QSet has multiple QTemplate objects.
-    # This lists which questions
-    qtemplates = models.ManyToManyField(QTemplate)
+    # This lists which questions are included, and their relative weight.
+    include = models.ManyToManyField(QTemplate, through="Inclusion")
 
     # Certain question templates might be required to always be present
     # Use the ``related_name`` because there are two M2M relationships here
-    forced_q = models.ManyToManyField(QTemplate, related_name='forced',
-                                      blank=True)
-
-    # Which questions are for bonus grades
-    bonus_q = models.ManyToManyField(QTemplate, related_name='bonus',
-                                     blank=True, null=True)
+    #weights_q = models.ManyToManyField(QTemplate,
 
     # Which course is this qset used in
     course = models.ForeignKey('course.Course')
@@ -165,6 +169,8 @@ class QSet(models.Model):
     # is no way to store as time-deltas
     max_duration = models.TimeField(default="00:00:00")
 
+    # Intended to be used later to allow super-users to preview tests before
+    # they are made available to regular student users
     is_active = models.BooleanField(default=True)
 
     def save(self, *args, **kwargs):
@@ -176,6 +182,18 @@ class QSet(models.Model):
         if len(slug) == 0:
             raise ValidationError('QSet slug contains invalid characters')
 
+        if self.min_num > self.max_num:
+            raise ValidationError(('Minimum number of questions must be '
+                                    'smaller or equal to maximum number.'))
+
+        if self.min_total > self.max_total:
+            raise ValidationError(('Minimum total must be '
+                                   'smaller or equal than the maximum total.'))
+
+        if self.min_difficulty > self.max_difficulty:
+            raise ValidationError(('Minimum difficulty must be smaller '
+                                   'or equal to the maximum difficulty.'))
+
         # Call the "real" save() method.
         self.slug = slug
         super(QSet, self).save(*args, **kwargs)
@@ -183,6 +201,51 @@ class QSet(models.Model):
 
     def __unicode__(self):
         return u'%s [%s]' % (self.name, self.course.name)
+
+
+class Inclusion(models.Model):
+    """
+    Captures relative inclusion weightings for questions in a QSet
+         0: never include it
+    1 or 2: about 25% of the questions will come from these weights
+    3 or 4: about 75% of the questions will come from these weights
+         5: these questions will always be included; once included the
+            remaining questions will be allocated as described above, i.e.
+            the 25% or 75% refer to the remaining space **after** the level 5
+            questions have been included.
+
+         7: these are bonus questions; they will always be added to the list,
+            and may cause the difficulty and number of questions to exceed
+            their respective constraints (but that's why they are bonus).
+
+    Note however, that if all level 5, 4, and 3 questions are used up, then
+    we will fill the quiz with level 1 and 2 questions, to get to the desired
+    number of grades and difficulty. So the 25/75 ratio won't always be obeyed,
+    but they are good guides for the case when there are excess questions
+    available.
+    """
+    qtemplate = models.ForeignKey(QTemplate)
+    qset = models.ForeignKey(QSet)
+    weight = models.PositiveSmallIntegerField(default=1, help_text=(' '
+        '0: never include; 2: 25% inclusion rate; 4: 75% inclusion;'
+        '5: definitely include; 7=bonus credit'))
+
+    def save(self, *args, **kwargs):
+        """ Override  model's saving function to do some checks """
+
+        previous = Inclusion.objects.filter(qset=self.qset).\
+                       filter(qtemplate=self.qtemplate)
+        if previous:
+            raise ValidationError(('This question template is already '
+                                    'included in this question set'))
+
+        super(Inclusion, self).save(*args, **kwargs)
+
+
+    def __unicode__(self):
+        return 'Question [id=%d] in QSet "%s"' % (self.qtemplate.id,
+                                                  self.qset)
+
 
 
 class QActual(models.Model):
