@@ -34,7 +34,7 @@ import wingdbstub
 from django.test import TestCase
 from question.models import QTemplate
 import views
-
+from views import render
 
 class SimpleTests(TestCase):
     fixtures = ['initial_data',]
@@ -190,7 +190,7 @@ Some grading text would go here.
         qt = QTemplate.objects.get(id=qtemplate.id)
 
         from views import render
-        html_q, html_a, var_dict = render(qt)
+        html_q, html_a, var_dict, img = render(qt)
         start = html_q.find('for the <code>')
         self.assertTrue(html_q[start+14:start+18] in ('Opt1', 'Opt2', 'Opt3'))
 
@@ -212,8 +212,7 @@ The sun is hot.
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        from views import render
-        html_q, html_a, var_dict = render(qt)
+        html_q, html_a, var_dict, img = render(qt)
 
         key, value = views.get_type(qt.t_grading, 'key').next()
         self.assertTrue(key.startswith('True'))
@@ -243,8 +242,7 @@ The sun is ....
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        from views import render
-        html_q, html_a, var_dict = render(qt)
+        html_q, html_a, var_dict, img = render(qt)
 
         key, value = views.get_type(qt.t_grading, 'final-lure').next()
         self.assertTrue(key.startswith('None of the above.'))
@@ -268,8 +266,7 @@ The sun is ....
             """
             qtemplate = views.create_question_template(some_text)
             qt = QTemplate.objects.get(id=qtemplate.id)
-            from views import render
-            html_q, html_a, var_dict = render(qt)
+            html_q, html_a, var_dict, img = render(qt)
 
             key, value = views.get_type(qt.t_grading, 'final-key').next()
             self.assertTrue(key.startswith('None of the above.'))
@@ -308,8 +305,7 @@ b: [5, 9, 1, int]
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        from views import render
-        html_q, html_a, var_dict = render(qt)
+        html_q, html_a, var_dict, img = render(qt)
         var_dict = json.loads(var_dict)
         true_answer = var_dict['a'][1] * var_dict['b'][1]
         self.assertEqual(html_a, '<p>The solution is: "%s"</p>' % true_answer)
@@ -350,3 +346,26 @@ The sun is ....
         with self.assertRaises(views.ParseError):
             views.create_question_template(some_text)
 
+    def test_image_location(self):
+        """
+        Tests that images are placed in the correct location
+        """
+
+        some_text = """
+[[type]]
+TF
+[[question]]
+The image here contains oscillations
+![Image alt text](image_file_name.jpg)
+--
+& False
+^ True
+"""
+        qtemplate = views.create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+
+        html_q, html_a, var_dict, img = render(qt)
+        self.assertEqual(img.keys(), ['image_file_name.jpg'])
+        val = img.values()[0]
+        idx = val.find('image_file_name.jpg')
+        self.assertEqual(val[idx-3:idx], '/0/') # this is the subdir stored in

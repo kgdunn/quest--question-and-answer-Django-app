@@ -7,7 +7,9 @@ except ImportError:
     import json
 import random
 import logging
+import hashlib
 
+from django.conf import settings
 from django.shortcuts import HttpResponse
 from django.core.exceptions import ValidationError
 from django.template import Context, Template, Library
@@ -541,13 +543,15 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                         is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
-                html_q, html_a, var_dict = render(qt)
+                html_q, html_a, var_dict, img_location = render(qt)
                 qa = QActual.objects.create(qtemplate=qt,
                                             qset=qset,
                                             user=user.get_profile(),
                                             as_displayed=html_q,
                                             html_solution=html_a,
                                             var_dict=var_dict)
+
+                # TODO(KGD): move the images to this location
                 question_list.append(qa)
 
         n_questions = len(qts)
@@ -655,9 +659,16 @@ def render(qt):
         lst.append('</span>')
         return lst
     #---------
-    def call_markdown(text):
+    def call_markdown(text, filenames):
         """
         Calls the Markdown library http://daringfireball.net/projects/markdown
+
+        The ``filenames`` dict contains a mapping from any found filenames to
+        their rendered location (relative to the server's MEDIA location).
+
+        The keys of this dict are the original filename and the value is the
+        new, correct location. However it is up to another function to move
+        the files into the correct place.
         """
         # Special filter: to ensure "\\" in the input string actually comes
         # out as intended, as "\\"
@@ -666,8 +677,26 @@ def render(qt):
         # Call Markdown to do the HTML formatting for us
         out = markdown.markdown(text)
 
+        # Post processing of ALL image fields (multiple might exist)
+        # <img alt="Image alt text" src="image_file_name.jpg" />
+        img = re.compile(r'<img(.*?)src="(.*?)"')
+        mod_out = ''
+        start = 0
+        for image in img.finditer(out):
+            mod_out += out[start:image.start()] + r'<img' + image.group(1)
+            hashm = hashlib.md5()
+            hashm.update(image.group(2))
+            root = settings.QUEST['MEDIA_LOCATION'] % hashm.hexdigest()[0]
+            filenames[image.group(2)] = root + image.group(2)
+            mod_out += 'src="%s"' % (settings.MEDIA_URL + \
+                                hashm.hexdigest()[0] + '/' + image.group(2))
+            start = image.end()
+
+        if mod_out:
+            out = mod_out + out[start:-1]
+
         # Undo the filtering in the HTML
-        return out.replace('\\\\', '\\')
+        return out.replace('\\\\', '\\'), filenames
     #---------
     def insert_evaluate_variables(text, var_dict):
         """
@@ -728,13 +757,14 @@ def render(qt):
 
 
     # 6. Then call Markdown
-    html_q = call_markdown(rndr_question)
-    html_a = call_markdown(rndr_solution)
+    filenames = {}
+    html_q, filenames = call_markdown(rndr_question, filenames)
+    html_a, filenames = call_markdown(rndr_solution, filenames)
 
     # 7. Dump the dictionary to a string for storage
     var_dict_str = json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
 
-    return html_q, html_a, var_dict_str
+    return html_q, html_a, var_dict_str, filenames
 
 
 def create_random_variables(var_dict):
