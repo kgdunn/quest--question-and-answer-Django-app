@@ -32,9 +32,17 @@ except ImportError:
 
 import wingdbstub
 from django.test import TestCase
-from question.models import QTemplate
+from question.models import QTemplate, QSet, QActual
+from person.models import User
+from course.models import Course
 import views
 from views import render
+
+# For all tests:
+course = Course.objects.all()[0]
+qset = QSet.objects.create(name="temporary", course=course)
+user = User.objects.all()[0]
+
 
 class SimpleTests(TestCase):
     fixtures = ['initial_data',]
@@ -48,7 +56,7 @@ class SimpleTests(TestCase):
 
 class ParseTests(TestCase):
     fixtures = ['initial_data',]
-    def test_mcq_basic(self):
+    def test_mcq_basic_parse(self):
         """
         Basic question template. Really the minimal possible example.
         """
@@ -132,7 +140,7 @@ There is no solution for this question.
         self.assertEqual(q.difficulty, 3)
         self.assertEqual(q.max_grade, 5)
         self.assertEqual(q.t_solution, ('There is no solution for this '
-                                         'question. '))
+                                         'question.'))
         #self.assertEqual(q.t_question,
 
     def test_short_answer_question(self):
@@ -142,33 +150,35 @@ There is no solution for this question.
         some_text = """
 [[type]]
 short
+[[question]]
+
+Plots with both category and value axes are known as {[ans1]} plots, while a
+plot with the 5-number summary of a univariate series are called {[2]} plots.
+[[grading]]
+ans1:bar
+ans1:BAR
+2:box
+[[solution]]
+Goes here
 [[attribs]]
 Contributor: Kevin Dunn
 Difficulty: 1
 Tags: data visualization
 Grade: 1
-[[question]]
-Plots with both category and value axes are known as [{1}] plots, while plots
-with thge 5-number summary of a univariate series are called [{2}] plots.
---
-[[grading]]
-{1}bar
-{1}BAR
-{2}box
---
-[[solution]]
-These would be bar plots.
 """
-        #qtemplate = views.create_question_template(some_text)
-        #q = QTemplate.objects.get(id=qtemplate.id)
-        #self.assertEqual(q.difficulty, 1)
-        #self.assertEqual(q.max_grade, 1)
-        #self.assertEqual(q.t_solution, u'These would be bar plots.')
-        #t_grading = json.loads(q.t_grading)
-        #vals = t_grading.values()
-        #keys = t_grading.keys()
-        #self.assertEqual(keys, ['1', '2']) # <--- keys are strings
-        #self.assertEqual(vals, [['bar', 'BAR'], ['box']])
+        qtemplate = views.create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+        self.assertEqual(qt.t_solution, u'Goes here')
+        t_grading = json.loads(qt.t_grading)
+        vals = t_grading.values()
+        keys = t_grading.keys()
+        self.assertEqual(keys, ['ans1', '2']) # <--- keys are strings
+        self.assertEqual(vals, [['bar', 'BAR'], ['box']])
+
+        qa = render(qt, qset, user)
+        self.assertEqual(qa.as_displayed[0:74], ('<p>Plots with both category '
+                            'and value axes are known as <input type="text"'))
+
 
     def test_variables_with_choices(self):
         some_text="""
@@ -189,10 +199,9 @@ Some grading text would go here.
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
 
-        from views import render
-        html_q, html_a, var_dict, img = render(qt)
-        start = html_q.find('for the <code>')
-        self.assertTrue(html_q[start+14:start+18] in ('Opt1', 'Opt2', 'Opt3'))
+        qa = render(qt, qset, user)
+        start = qa.as_displayed.find('for the <code>')
+        self.assertTrue(qa.as_displayed[start+14:start+18] in ('Opt1', 'Opt2', 'Opt3'))
 
 
 class RenderTests(TestCase):
@@ -212,17 +221,17 @@ The sun is hot.
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        html_q, html_a, var_dict, img = render(qt)
+        qa = render(qt, qset, user)
 
         key, value = views.get_type(qt.t_grading, 'key').next()
         self.assertTrue(key.startswith('True'))
-        start = html_q.find(value)
-        self.assertEqual(html_q[start+7:start+11], 'True')
+        start = qa.as_displayed.find(value)
+        self.assertEqual(qa.as_displayed[start+7:start+11], 'True')
 
         key, value = views.get_type(qt.t_grading, 'lure').next()
         self.assertTrue(key.startswith('False'))
-        start = html_q.find(value)
-        self.assertEqual(html_q[start+7:start+12], 'False')
+        start = qa.as_displayed.find(value)
+        self.assertEqual(qa.as_displayed[start+7:start+12], 'False')
 
 
     def test_tf_final_incorrect(self):
@@ -242,12 +251,12 @@ The sun is ....
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        html_q, html_a, var_dict, img = render(qt)
+        qa = render(qt, qset, user)
 
         key, value = views.get_type(qt.t_grading, 'final-lure').next()
         self.assertTrue(key.startswith('None of the above.'))
-        start = html_q.find(value)
-        self.assertEqual(html_q[start+7:start+11], 'None')
+        start = qa.as_displayed.find(value)
+        self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
 
     def test_tf_final_correct(self):
             """
@@ -266,12 +275,12 @@ The sun is ....
             """
             qtemplate = views.create_question_template(some_text)
             qt = QTemplate.objects.get(id=qtemplate.id)
-            html_q, html_a, var_dict, img = render(qt)
+            qa = render(qt, qset, user)
 
             key, value = views.get_type(qt.t_grading, 'final-key').next()
             self.assertTrue(key.startswith('None of the above.'))
-            start = html_q.find(value)
-            self.assertEqual(html_q[start+7:start+11], 'None')
+            start = qa.as_displayed.find(value)
+            self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
             self.assertEqual(qt.t_solution, ('The solution is: "None of the '
                                              'above."'))
 
@@ -305,10 +314,12 @@ b: [5, 9, 1, int]
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        html_q, html_a, var_dict, img = render(qt)
-        var_dict = json.loads(var_dict)
+        qa = render(qt, qset, user)
+        qa = QActual.objects.get(id=qa.id)
+        var_dict = json.loads(qa.var_dict)
         true_answer = var_dict['a'][1] * var_dict['b'][1]
-        self.assertEqual(html_a, '<p>The solution is: "%s"</p>' % true_answer)
+        self.assertEqual(qa.html_solution, '<p>The solution is: "%s"</p>' %\
+                         true_answer)
 
     def test_mcq_bad_specified(self):
         """
@@ -364,8 +375,6 @@ The image here contains oscillations
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
 
-        html_q, html_a, var_dict, img = render(qt)
-        self.assertEqual(img.keys(), ['image_file_name.jpg'])
-        val = img.values()[0]
-        idx = val.find('image_file_name.jpg')
-        self.assertEqual(val[idx-3:idx], '/0/') # this is the subdir stored in
+        qa = render(qt, qset, user)
+        idx = qa.as_displayed.find('image_file_name.jpg')
+        self.assertEqual(qa.as_displayed[idx-3:idx], '/0/') # this is the subdir stored in

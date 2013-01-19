@@ -9,7 +9,6 @@ QActual:   actual questions are derived from the QTemplate template. The
            placeholders are filled in with specific values. QActual questions
            are only used once, and they are unique to a user. There will
            be many of these in the database.
-
 QSet:      defines a set of QTemplate questions from which the system can
            choose to make a set of QActual questions. You might have 16
            possible questions, but only want users to be randomly given
@@ -129,14 +128,16 @@ class QSet(models.Model):
                                         'questions for the users'))
     min_total = models.FloatField(verbose_name='Total minimum grade',
                                   help_text = ('Minimum total grades allowed '
-                                               'in set'))
+                                               'in set'), default=0.0)
     max_total = models.FloatField(verbose_name='Total maximum grade',
                                   help_text = ('Maximum total grades allowed '
-                                               'in set'))
+                                               'in set'), default=0.0)
     min_num = models.PositiveIntegerField(verbose_name=('Fewest number of '
-                                                         'questions in set'))
+                                                         'questions in set'),
+                                          default=0)
     max_num = models.PositiveIntegerField(verbose_name=('Most number of '
-                                                         'questions in set'))
+                                                         'questions in set'),
+                                          default=0)
 
     min_difficulty = models.FloatField(verbose_name='Min average difficulty',
               help_text = ('Minimum average difficulty across all questions'),
@@ -247,7 +248,6 @@ class Inclusion(models.Model):
                                                   self.qset)
 
 
-
 class QActual(models.Model):
     """
     The actual question asked to the user. There are many many of these in
@@ -279,6 +279,11 @@ class QActual(models.Model):
     # * list of strings: ['tf', 'mcq', 'multi']    <- refers to QTemplate.question_type
     # * string: 'short', 'long', 'numeric'         <- string only
     # * dict: {'fib': '....'; 'multipart': '...'}  <- dict of strings
+
+    # A copy of the ``QTemplate.t_grading`` field, but customized for this
+    # user. Grading keys for the same question can varay from student to
+    # student, depending on their specific question values
+    grading_answer = models.TextField(blank=True)
 
     # The user's answer (may be intermediate still)
     user_comments = models.TextField(blank=True)
@@ -317,4 +322,7 @@ class QActual(models.Model):
                                  self.user.user.username)
 
 
-
+    def save(self, *args, **kwargs):
+        """ Override the model's saving function to do some changes """
+        self.var_dict = json.dumps(self.var_dict, sort_keys=True)
+        super(QActual, self).save(*args, **kwargs)

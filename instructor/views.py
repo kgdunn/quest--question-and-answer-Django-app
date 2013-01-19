@@ -8,6 +8,7 @@ except ImportError:
 import random
 import logging
 import hashlib
+from collections import defaultdict
 
 from django.conf import settings
 from django.shortcuts import HttpResponse
@@ -46,6 +47,8 @@ LURE_RE = re.compile(r'^\&(\s*)(.*)$')       # & lure answer
 KEY_RE = re.compile(r'^\^(\s*)(.*)$')        # ^ correct answer
 FINALLURE_RE = re.compile(r'^\%(\s*)(.*)$')  # % final MCQ option, but a lure
 FINALKEY_RE = re.compile(r'^\%\^(\s*)(.*)$')   # %^ final MCQ option, correct
+
+GRADE_SHORT_RE = re.compile(r'(?P<key>.*?):(?P<value>.*)')
 
 class ParseError(Exception):
     pass
@@ -236,10 +239,17 @@ def parse_OTHER(text, solution, grading, q_type):             # helper
         # The space is the list join() is intentional; to ensure imported text
         # that spans lines gets correctly spaced; double spaces are handled
         # well in HTML anyway, so 2 spaces won't show up badly.
-        # Strip off trailing and starting newlines.
-        t_question = u' \n'.join(text).strip('\n')
-        t_solution = u' \n'.join(solution).strip('\n')
-        t_grading = u' \n'.join(grading).strip('\n')
+        # Strip off trailing and starting newlines and blank spaces
+        t_question = u' \n'.join(text).strip('\n ')
+        t_solution = u' \n'.join(solution).strip('\n ')
+        t_grading = u' \n'.join(grading).strip('\n ')
+
+    if q_type == 'short':
+        t_grading_orig, t_grading = t_grading, defaultdict(list) # Love Python
+        for line in t_grading_orig.split('\n'):
+            if GRADE_SHORT_RE.match(line):
+                key, val = GRADE_SHORT_RE.match(line).groups()
+                t_grading[key].append(val.strip())
 
     return t_question, t_solution, t_grading
 
@@ -315,6 +325,7 @@ def parse_question_text(text):                                    # helper
         # Remmber that ``parse_question_text()`` is intended only to load
         # text templates into our internal representation. Text templates
         # match our internal representation closely anyway.
+        # We render the question and solution later.
         t_question, t_solution, t_grading = parse_OTHER(sd['question'],
                                                         sd['solution'],
                                                         sd['grading'],
@@ -426,7 +437,7 @@ def create_question_template(text, user=None):
         # It will break the grading for questions that are in progress, but
         # not graded yet.
 
-        logger.info(('Found an existing question with the same/similar '
+        logger.warn(('Found an existing question with the same/similar '
                      'template. Skipping it: [%s]') % sd['name'])
 
         # Return only the first instance of the template (there should only
@@ -543,15 +554,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                         is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
-                html_q, html_a, var_dict, img_location = render(qt)
-                qa = QActual.objects.create(qtemplate=qt,
-                                            qset=qset,
-                                            user=user.get_profile(),
-                                            as_displayed=html_q,
-                                            html_solution=html_a,
-                                            var_dict=var_dict)
-
-                # TODO(KGD): move the images to this location
+                qa = render(qt)
                 question_list.append(qa)
 
         n_questions = len(qts)
@@ -599,13 +602,14 @@ def generate_questions(request, course_code_slug, question_set_slug):
     return HttpResponse('All questions generated for all users')
 
 
-def render(qt):
+def render(qt, qset, user):
     """
     Renders templates to HTML.
     * Handles text
     * MathJax math
     * Pictures/images
     * Calls external code before rendering
+    * Create a QActual object, which is returned
 
     To maintain integrity, rendering from ``QTemplate`` to a ``QActual`` is
     only and ever done ONCE (at rendering time). Later, when the question is
@@ -621,7 +625,7 @@ def render(qt):
         4 t_grading['answer'] string is run through rendering as well
         5 Render any variables using our templates.
         6 Convert this markup to HTML.
-
+        7 Create QAactual object and return that
     """
     #---------
     def render_mcq_question(qt):
@@ -658,6 +662,30 @@ def render(qt):
         lst.insert(0, '<span class="quest-question-mcq">')
         lst.append('</span>')
         return lst
+    #---------
+    def render_short_question(qt):
+        """Renders short-answer questions. More than one short answer box may
+        be present.
+        """
+        ans_str = '<input type="text" name="%s"></input>'
+        out = ''
+        token_dict = {}
+        token = re.compile(r'\{\[(.*?)\]\}')
+        if token.findall(qt.t_question):
+
+            start = 0
+            for item in token.finditer(qt.t_question):
+                out += qt.t_question[start:item.start()]
+                key = item.groups()[0]
+                val = generate_random_token(8)
+                token_dict[val] = qt.t_grading.pop(key)  # transfer it over
+                out += ans_str % val
+                start = item.end()
+
+            if out:
+                out += qt.t_question[start:-1]
+
+        return out, token_dict
     #---------
     def call_markdown(text, filenames):
         """
@@ -724,16 +752,25 @@ def render(qt):
         qt.t_variables = json.loads(qt.t_variables)
 
     rndr_question = []
-    rndr_question.append(qt.t_question)
-    rndr_question.append('\n')
     if qt.q_type in ('mcq', 'tf', 'multi'):
+        rndr_question.append(qt.t_question)
+        rndr_question.append('\n')
         rndr_question.extend(render_mcq_question(qt))
-    elif qt.q_type in ('long',):
+    elif qt.q_type == 'long':
+        rndr_question.append(qt.t_question)
+        rndr_question.append('\n')
         ans_str = ('<textarea name="%s" cols="100" rows="10" '
-                   'autofocus="true", required="true" placeholder="%s">'
+                   'autofocus="true", placeholder="%s">'
                    '</textarea>') % (generate_random_token(8),
                                      'Enter your answer here ...')
         rndr_question.append(ans_str)
+    elif qt.q_type == 'short':
+        out, token_dict = render_short_question(qt)
+        rndr_question.append(out)
+    elif qt.q_type == 'multipart':
+        rndr_question.append(qt.t_question)
+        rndr_question.append('\n')
+
 
     # 2. Random variables, if required.
     var_dict = {}
@@ -742,6 +779,7 @@ def render(qt):
 
     # 3. Evaluate source code
     # TODO(KGD)
+    pass
 
     # 4. Evalute the solution string
     rndr_solution = qt.t_solution
@@ -764,7 +802,21 @@ def render(qt):
     # 7. Dump the dictionary to a string for storage
     var_dict_str = json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
 
-    return html_q, html_a, var_dict_str, filenames
+
+    # TODO(KGD): move the images in ``filenames``
+
+    qa = QActual.objects.create(qtemplate=qt,
+                                qset=qset,
+                                user=user.get_profile(),
+                                as_displayed=html_q,
+                                html_solution=html_a,
+                                var_dict=var_dict)
+
+    return qa
+
+
+
+
 
 
 def create_random_variables(var_dict):
