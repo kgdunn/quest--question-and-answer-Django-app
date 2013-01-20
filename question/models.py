@@ -31,26 +31,6 @@ from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 from django.core.exceptions import ValidationError
 
-class DateTimes(models.Model):
-    """ Date and times something was accessed or created."""
-    dt = models.DateTimeField()
-
-
-class IPAddresses(models.Model):
-    """ IP addresses used to access material. """
-    ip = models.GenericIPAddressField(blank=True)
-
-
-class BrowserID(models.Model):
-    """ Collects information about the user so we can track and enhance
-    the experience in the future"""
-    # https://panopticlick.eff.org/resources/fetch_whorls.js
-    user_agent = models.CharField(max_length=200, blank=True) # HTTP_USER_AGENT
-    http_accept = models.CharField(max_length=100, blank=True)# HTTP_ACCEPT
-    resolution = models.CommaSeparatedIntegerField(max_length=50, blank=True)
-    timezone = models.SmallIntegerField(blank=True)
-
-
 class QTemplate(models.Model):
     """
     The template for a question.
@@ -300,20 +280,6 @@ class QActual(models.Model):
                                related_name='next_question')
     prev_q = models.ForeignKey('self', blank=True, null=True,
                                related_name='prev_question')
-
-    # Tracking on the question
-    # ---------------------------
-    # TODO When was the question displayed in the browser [comma-separated list]
-    times_displayed = models.ManyToManyField(DateTimes,
-                                             related_name='displayed')
-
-    # When was the question answered by the users [comma-separated list]
-    times_answered = models.ManyToManyField(DateTimes,
-                                            related_name='answered')
-
-    # Browser ID
-    browsers = models.ManyToManyField(BrowserID)
-
 
     def __unicode__(self):
         return u'%s [for %s]' % (self.qtemplate.name,
