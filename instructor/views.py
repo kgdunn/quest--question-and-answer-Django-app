@@ -107,7 +107,7 @@ def parse_MCQ_TF_Multi(text, q_type):                             # helper
         instructions.append(text[0].strip())
         text.pop(0)
     text.pop(0)
-    t_question = ''.join(instructions)
+    t_question = '\n'.join(instructions)
 
     # Handles the case of the """--\n--\n""" where we specify the solution in
     # terms of a function.
@@ -316,6 +316,9 @@ def parse_question_text(text):                                    # helper
     if sd['type'] in ('tf', 'mcq', 'multi'):
         t_question, t_solution, t_grading = parse_MCQ_TF_Multi(sd['question'],
                                                                sd['type'])
+        if sd.has_key('solution'):
+            t_solution += '\n\n' + '\n'.join(sd['solution'])
+
         sd.pop('question')
 
     if sd['type'] in ('short', 'long', 'multipart'):
