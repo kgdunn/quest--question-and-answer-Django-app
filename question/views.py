@@ -58,6 +58,11 @@ def validate_user(request, course_code_slug, question_set_slug,
         logger.info('Bad question set request: [%s]; request path="%s"' %
                     (question_set_slug, request.path_info))
         return redirect('quest-main-page')
+    else:
+        if not qset[0].is_active:
+            logger.warn('Attempt by user "%s" to access in-active QSet [%s]' %
+                        (user, question_set_slug))
+            return redirect('quest-main-page')
 
     token = request.session['token']
     token_obj = Token.objects.filter(token_address=token).filter(user=user)
@@ -165,72 +170,75 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     sec_remain = 0
 
     # Information to store
-    if quests:
-        qset = quests[0].qset
-        # Has the user started this QSet already? If not, create a DB entry
-        # NOTE: there can only be one DB entry per user per Qset
-        exist = Timing.objects.filter(user=request.user.profile, qset=qset)
-        start_time = datetime.datetime.now()
-        if exist:
-            final_time = exist[0].final_time
-        else:
-            done_timing = False
+    if not quests:
+        raise NotImplementedError(('Should not be able to click link if the '
+                                   'questions are not avaialble yet.'))
 
-            # Test has not started yet
-            if qset.ans_time_start.replace(tzinfo=None) \
-                                                    > datetime.datetime.now():
+    qset = quests[0].qset
+    # Has the user started this QSet already? If not, create a DB entry
+    # NOTE: there can only be one DB entry per user per Qset
+    exist = Timing.objects.filter(user=request.user.profile, qset=qset)
+    start_time = datetime.datetime.now()
+    if exist:
+        final_time = exist[0].final_time
+    else:
+        done_timing = False
 
-                ctxdict = {'time_to_start': qset.ans_time_start}
-                ctxdict.update(csrf(request))
-                return render_to_response('question/not-started-yet.html',
-                            ctxdict, context_instance=RequestContext(request))
+        # Test has not started yet
+        if qset.ans_time_start.replace(tzinfo=None) \
+                                                > datetime.datetime.now():
 
-            # Test has finished: give the user 60 mins to review the solutions
-            # after that they need to sign in again.
-            if qset.ans_time_final.replace(tzinfo=None) \
-                                                   <= datetime.datetime.now():
-                final_time = datetime.datetime.now() + \
-                                       datetime.timedelta(seconds=60*60)
-                done_timing = True
+            ctxdict = {'time_to_start': qset.ans_time_start}
+            ctxdict.update(csrf(request))
+            return render_to_response('question/not-started-yet.html',
+                        ctxdict, context_instance=RequestContext(request))
 
-            if not done_timing:
-                # User is signing in during the test time frame and they have
-                # not signed in before. How much time remaining = min(test
-                # duration, test cut off-time)
-                final = qset.max_duration
-                right_now = datetime.datetime.now()
-                indend_finish = right_now + \
-                                datetime.timedelta(hours=final.hour) + \
-                                datetime.timedelta(minutes=final.minute) + \
-                                datetime.timedelta(seconds=final.second)
+        # Test has finished: give the user 60 mins to review the solutions
+        # after that they need to sign in again.
+        if qset.ans_time_final.replace(tzinfo=None) \
+                                               <= datetime.datetime.now():
+            final_time = datetime.datetime.now() + \
+                                   datetime.timedelta(seconds=60*60)
+            done_timing = True
 
-                if qset.max_duration == datetime.time(0, 0, 0):
-                    final_time = quests[0].qset.ans_time_final
-                else:
-                    final_time = min(indend_finish,
-                        quests[0].qset.ans_time_final)
+        if not done_timing:
+            # User is signing in during the test time frame and they have
+            # not signed in before. How much time remaining = min(test
+            # duration, test cut off-time)
+            final = qset.max_duration
+            right_now = datetime.datetime.now()
+            indend_finish = right_now + \
+                            datetime.timedelta(hours=final.hour) + \
+                            datetime.timedelta(minutes=final.minute) + \
+                            datetime.timedelta(seconds=final.second)
 
-                token = request.session['token']
-                token_obj = Token.objects.filter(token_address=token)
-                Timing.objects.create(user=request.user.profile, qset=qset,
-                                      start_time=start_time,
-                                      final_time=final_time,
-                                      token=token_obj[0])
+            if qset.max_duration == datetime.time(0, 0, 0):
+                final_time = quests[0].qset.ans_time_final
+            else:
+                final_time = min(indend_finish,
+                    quests[0].qset.ans_time_final)
 
-        request.session['expires'] = final_time
-        request.session.save()
+            token = request.session['token']
+            token_obj = Token.objects.filter(token_address=token)
+            Timing.objects.create(user=request.user.profile, qset=qset,
+                                  start_time=start_time,
+                                  final_time=final_time,
+                                  token=token_obj[0])
 
-        exist = Timing.objects.filter(user=request.user.profile, qset=qset)
-        if exist:
-            final_time = exist[0].final_time
-        else:
-            final_time = quests[0].qset.ans_time_final
+    request.session['expires'] = final_time
+    request.session.save()
 
-        now_time = datetime.datetime.now()
-        if final_time > now_time:        # The testing period is running
-            delta = final_time - now_time
-            min_remain = int(floor(delta.seconds/60.0))
-            sec_remain = int(delta.seconds - min_remain*60)
+    exist = Timing.objects.filter(user=request.user.profile, qset=qset)
+    if exist:
+        final_time = exist[0].final_time
+    else:
+        final_time = quests[0].qset.ans_time_final
+
+    now_time = datetime.datetime.now()
+    if final_time > now_time:        # The testing period is running
+        delta = final_time - now_time
+        min_remain = int(floor(delta.seconds/60.0))
+        sec_remain = int(delta.seconds - min_remain*60)
 
 
     # Now display the questions
@@ -318,7 +326,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                'course': course_code_slug,
                'qset': question_set_slug,
                'item': quest,
-               'timeout_time': 1000,       # in the HTML template, XHR timeout
+               'timeout_time': 500,       # in the HTML template, XHR timeout
                'minutes_left': min_remain,
                'seconds_left': sec_remain,
                'html_question': html_question,
