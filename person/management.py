@@ -28,6 +28,16 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
             user.role = 'Superuser'
             user.save()
 
+        from django.core import mail
+        if len(users)==0 and hasattr(mail, 'outbox'):
+            # We are in testing mode. Create a superuser for testing purposes.
+            user = User.objects.create(username='__TESTING_SU__',
+                                       is_superuser=True)
+            user_prof = user_class.objects.create(user=user)
+            user_prof.role = 'Superuser'
+            user_prof.save()
+
+
         auto_user = User.objects.create(username='quest-grader',
                                         email='quest.grader@example.com',
                                         is_active=False)

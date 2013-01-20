@@ -477,14 +477,17 @@ def choose_random_questions(qset, user):
 
     # Add mandatory questions to the list
     mandatory = qset.inclusion_set.all()
+    all_id = range(len(mandatory))
 
-    for attempt in range(r_tries):
-        qts = []
-        N_quest = np.random.random_integers(qset.min_num, qset.max_num)
+    #for attempt in range(r_tries):
+
+    N_quest = np.random.random_integers(qset.min_num, qset.max_num)
+    random.shuffle(all_id)
+    qts = [mandatory[idx] for idx in all_id[0:N_quest]]
 
 
     # Finally, randomize (permute) the list order
-    np.random.shuffle(qts)
+    #np.random.shuffle(qts)
     return qts
 
 
@@ -549,12 +552,13 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
         question_list = []
         for idx, qt in enumerate(qts):
-            qa = QActual.objects.filter(qtemplate=qt, qset=qset,
+            qa = QActual.objects.filter(qtemplate=qt.qtemplate,
+                                        qset=qset,
                                         user=user.get_profile(),
                                         is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
-                qa = render(qt)
+                qa = render(qt.qtemplate, qset, user)
                 question_list.append(qa)
 
         n_questions = len(qts)
@@ -787,8 +791,11 @@ def render(qt, qset, user):
     # 5. Now call Django's template engine to render any templates, only if
     #    there are variables to be rendered
     if var_dict:
-        rndr_question = insert_evaluate_variables(rndr_question, var_dict)
-        rndr_solution = insert_evaluate_variables(rndr_solution, var_dict)
+        try:
+            rndr_question = insert_evaluate_variables(rndr_question, var_dict)
+            rndr_solution = insert_evaluate_variables(rndr_solution, var_dict)
+        except Exception, e:
+            raise(e)
 
     else:
         rndr_question = '\n'.join(rndr_question)
@@ -813,10 +820,6 @@ def render(qt, qset, user):
                                 var_dict=var_dict)
 
     return qa
-
-
-
-
 
 
 def create_random_variables(var_dict):

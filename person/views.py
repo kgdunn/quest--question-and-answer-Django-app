@@ -15,7 +15,7 @@ from utils import generate_random_token, send_email
 # http://quest.mcmaster.ca/tokens/
 # The Django ``reverse`` function is one of the hardest functions to get
 # working. Here's my attempt (not working):
-#    token_addr = reverse('quest-deactivate', 'quest', args=['random_token'])
+#    token_addr = reverse('quest-token-sign-in', 'quest', args=['random_token'])
 token_addr = 'tokens'
 token_prefix = 'http://%s/%s/' % (settings.QUEST['FULL_DOMAIN_NO_HTTP'],
                                   token_addr)
@@ -108,7 +108,7 @@ def sign_in(request):                             # URL: 'quest-main-page'
                                   context_instance=RequestContext(request))
 
 
-def deactivate_token_sign_in(request, token):  # URL: 'quest-deactivate'
+def token_sign_in(request, token):  # URL: 'quest-token-sign-in'
     """ Signs the user in for a limited period.
     TODO(KGD): function name here is misleading: remove the "deactivate" part
     """

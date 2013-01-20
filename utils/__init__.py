@@ -181,7 +181,7 @@ def send_email(to_addresses, subject, messages):
         if len(to_addresses) == len(messages):
             data = []
             for idx, message in enumerate(messages):
-                if settings.DEBUG:
+                if settings.DEBUG or settings.TESTING:
                     data.append((subject, message, from_address,
                                                      ['test@example.com',]))
                 else:
@@ -191,7 +191,7 @@ def send_email(to_addresses, subject, messages):
         use_mass_email = True
     else:
         use_mass_email = False
-        if settings.DEBUG:
+        if settings.DEBUG or settings.TESTING:
             # Overwrite sender address in debug mode
             to_addresses = ['test@example.com',]
 

@@ -40,7 +40,6 @@ from views import render
 
 # For all tests:
 course = Course.objects.all()[0]
-qset = QSet.objects.create(name="temporary", course=course)
 user = User.objects.all()[0]
 
 
@@ -174,6 +173,7 @@ Grade: 1
         keys = t_grading.keys()
         self.assertEqual(keys, ['ans1', '2']) # <--- keys are strings
         self.assertEqual(vals, [['bar', 'BAR'], ['box']])
+        qset = QSet.objects.create(name="temporary", course=course)
 
         qa = render(qt, qset, user)
         self.assertEqual(qa.as_displayed[0:74], ('<p>Plots with both category '
@@ -198,6 +198,7 @@ Some grading text would go here.
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
+        qset = QSet.objects.create(name="temporary", course=course)
 
         qa = render(qt, qset, user)
         start = qa.as_displayed.find('for the <code>')
@@ -221,6 +222,8 @@ The sun is hot.
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
+        qset = QSet.objects.create(name="temporary", course=course)
+
         qa = render(qt, qset, user)
 
         key, value = views.get_type(qt.t_grading, 'key').next()
@@ -251,6 +254,8 @@ The sun is ....
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
+        qset = QSet.objects.create(name="temporary", course=course)
+
         qa = render(qt, qset, user)
 
         key, value = views.get_type(qt.t_grading, 'final-lure').next()
@@ -259,10 +264,10 @@ The sun is ....
         self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
 
     def test_tf_final_correct(self):
-            """
-            Lures and an CORRECT option that must be shown as the last option.
-            """
-            some_text = """
+        """
+        Lures and an CORRECT option that must be shown as the last option.
+        """
+        some_text = """
 [[type]]
 TF
 [[question]]
@@ -272,17 +277,19 @@ The sun is ....
 & Luke warm
 & Warm
 %^ None of the above.
-            """
-            qtemplate = views.create_question_template(some_text)
-            qt = QTemplate.objects.get(id=qtemplate.id)
-            qa = render(qt, qset, user)
+        """
+        qtemplate = views.create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+        qset = QSet.objects.create(name="temporary", course=course)
 
-            key, value = views.get_type(qt.t_grading, 'final-key').next()
-            self.assertTrue(key.startswith('None of the above.'))
-            start = qa.as_displayed.find(value)
-            self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
-            self.assertEqual(qt.t_solution, ('The solution is: "None of the '
-                                             'above."'))
+        qa = render(qt, qset, user)
+
+        key, value = views.get_type(qt.t_grading, 'final-key').next()
+        self.assertTrue(key.startswith('None of the above.'))
+        start = qa.as_displayed.find(value)
+        self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
+        self.assertEqual(qt.t_solution, ('The solution is: "None of the '
+                                         'above."'))
 
 
     def test_mcq_basic(self):
@@ -314,6 +321,8 @@ b: [5, 9, 1, int]
         """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
+        qset = QSet.objects.create(name="temporary", course=course)
+
         qa = render(qt, qset, user)
         qa = QActual.objects.get(id=qa.id)
         var_dict = json.loads(qa.var_dict)
@@ -321,23 +330,6 @@ b: [5, 9, 1, int]
         self.assertEqual(qa.html_solution, '<p>The solution is: "%s"</p>' %\
                          true_answer)
 
-    def test_mcq_bad_specified(self):
-        """
-        Two correct options for an MCQ.
-        """
-        some_text = """
-[[type]]
-MCQ
-[[question]]
-The sun is ....
---
-^ Cold
-& Luke warm
-^ Hot
-% None of the above.
-        """
-        with self.assertRaises(views.ParseError):
-            views.create_question_template(some_text)
 
     def test_mcq_bad_specified(self):
         """
@@ -374,6 +366,7 @@ The image here contains oscillations
 """
         qtemplate = views.create_question_template(some_text)
         qt = QTemplate.objects.get(id=qtemplate.id)
+        qset = QSet.objects.create(name="temporary", course=course)
 
         qa = render(qt, qset, user)
         idx = qa.as_displayed.find('image_file_name.jpg')

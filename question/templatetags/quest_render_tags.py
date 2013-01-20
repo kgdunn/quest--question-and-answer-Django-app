@@ -122,9 +122,8 @@ class EvaluateString(template.Node):
             else:
                 raise(e_log)
         except Exception, e:
-            # TODO(KGD): make sure this doesn't pass unraised
-            raise(e)
-            #out = str(e)
+            logger.error('%s: "%s"' % (str(e), e.text))
+            raise
         else:
             # Clean up the output
             out = Context(prec=self.sig_figs, Emax=999,)\
