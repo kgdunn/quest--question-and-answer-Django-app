@@ -62,19 +62,39 @@
 				});
 			}, {{timeout_time}});
 		});
-		$('.quest-item-question').find('textarea').change(function() {
+		$('.quest-item-question').find('input').keydown(function() {
 			itemValue = encodeURIComponent($(this).val());
-			$.ajax(
+			if (timer){
+				window.clearTimeout(timer);
+			};
+			timer = window.setTimeout(function()
 			{
-				type: "GET",
-				url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,
-				data:  '',
-				cache: false,
-				success: function(result) {$('#ajaxDiv').html(result);},
-				error: function (response, desc, exception) {// custom error
-				}
-			});
+				$.ajax(
+				{
+					type: "GET",
+					url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,
+					data:  '',
+					cache: false,
+					success: function(result) {$('#ajaxDiv').html(result);},
+					error: function (response, desc, exception) {// custom error
+					}
+				});
+			}, {{timeout_time}});
 		});
+
+		<!--$('.quest-item-question').find('textarea').change(function() {-->
+			<!--itemValue = encodeURIComponent($(this).val());-->
+			<!--$.ajax(-->
+			<!--{-->
+				<!--type: "GET",-->
+				<!--url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,-->
+				<!--data:  '',-->
+				<!--cache: false,-->
+				<!--success: function(result) {$('#ajaxDiv').html(result);},-->
+				<!--error: function (response, desc, exception) {// custom error-->
+				<!--}-->
+			<!--});-->
+		<!--});-->
 	});
 {# http://stackoverflow.com/questions/1620602/javascript-jquery-make-an-ajax-request-when-a-user-is-typing-in-a-textarea    http://stackoverflow.com/questions/10018437/jquery-ajax-autosave-for-textareas #}
 </script>
@@ -84,7 +104,7 @@
     var minutes = {{minutes_left}};
     var seconds = {{seconds_left}};
     window.onload = function() {
-        countdown('countdown');
+        countdown('quest-countdown');
     };
 
 function countdown(element) {
@@ -92,7 +112,7 @@ function countdown(element) {
     var el = document.getElementById(element);
         if(seconds == 0) {
                 if(minutes == 0) {
-                    el.innerHTML = ""; //"The testing time has ended";
+                    el.innerHTML = "The testing period has expired";
                     clearInterval(interval);
                     return;
                 } else {

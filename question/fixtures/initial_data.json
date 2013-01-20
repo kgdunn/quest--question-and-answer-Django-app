@@ -76,8 +76,8 @@
       "ans_time_final": "2013-01-13T18:04:42",
       "course": 1,
       "max_total": 24.0,
-      "min_num": 2,
-      "max_num": 3,
+      "min_num": 5,
+      "max_num": 8,
       "is_active": true
     }
   },
@@ -93,8 +93,8 @@
       "ans_time_final": "2013-01-19T18:04:42",
       "course": 1,
       "max_total": 25.0,
-      "min_num": 3,
-      "max_num": 5,
+      "min_num": 6,
+      "max_num": 7,
       "is_active": true
     }
   },

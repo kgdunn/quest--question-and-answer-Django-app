@@ -259,7 +259,7 @@ class QActual(models.Model):
     # * dict: {'fib': '....'; 'multipart': '...'}  <- dict of strings
 
     # A copy of the ``QTemplate.t_grading`` field, but customized for this
-    # user. Grading keys for the same question can varay from student to
+    # user. Grading keys for the same question can vary from student to
     # student, depending on their specific question values
     grading_answer = models.TextField(blank=True)
 

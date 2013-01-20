@@ -199,7 +199,7 @@ def parse_MCQ_TF_Multi(text, q_type):                             # helper
             t_solution = soln_str % key
 
         if q_type in ('multi',):
-            soln_str = ['The correct answers are: ', '']
+            soln_str = []
             final_soln = ''
             solutions = t_grading.values()
             solutions.sort()
@@ -211,6 +211,13 @@ def parse_MCQ_TF_Multi(text, q_type):                             # helper
 
             if final_soln:
                 soln_str.append('*\t%s' % final_soln[1])
+
+            if len(soln_str) > 1:
+                soln_str.insert(0, 'The correct answers are: ')
+            elif len(soln_str) == 1:
+                soln_str.insert(0, 'The correct answer is: ')
+
+            soln_str.insert(1, '')
 
             t_solution = '\n'.join(soln_str)
 

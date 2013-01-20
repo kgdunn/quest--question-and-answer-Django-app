@@ -195,6 +195,12 @@ div#quest-section-body a{
 div#quest-section-body a:hover{
 	text-decoration: underline;
 }
+div#quest-header a{
+	text-decoration: none;
+}
+div#quest-header a:hover{
+	text-decoration: underline;
+}
 
 /* Styling for images and figures: images are inline, figures are centered */
 div#quest-section-body .align-center{
@@ -638,7 +644,7 @@ div .quest-itemdisp-mainlink{
 .quest-item-solution{
   border: 1px solid #DDD;
   overflow: auto;
-  padding: 5px;
+  padding: 1px;
   background-color: #FFF; /*  #EEE  */
 }
 

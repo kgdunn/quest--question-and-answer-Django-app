@@ -83,6 +83,9 @@ def quick_eval(parser, token):
 
 class EvaluateString(template.Node):
     """ Does the actual work of evaluating the node. """
+
+    # TODO(KGD): remove this hard hack until you figure out how to enter
+    #            questions correctly.
     def __init__(self, format_string, sig_figs=None):
         self.format_string = format_string
         self.sig_figs = sig_figs

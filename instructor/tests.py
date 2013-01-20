@@ -231,6 +231,18 @@ The pass rate for this system is ({{n_total}}-1)/{{n_total}}), so
             qa = render(qt, qset, user)
 
 
+    def test_dont_allow_no_answers_MCQ(self):
+        """
+        [[type]]
+        multi
+        [[question]]
+        The following plot is from a measurement system at a company showing actual data   PLOT HERE
+        Some of the things that can be noticed in the plot are:
+        --
+        &
+        ^
+        """
+
 
 
 
@@ -343,8 +355,8 @@ If a={{a}}, b={{b}}. What is a*b?
 --
 & {{a}}{{b}}
 &1
-^{% quick_eval "a*b" %}
-& {% quick_eval "a+b" %}
+^{% quick_eval "a*b" 5 %}
+& {% quick_eval "a+b" 2 %}
 [[variables]]
 a: [2, 5, 0.5, float]
 b: [5, 9, 1, int]

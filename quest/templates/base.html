@@ -27,12 +27,12 @@
 			</div>
 			<div style="clear:both;"></div>
 			<div class="quest-header-left">{% block headerleft %}{% endblock %}</div>
-			<div class="quest-header-right">{% block headerright %}{% endblock %}</div>
+			<div class="quest-header-right">{% block headerright %}{% endblock %}
+			</div>
 			<div class="quest-header-row" id="quest-site-title">
 			<h1>{{SITE_NAME}}</h1>
 			</div>
 		 </div> <!--#quest-header-->
-		 <div id='countdown'></div>
 		 <div style="clear:both;"></div>
 		 <div id="quest-contentwrap">
 			<div id="quest-content-main">
@@ -45,9 +45,11 @@
 		 </div><!--#quest-contentwrap-->
 
 		 <div id="quest-footer">
-			{% block footer %}{% endblock %}
-			<div class="quest-footer-left"></div>
-			<div class="quest-footer-right"></div>
+			<div class="quest-footer-left">{% block footer %}{% endblock %}</div>
+			<div class="quest-footer-right">
+			<div style="clear:both;"></div>
+			<span id='quest-countdown'></span>
+			</div>
 
 		 </div> <!--#quest-footer-->
 	  </div> <!--quest-container-->
