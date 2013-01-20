@@ -110,7 +110,6 @@ def sign_in(request):                             # URL: 'quest-main-page'
 
 def token_sign_in(request, token):  # URL: 'quest-token-sign-in'
     """ Signs the user in for a limited period.
-    TODO(KGD): function name here is misleading: remove the "deactivate" part
     """
     logger.debug('About to process received token: ' + str(token))
     token_item = Token.objects.filter(token_address=token)

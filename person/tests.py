@@ -10,6 +10,12 @@ import datetime
 
 import wingdbstub
 
+#def test_login_during_second_time(self):
+    #pass
+
+#def test_login_during_second_time_different_browser(self):
+    #pass
+
 class Login_TestCases(TestCase):
     def test_login_before_start(self):
         c = Client(HTTP_USER_AGENT='ABC')  # enforce_csrf_checks=True,
@@ -163,6 +169,8 @@ class Login_TestCases(TestCase):
         #---------------------------------------------------------------------
         qset.max_duration = datetime.time(minute=5)
         qset.save()
+
+        timer = Timing.objects.filter(user=user[0], qset=qset)
         timer[0].delete()
         c = Client(HTTP_USER_AGENT='ABC')
         resp = c.get(reverse('quest-token-sign-in',
@@ -234,6 +242,7 @@ class Login_TestCases(TestCase):
         qset.ans_time_final = now - datetime.timedelta(seconds=5)
         qset.save()
 
+        timer = Timing.objects.filter(user=user[0], qset=qset)
         timer[0].delete()
         c = Client(HTTP_USER_AGENT='GHI')
         resp = c.get(reverse('quest-token-sign-in',
@@ -259,37 +268,43 @@ class Login_TestCases(TestCase):
         self.assertTrue(resp.context['minutes_left'] == 0)
 
 
+        # Now create a QSet that has a specified duration of 5, yes 5, seconds.
+        # But the user signs in and tries to answer a question after their time
+        # has expired.
+        # Delete out the old timers; start with a new client and a new session.
+        # We have to sign in again with the same token. Change the expiry
+        # date of their session during this test and compare the results.
+        #----------------------------------------------------------------------
+        qset.max_duration = datetime.time(second=5)
+        qset.ans_time_final = now + datetime.timedelta(seconds=500)
+        qset.save()
 
-        # The user has signed in and done the test; now their time has expired
-        # but the QSet final time is still into the future. The user must get
-        # a ``time-expired`` page
-        #t_objs = Timing.objects.filter(user=request.user.profile, qset=qset)
-               #if t_objs:
-                   #old_time = t_objs[0].final_time
-               #else:
-                   #old_time = datetime.datetime(1901,1,1,0,0,0)
-               #expiry_time = request.session.get('expires', old_time)
-               ##logger.debug(str(request.session._session_key))
-               ##logger.debug(str(t_objs))
+        timer = Timing.objects.filter(user=user[0], qset=qset)
+        if timer:
+            timer[0].delete()
+        c = Client(HTTP_USER_AGENT='UVW')
+        resp = c.get(reverse('quest-token-sign-in',
+                              args=(su_token.token_address,)), follow=True)
+        before = datetime.datetime.now()
+        resp = c.get(to_get, follow=True)
+        self.assertEqual(resp.status_code, 200)
+        timer = Timing.objects.filter(user=user[0], qset=qset)
+        self.assertEqual(len(timer), 1)
 
-               #if False:
-               ##if expiry_time  < datetime.datetime.now():
-                   ## Either the user doesn't have the expiry date set in their
-                   ## session (i.e. they logged out and then refreshed the page)
-                   ## or the expiry has past the current time
-                   #exp = expiry_time.strftime('%H:%M:%S on %d %h %Y')
-                   #ctxdict = {'time_expired': exp,
-                              #'solution_time': qset[0].ans_time_final}
-                   #ctxdict.update(csrf(request))
-                   #return render_to_response('question/time-expired.html', ctxdict,
-                                             #context_instance=RequestContext(request))
+        mins_left_session = (c.session['expires'] - before).seconds//60
+        self.assertTrue(mins_left_session == 0)
 
+        mins_left_timer = (timer[0].final_time - before).seconds//60
+        self.assertTrue(mins_left_timer == 0)
 
+        # Now sleep 5 seconds; waiting for the QSet to expire.
+        import time
+        time.sleep(5)
 
-
-    def test_login_during_second_time(self):
-        pass
-
-    def test_login_during_second_time_different_browser(self):
-        pass
-
+        # Now attempt to answer the questions. Should not be able to.
+        resp = c.get(reverse('quest-ask-specific-question', args=(
+                                                        qset.course.slug,
+                                                        qset.slug,
+                                                        1)))
+        self.assertEqual(resp.templates[0].name, 'question/time-expired.html')
+        self.assertTrue(resp.context['solution_time'] == qset.ans_time_final)

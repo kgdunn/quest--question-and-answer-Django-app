@@ -93,8 +93,7 @@ def validate_user(request, course_code_slug, question_set_slug,
         #logger.debug(str(request.session._session_key))
         #logger.debug(str(t_objs))
 
-        if False:
-        #if expiry_time  < datetime.datetime.now():
+        if expiry_time  < datetime.datetime.now():
             # Either the user doesn't have the expiry date set in their
             # session (i.e. they logged out and then refreshed the page)
             # or the expiry has past the current time
