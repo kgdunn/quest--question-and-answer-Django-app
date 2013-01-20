@@ -120,7 +120,8 @@ class EvaluateString(template.Node):
                 raise (out)
                 # TODO(KGD): make sure this doesn't pass unraised
             else:
-                raise(e_log)
+                logger.error('%s' % str(e_log))
+                raise
         except Exception, e:
             logger.error('%s: "%s"' % (str(e), e.text))
             raise

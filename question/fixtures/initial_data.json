@@ -102,7 +102,7 @@
     "pk": 1,
     "model": "course.course",
     "fields": {
-      "code": "4C3/6C3",
+      "code": "4C3",
       "name": "Statistics for Engineering, 4C3",
       "slug": "statistics-for-engineering-4c3"
     }
@@ -111,7 +111,7 @@
     "pk": 2,
     "model": "course.course",
     "fields": {
-      "code": "4C3/6C3",
+      "code": "6C3",
       "name": "Statistics for Engineering, 6C3",
       "slug": "statistics-for-engineering-6c3"
     }

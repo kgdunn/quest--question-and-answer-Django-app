@@ -205,6 +205,35 @@ Some grading text would go here.
         self.assertTrue(qa.as_displayed[start+14:start+18] in ('Opt1', 'Opt2', 'Opt3'))
 
 
+    def test_question_missing_variable(self):
+        some_text = """
+[[type]]
+multi
+[[question]]
+Our process produces defective products at a rate of 1 in {{n_total}}. If we randomly take a sample of {{n_sample}} items from the production line,then ....
+--
+^{% quick_eval "((n_total-1)/n_total)**n_sample" %}
+& {% quick_eval "((n_total-1)/n_total)" %}
+& be greater than or equal to ({{n_total}}-1)/{{n_total}})
+& is equal to 1/{{n_total}}
+[[variables]]
+n_total: [6, 10, 1, int]
+n: [4,6,1,int]
+[[Solution]]
+The pass rate for this system is ({{n_total}}-1)/{{n_total}}), so
+"""
+        # The ``n_sample`` variable is not specified
+        qtemplate = views.create_question_template(some_text)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+        qset = QSet.objects.create(name="temporary", course=course)
+
+        with self.assertRaises(NameError):
+            qa = render(qt, qset, user)
+
+
+
+
+
 class RenderTests(TestCase):
     fixtures = ['initial_data',]
     def test_tf_basic(self):
@@ -262,6 +291,7 @@ The sun is ....
         self.assertTrue(key.startswith('None of the above.'))
         start = qa.as_displayed.find(value)
         self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
+
 
     def test_tf_final_correct(self):
         """
@@ -348,6 +378,7 @@ The sun is ....
         """
         with self.assertRaises(views.ParseError):
             views.create_question_template(some_text)
+
 
     def test_image_location(self):
         """

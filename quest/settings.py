@@ -153,6 +153,7 @@ INSTALLED_APPS = (
     # Our apps
     'person',
     'tagging',
+    'logitem',
     'question',
     'course',
     'instructor',
