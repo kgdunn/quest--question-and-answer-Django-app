@@ -7,7 +7,10 @@
     {# TODO(KGD): hide table if there are no item.is_active entries in the list #}
         {% for qset in question_set_list %}
             <div id="quest-course-list-container">
-                Course: {{qset.0.course.name}}
+                <p>Welcome: <b>{{username}}</b>
+                <br>
+                <p>Course: {{qset.0.course.name}}
+                <br>
                 <table>
                     <tr>
                         <th style="width:10%">Test name</th>

@@ -39,7 +39,7 @@ def create_new_account(user=None, **kwargs):
         new_user_profile.save()
 
 
-def create_sign_in_email(user):
+def create_sign_in_email(user, qset=None):
     """
     Creates the token and generates the email body and subject for a user.
     """
@@ -48,19 +48,35 @@ def create_sign_in_email(user):
                                 user=user,
                                 has_been_used=False)
     token_address = token_prefix + token_address
-    message = '''\
+    message = """\
     This message has been sent so you may access the Quest website.
 
-    The web address will only work for a single test: ''' + token_address + '''\
+    Sign in at: %s
 
+    You may re-use this link within the testing duration, or request a new link
+    from http://quest.mcmaster.ca
+    """ % token_address
 
-    You can re-request access as many times as you like. There is no need to log
-    in or log out afterwards - after you submit the test the weblink becomes
-    invalid.
+    if qset:
+        subject = 'Quest website, %s' % qset.name
+        message += """\
+    * Test duration = %s hours and %s minute(s).
+    * Testing window closes at: %s; after which solutions are available.
+    """ % (qset.max_duration.strftime('%H'),
+           qset.max_duration.strftime('%M'),
+           qset.ans_time_final.strftime('%H:%M on %d %h %Y'))
+    else:
+        subject = 'Quest website access'
+
+    message += """\
+
+    Please note: negative grading will be used for multiple-selection answers.
+    In other words, do not check an answer unless you are certain it is correct.
+    Negative grading is -0.5 points per incorrect selection.
 
     The http://quest.mcmaster.ca web server.
-    '''
-    subject = 'Access the Quest website'
+    """
+
     return subject, message, user.email
 
 

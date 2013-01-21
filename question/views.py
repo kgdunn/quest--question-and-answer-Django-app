@@ -152,7 +152,8 @@ def ask_question_set(request):        # URL: ``quest-question-set``
         idx += 1
 
     # Show question sets
-    ctxdict = {'question_set_list': qsets}
+    ctxdict = {'question_set_list': qsets,
+               'username': user.user.first_name + ' ' + user.user.last_name}
     ctxdict.update(csrf(request))
     return render_to_response('question/question-sets.html', ctxdict,
                               context_instance=RequestContext(request))
@@ -439,7 +440,15 @@ def successful_submission(request, course_code_slug, question_set_slug):
         quest.is_submitted = True
         quest.save()
 
+    if quests:
+        create_hit(request, quests[0].qset, extra_info='Submitted answers')
+
     token = request.session['token']
+    #timing = Timing.objects.filter(token=token)
+    #if timing:
+        #timing[0].is_valid = False
+        #timing[0].save()
+
     try:
         del request.session['expires']
     except KeyError:

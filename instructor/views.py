@@ -541,7 +541,9 @@ def generate_questions(request, course_code_slug, question_set_slug):
     2. Emails users in the class the link to sign in and start answering
     """
     fname = '/home/kevindunn/quest/class-list.csv'
-    users_added = load_class_list(fname, course_code_slug)
+    fname = ''
+    if fname:
+        users_added = load_class_list(fname, course_code_slug)
     load_question_templates(request, course_code_slug, question_set_slug)
 
     course = validate_user(request, course_code_slug, question_set_slug,
@@ -553,7 +555,8 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
     # Now render, for every user, their questions from the question set
     which_users = UserProfile.objects.filter(courses=course)
-    for user in [userP.user for userP in which_users]:
+    user_objs = [userP.user for userP in which_users]
+    for user in user_objs:
 
         if qset.random_choice:
             qts = choose_random_questions(qset, user)
@@ -599,8 +602,8 @@ def generate_questions(request, course_code_slug, question_set_slug):
         to_list = []
         message_list = []
         out = subject = ''
-        for user in users_added:
-            subject, message, to_address = create_sign_in_email(user)
+        for user in user_objs:
+            subject, message, to_address = create_sign_in_email(user, qset)
             message_list.append(message)
             to_list.append(to_address)
 
