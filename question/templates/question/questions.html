@@ -63,16 +63,23 @@
 			}, {{timeout_time}});
 		});
 		$('.quest-item-question').find('input').keydown(function() {
-			itemValue = encodeURIComponent($(this).val());
 			if (timer){
 				window.clearTimeout(timer);
 			};
 			timer = window.setTimeout(function()
 			{
+				var url_out = '?';
+				//var typed_values = new Array();
+				//var box_names = new Array();
+				$('.quest-item-question input').each(function() {
+					url_out += $(this).attr('name') + '=' + encodeURIComponent($(this).val()) + '&';
+					//typed_values.push();
+					//box_names.push($(this).attr('name'));
+				});
 				$.ajax(
 				{
 					type: "GET",
-					url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,
+					url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}' + url_out,//?entered=' + typed_values + '&box_names=' + box_names,
 					data:  '',
 					cache: false,
 					success: function(result) {$('#ajaxDiv').html(result);},

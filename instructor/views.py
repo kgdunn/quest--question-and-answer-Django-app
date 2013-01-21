@@ -613,7 +613,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
             logger.error('Unable to send multiple sign-in emails to: %s' %
                         str(to_list))
 
-    return HttpResponse('All questions generated for all users')
+    return HttpResponse('All questions generated for all users for %s' % qset.slug)
 
 
 def render(qt, qset, user):
@@ -697,7 +697,7 @@ def render(qt, qset, user):
                 start = item.end()
 
             if out:
-                out += qt.t_question[start:-1]
+                out += qt.t_question[start:]
 
         return out, token_dict
     #---------
@@ -735,7 +735,7 @@ def render(qt, qset, user):
             start = image.end()
 
         if mod_out:
-            out = mod_out + out[start:-1]
+            out = mod_out + out[start:]
 
         # Undo the filtering in the HTML
         return out.replace('\\\\', '\\'), filenames

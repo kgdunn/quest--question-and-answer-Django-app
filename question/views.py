@@ -4,6 +4,11 @@
 import re
 import logging
 import datetime
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 from math import floor
 from django.core.context_processors import csrf
 from django.contrib.auth.decorators import login_required
@@ -36,7 +41,8 @@ LURE_RE = re.compile(r'^\&(\s*)(.*)$')
 KEY_RE = re.compile(r'^\^(\s*)(.*)$')
 FINAL_RE = re.compile(r'^\&(\s*)(.*)$')
 
-TEXAREA_RE = re.compile(r'\<textarea (.*?)\>(?P<filled>.*?)\</textarea\>')
+TEXTAREA_RE = re.compile(r'\<textarea (.*?)\>(?P<filled>.*?)\</textarea\>')
+INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
 
 class ParseError(Exception):
     pass
@@ -89,10 +95,8 @@ def validate_user(request, course_code_slug, question_set_slug,
         if t_objs:
             old_time = t_objs[0].final_time
         else:
-            old_time = datetime.datetime(1901,1,1,0,0,0)
+            old_time = datetime.datetime(1901, 1, 1, 0, 0, 0)
         expiry_time = request.session.get('expires', old_time)
-        #logger.debug(str(request.session._session_key))
-        #logger.debug(str(t_objs))
 
         if expiry_time  < datetime.datetime.now():
             # Either the user doesn't have the expiry date set in their
@@ -282,11 +286,36 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                                                 html_question)
 
         if q_type in ('long'):
-            re_exp = TEXAREA_RE.search(html_question)
+            re_exp = TEXTAREA_RE.search(html_question)
             if re_exp:
                 html_question = '%s%s%s' % (html_question[0:re_exp.start(2)],
                                             quest.given_answer,
                                             html_question[re_exp.end(2):])
+
+
+        if q_type in ('short'):
+            out = ''
+            if INPUT_RE.findall(html_question):
+                # INPUT_RE = (r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
+                start = 0
+                token_dict = json.loads(quest.given_answer)
+                for item in INPUT_RE.finditer(html_question):
+                    val = token_dict[item.group(2)]
+                    out += '%s%s%s%s%s%s' %\
+                            (html_question[start:item.start()],
+                             r'<input',
+                             ' value="%s"' % val,
+                             ' name="%s"' % item.group(2),
+                             item.group(3),
+                             r'</input>')
+
+                    start = item.end()
+
+                if out:
+                    out += html_question[start:]
+
+                html_question = out
+
 
     qset = quests[0].qset
     now_time = datetime.datetime.now()
@@ -373,9 +402,25 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     if isinstance(quests, tuple):
         quests, q_id = quests
 
-    quests[q_id-1].given_answer = request.GET['entered']
-    quests[q_id-1].is_submitted = False
-    quests[q_id-1].save()
+
+    quest = quests[q_id-1]
+    if quest.qtemplate.q_type == 'short':
+        keys = request.GET.keys()
+        try:
+            keys.remove('_')
+        except ValueError:
+            pass
+        out = {}
+        for key in keys:
+            out[key] = request.GET[key]
+
+        quest.given_answer = json.dumps(out, sort_keys=True)
+    else:
+        quest.given_answer =request.GET['entered']
+
+
+    quest.is_submitted = False
+    quest.save()
 
     return HttpResponse('%s: Answer recorded' %
                         datetime.datetime.now().strftime('%H:%M:%S'))
