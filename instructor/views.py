@@ -511,12 +511,16 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
 
     f_name = '/home/kevindunn/quest/week-2.qset'
+    f_name = ''
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
     if isinstance(course, HttpResponse):
         return course
     if isinstance(course, tuple):
         course, qset = course
+
+    if not f_name:
+        return HttpResponse('No templates loaded')
 
     f_handle = open(f_name, 'r')
     questions = f_handle.read().split('#----')
@@ -540,10 +544,11 @@ def generate_questions(request, course_code_slug, question_set_slug):
     1. Generates the questions from the question sets, rendering templates
     2. Emails users in the class the link to sign in and start answering
     """
-    fname = '/home/kevindunn/quest/class-list.csv'
-    fname = ''
-    if fname:
-        users_added = load_class_list(fname, course_code_slug)
+    #fname = '/home/kevindunn/quest/class-list.csv'
+    #fname = ''
+    #if fname:
+    #    users_added = load_class_list(fname, course_code_slug)
+
     load_question_templates(request, course_code_slug, question_set_slug)
 
     course = validate_user(request, course_code_slug, question_set_slug,
