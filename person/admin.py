@@ -26,7 +26,7 @@ class TimingAdmin(admin.ModelAdmin):
     list_display = ('id', 'start_time', 'final_time', 'qset', 'token')
     list_display_links = ('start_time', 'final_time')
     list_per_page = 1000
-    ordering = ('id',)
+    ordering = ('-id',)
 admin.site.register(Timing, TimingAdmin)
 
 
