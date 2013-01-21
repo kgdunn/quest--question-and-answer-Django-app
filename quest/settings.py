@@ -10,6 +10,7 @@
 import os
 import django.conf.global_settings as DEFAULT_SETTINGS
 DEBUG = False
+TESTING = False  # Set to False during unit test to previous sending email
 #TEMPLATE_DEBUG = DEBUG
 TEMPLATE_DEBUG = True
 
