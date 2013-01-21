@@ -6,12 +6,12 @@ from datetime import date
 import logitem.models as models
 from utils import get_IP_address
 
-#static_items = {'spc-main-page': 1,
-                #'spc-about-page': 2,
-                #'spc-about-licenses': 3,
-                #'spc-markup-help': 4,
-                #'haystack_search': 5,
-               #}
+static_items = {'spc-main-page': 1,
+                'spc-about-page': 2,
+                'spc-about-licenses': 3,
+                'spc-markup-help': 4,
+                'haystack_search': 5,
+               }
 
 def create_hit(request, item, extra_info=None):
     """

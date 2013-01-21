@@ -529,7 +529,7 @@ def load_question_templates(request, course_code_slug, question_set_slug):
         try:
             included_item.save()
         except ValidationError, e:
-            logger.error(('This template [%d] has already been included in '
+            logger.warn(('This template [%d] has already been included in '
                          'this question set [%s]') % (template.id, qset.name))
 
     return HttpResponse('All questions loaded')
