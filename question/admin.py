@@ -23,7 +23,7 @@ class InclusionAdmin(admin.ModelAdmin):
 class QActualAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'given_answer', 'is_submitted')
     list_display_links = ('user', )
-    list_per_page = 1000
+    list_per_page = 100
     ordering = ('id',)
 
 

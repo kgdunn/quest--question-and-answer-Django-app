@@ -98,7 +98,11 @@ def validate_user(request, course_code_slug, question_set_slug,
             old_time = datetime.datetime(1901, 1, 1, 0, 0, 0)
         expiry_time = request.session.get('expires', old_time)
 
-        if expiry_time  < datetime.datetime.now():
+        if False:
+        # this is clearly not the only criterion: we must handle whether
+        # the user can see previous qset's and also check the current qset's
+        # expiry time. Not solely rely on t_objs
+        #if expiry_time  < datetime.datetime.now():
             # Either the user doesn't have the expiry date set in their
             # session (i.e. they logged out and then refreshed the page)
             # or the expiry has past the current time
@@ -416,8 +420,8 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
             out[key] = request.GET[key]
 
         quest.given_answer = json.dumps(out, sort_keys=True)
-    else:
-        quest.given_answer =request.GET['entered']
+    elif request.GET.has_key('entered'):
+        quest.given_answer = request.GET['entered']
 
 
     quest.is_submitted = False

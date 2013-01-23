@@ -560,7 +560,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
     # Now render, for every user, their questions from the question set
     which_users = UserProfile.objects.filter(courses=course)
-    user_objs = [userP.user for userP in which_users]
+    user_objs = [userP.user for userP in which_users if userP.slug == 'zhangbo-gu']
     for user in user_objs:
 
         if qset.random_choice:
