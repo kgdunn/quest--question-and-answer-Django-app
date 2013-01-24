@@ -121,6 +121,18 @@ def validate_user(request, course_code_slug, question_set_slug,
     else:
         quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
 
+    if len(quests) == 0:
+        # I've seen this error only occur once; when the URL for the questions
+        # was displayed and I came back the next day and click on the links
+        # it crashed because len(quests) = 0, but i can't reproduce it.
+        # However, it is sensible to verify this, because if the use is trying
+        # to view a qset for which there are no quests, then there is nothing
+        # to display.
+        logger.info('No quests for token [%s]; URL [%s]' %
+                    (token_obj[0], request.path_info))
+        return redirect('quest-main-page')
+
+
     q_id = question_id
     if question_id:
         try:
@@ -181,7 +193,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     # Information to store
     if not quests:
         raise NotImplementedError(('Should not be able to click link if the '
-                                   'questions are not avaialble yet.'))
+                                   'questions are not available yet.'))
 
     qset = quests[0].qset
     # Has the user started this QSet already? If not, create a DB entry
