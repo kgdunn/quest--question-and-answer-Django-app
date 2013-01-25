@@ -1004,3 +1004,87 @@ def load_class_list(f_name, course_slug):
     return users_added
 
 
+def clean_db(request):
+    """
+    During week-2 the database got corrupted; this is an attempt to clean it.
+    """
+    from django.core import serializers
+    from question import models
+    from person.models import User
+    import sys
+    qset = models.QSet.objects.all()
+    import gc
+
+
+    #users =
+    for idx, user in enumerate(User.objects.all()):
+        gc.collect()
+        print(idx, user)
+        sys.stdout.flush()
+        if user.id ==37 or user.id>=69:
+            continue
+
+        quests = models.QActual.objects.filter(qset=qset[1], user=user)
+
+
+        data = serializers.serialize("json", quests, indent=2)
+        out = open("/home/kevindunn/quest/jsons/quests-week-2-400-temp.json", "w")
+        out.write(data)
+        out.close()
+
+        infile = open("/home/kevindunn/quest/jsons/quests-week-2-400-temp.json", "r")
+        outfile = open("/home/kevindunn/quest/jsons/quests-week-2-400-cleaned.json", "a")
+        for line in infile.readlines():
+            if len(line) > 335544412//3:
+                a = len(line)//3
+                test1 = line[0:a].strip().replace('"var_dict": ', '').strip(',')
+                out = ''
+                for item in test1:
+                    if item not in ('\\', r'"'):
+                        out += item
+                del test1
+                gc.collect()
+                print out
+
+                test2 = line[a:2*a].strip().replace('"var_dict": ', '').strip(',')
+                for item in test2:
+                    if item not in ('\\', r'"'):
+                        out += item
+                del test2
+                gc.collect()
+                print out
+
+                test3 = line[2*a:].strip().replace('"var_dict": ', '').strip(',')
+                for item in test3:
+                    if item not in ('\\', r'"'):
+                        out += item
+                del test3
+                gc.collect()
+                print out
+
+                line = '      "var_dict": ' + '{"n_sample": [[4.0, 6.0, 1.0, "int"], 6], "n_total": [[6.0, 10.0, 1.0, "int"], 7]}'
+
+
+            if line.strip().startswith('"var_dict"'):
+                test = line.strip().replace('"var_dict": ', '').strip(',')
+                while isinstance(test, basestring):
+                    test = json.loads(test)
+
+                output = json.dumps(test)
+                outfile.write('      "var_dict": ' + output + ',\n')
+            else:
+                outfile.write(line)
+
+
+        outfile.close()
+        infile.close()
+
+        #for idx in range(len(line)//1000000):
+            #print(line[idx*1000:(idx+1)*1000])
+            #print(idx)
+            #sys.stdout.flush()
+
+            #{n_sample: [[4.0, 6.0, 1.0, '
+
+
+
