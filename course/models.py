@@ -9,7 +9,7 @@ class Course(models.Model):
     # Full course name
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20)  # shorter course code
-    slug = models.SlugField(max_length=20, editable=False)
+    slug = models.SlugField(max_length=100, editable=False)
 
     def __unicode__(self):
         return self.code

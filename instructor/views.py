@@ -1021,10 +1021,11 @@ def clean_db(request):
         gc.collect()
         print(idx, user)
         sys.stdout.flush()
-        if user.id ==37 or user.id>=69:
+        if user.id !=37:
             continue
 
-        quests = models.QActual.objects.filter(qset=qset[1], user=user)
+        #quests = models.QActual.objects.filter(qset=qset[1], user=user)
+        quests = models.QActual.objects.filter(id=892)
 
 
         data = serializers.serialize("json", quests, indent=2)
@@ -1034,7 +1035,9 @@ def clean_db(request):
 
         infile = open("/home/kevindunn/quest/jsons/quests-week-2-400-temp.json", "r")
         outfile = open("/home/kevindunn/quest/jsons/quests-week-2-400-cleaned.json", "a")
-        for line in infile.readlines():
+        for line in infile.xreadlines():
+            print(line[0:min(50, len(line))])
+
             if len(line) > 335544412//3:
                 a = len(line)//3
                 test1 = line[0:a].strip().replace('"var_dict": ', '').strip(',')
@@ -1067,13 +1070,21 @@ def clean_db(request):
 
             if line.strip().startswith('"var_dict"'):
                 test = line.strip().replace('"var_dict": ', '').strip(',')
+                k = 0
                 while isinstance(test, basestring):
                     test = json.loads(test)
+                    k+=1
+                print(k)
 
                 output = json.dumps(test)
                 outfile.write('      "var_dict": ' + output + ',\n')
             else:
-                outfile.write(line)
+                if line in ('[]', '[\n'):
+                    pass
+                elif line in (']\n'):
+                    outfile.write(',')
+                else:
+                    outfile.write(line)
 
 
         outfile.close()
