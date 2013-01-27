@@ -1,4 +1,5 @@
 from django.db import models
+from person.models import UserProfile
 
 #class BrowserID(models.Model):
     #""" Collects information about the user so we can track and enhance
@@ -25,6 +26,14 @@ class PageHit(models.Model):
 
     def __unicode__(self):
         return '%s at %s' % (self.item, self.datetime)
+
+    #def user_slug(self):
+        #user = UserProfile.objects.filter(id=self.user_id)
+        #if user:
+            #return user.slug
+        #else:
+            #return 'User not found'
+    #user_slug.short_description = "User's slug"
 
 
     #def most_viewed(self, field):

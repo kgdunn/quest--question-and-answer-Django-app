@@ -169,7 +169,9 @@ def ask_question_set(request):        # URL: ``quest-question-set``
 
     # Show question sets
     ctxdict = {'question_set_list': qsets,
-               'username': user.user.first_name + ' ' + user.user.last_name}
+               'username': user.user.first_name + ' ' + user.user.last_name,
+               #'last_login': request.user.last_login <-- useless
+              }
     ctxdict.update(csrf(request))
     return render_to_response('question/question-sets.html', ctxdict,
                               context_instance=RequestContext(request))

@@ -22,8 +22,8 @@
                     {% if item.is_active %}
                     <tr>
                         <td><a href="{% url quest-ask-show-questions item.course.slug item.slug %}">{{item.name}}</a>
-                        <td>{{item.ans_time_start|date:"d F Y G:i"}}
-                        <td>{{item.ans_time_final|date:"d F Y G:i"}}
+                        <td>{{item.ans_time_start|date:"d F Y"}} at {{item.ans_time_start|date:"g:i A"}}
+                        <td>{{item.ans_time_final|date:"d F Y"}} at {{item.ans_time_final|date:"g:i A"}}
                         <td>{{item.announcement|safe}}
                     </tr>
                     {% endif %}

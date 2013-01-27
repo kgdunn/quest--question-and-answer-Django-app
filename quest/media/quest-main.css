@@ -136,8 +136,8 @@ body {
 	background: white;
     padding-top: 0em;     /* Don't remove top and bottom padding: leads to   */
     padding-bottom: 0em;  /* unwanted horizontal borders around the document.*/
-	padding-left: 2em;
-	padding-right: 2em;
+	padding-left: 0em;
+	padding-right: 0em;
 }
 
 /* quest-section-body: the current section of the document.  The Sphinx
@@ -276,6 +276,11 @@ tt {
 	float: left;
 }
 
+#quest-sidebar ul{
+	margin: 0 auto;
+	padding: 0;
+}
+
 /* Submission buttons */
 .quest-button-container {
 	float: left;
@@ -363,30 +368,30 @@ tt {
 	padding:0;	/* no left and right padding on columns */
 	overflow:hidden;
 }
-  /* 3 Column settings */
+  /* 3 Column settings (was 15, 60, 25) now (15, 70, 15) */
 .threecol {
 	background:#fff;	/* right column background colour */
 }
 .threecol .colmid {
-	right:25%;		/* width of the right column */
+	right:15%;		/* width of the right column */
 	background:#fff;	/* center column background colour */
 }
 .threecol .colleft {
-	right:60%;		/* width of the middle column */
+	right:70%;		/* width of the middle column */
 	background:#fff;	/* left column background colour */
 }
 .threecol .col1 {
-	width:58%;		/* width of center column content (column width minus padding on either side) */
+	width:68%;		/* width of center column content (column width minus padding on either side) */
 	left:101%;		/* 100% plus left padding of center column */
 }
 .threecol .col2 {
 	width:13%;		/* Width of left column content (column width minus padding on either side) */
-	left:28%;		/* width of (right column) plus (center column left and right padding) plus (left column left padding) */
+	left:18%;		/* width of (right column) plus (center column left and right padding) plus (left column left padding) */
 }
 .threecol .col3 {
-	width:23%;		/* Width of right column content (column width minus padding on either side) */
+	width:13%;		/* Width of right column content (column width minus padding on either side) */
 	left:90%;		/* Please make note of the brackets here:
-	  (100% - left column width) plus (center column left and right padding) plus (left column left and right padding) plus (right column left padding)
+	  (100% - left column width) plus (center column's left and right padding) plus (left column's left and right padding) plus (right column's left padding)
 	  (100-15)+(1+1)+(1+1)+(1)*/
 }
 .form-field input, select, textarea{
