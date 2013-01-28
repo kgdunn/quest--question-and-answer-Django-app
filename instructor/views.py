@@ -1019,26 +1019,34 @@ def clean_db(request):
     qset = models.QSet.objects.all()
     import gc
 
-
-    #users =
-    for idx, user in enumerate(User.objects.all()):
-        gc.collect()
-        print(idx, user)
-        sys.stdout.flush()
-        if user.id !=37:
-            continue
-
-        #quests = models.QActual.objects.filter(qset=qset[1], user=user)
-        quests = models.QActual.objects.filter(id=892)
-
-
+    for idn in range(1479, 1489):
+        quests = models.QActual.objects.filter(id=idn)
         data = serializers.serialize("json", quests, indent=2)
         out = open("/home/kevindunn/quest/jsons/quests-week-2-400-temp.json", "w")
         out.write(data)
         out.close()
 
+
+
+    ##users =
+    #for idx, user in enumerate(User.objects.all()):
+        #gc.collect()
+        #print(idx, user)
+        #sys.stdout.flush()
+        #if user.id !=37:
+            #continue
+
+        ##quests = models.QActual.objects.filter(qset=qset[1], user=user)
+        #quests = models.QActual.objects.filter(id=892)
+
+
+        #data = serializers.serialize("json", quests, indent=2)
+        #out = open("/home/kevindunn/quest/jsons/quests-week-2-400-temp.json", "w")
+        #out.write(data)
+        #out.close()
+
         infile = open("/home/kevindunn/quest/jsons/quests-week-2-400-temp.json", "r")
-        outfile = open("/home/kevindunn/quest/jsons/quests-week-2-400-cleaned.json", "a")
+        outfile = open("/home/kevindunn/quest/jsons/quests-week-2-600-cleaned.json", "a")
         for line in infile.xreadlines():
             print(line[0:min(50, len(line))])
 

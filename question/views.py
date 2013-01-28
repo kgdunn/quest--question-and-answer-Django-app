@@ -263,13 +263,19 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
         min_remain = int(floor(delta.seconds/60.0))
         sec_remain = int(delta.seconds - min_remain*60)
 
+    # Topics:
+    tags = set()
+    for item in quests:
+        for tag in item.qtemplate.tags.all():
+            tags.add(tag)
 
     # Now display the questions
     ctxdict = {'quest_list': quests,   # list of QActual items
                'course': course_code_slug,
                'qset': question_set_slug,
                'minutes_left': min_remain,
-               'seconds_left': sec_remain}
+               'seconds_left': sec_remain,
+               'tag_list': list(tags)}
     ctxdict.update(csrf(request))
     return render_to_response('question/question-list.html', ctxdict,
                               context_instance=RequestContext(request))

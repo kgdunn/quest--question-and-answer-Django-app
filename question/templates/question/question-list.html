@@ -4,13 +4,23 @@
 {% block headerleft %}<a href="{% url quest-question-set %}">&lt; Back to list of all available tests</a>{% endblock %}
 
 {% block content %}
-    {% spaceless %}
-    <ul>
-    {% for quest in quest_list %}
-        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}" target="_blank">
-            Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} point{{quest.qtemplate.max_grade|pluralize}}]</li>
-    {% endfor %}
-    </ul>
-    <div class="quest-printing-options"></div>
-    {% endspaceless %}
+
+				{% spaceless %}
+				<b>Important note</b>: <span id='quest-countdown'></span>
+				<ul>
+				{% for quest in quest_list %}
+					<li><a href="{% url quest-ask-specific-question course qset forloop.counter %}" target="_blank">
+						Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} point{{quest.qtemplate.max_grade|pluralize}}]</li>
+				{% endfor %}
+				</ul>
+				<div class="quest-printing-options"></div>
+				{% endspaceless %}
+
+
+			Topics in this quiz:
+			<br>
+			{% for topic in tag_list %}<div class="quest-tag">{{topic}}</div>{% endfor %}
+
+
+
 {% endblock %}
