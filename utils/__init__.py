@@ -173,6 +173,7 @@ def send_email(to_addresses, subject, messages):
     the subject is re-used for all messages.
     """
     from_address = email_from
+    to_list = []
     if from_address is None:
         from_address = settings.SERVER_EMAIL
 
@@ -184,9 +185,11 @@ def send_email(to_addresses, subject, messages):
                 if settings.DEBUG or settings.TESTING:
                     data.append((subject, message, from_address,
                                                      ['test@example.com',]))
+                    to_list.append('test@example.com')
                 else:
                     data.append((subject, message, from_address,
                                                      [to_addresses[idx],]))
+                    to_list.append(to_addresses[idx])
 
         use_mass_email = True
     else:
@@ -194,6 +197,7 @@ def send_email(to_addresses, subject, messages):
         if settings.DEBUG or settings.TESTING:
             # Overwrite sender address in debug mode
             to_addresses = ['test@example.com',]
+            to_list.append('test@example.com')
 
     out = None
     if use_mass_email:
@@ -214,7 +218,7 @@ def send_email(to_addresses, subject, messages):
                                   subject,
                                   str(e)))
 
-    return out
+    return out, to_list
 
 def generate_random_token(token_length=16, base_address=''):
     import random

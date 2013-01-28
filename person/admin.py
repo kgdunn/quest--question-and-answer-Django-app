@@ -18,7 +18,7 @@ class TokenAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'token_address', 'has_been_used')
     list_display_links = ('user', 'token_address')
     list_per_page = 1000
-    ordering = ('id',)
+    ordering = ('-id',)
 admin.site.register(Token, TokenAdmin)
 
 

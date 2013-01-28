@@ -421,7 +421,8 @@ variable  must be specified as "{'choices': ['option a', 'option b', 'etc']}"\
 
     # Final checks before returning
     if not sd.has_key('name'):
-        sd['name'] = t_question.replace('\n','').strip()
+        summary = t_question.replace('\n','').strip()
+        sd['name'] = summary[0:min(250,len(summary))]
 
     sd['t_question'] = t_question
     sd['t_solution'] = t_solution
@@ -506,12 +507,14 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     """
     Given a text file, loads various question templates for a course.
 
+    NOTE: does not need the ``question_set_slug`` actually.
+
     Each question is split by "#----" in the text file
     """
     # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
 
-    f_name = '/home/kevindunn/quest/week-2.qset'
-    f_name = ''
+    f_name = '/home/kevindunn/quest/week-3.qset'
+    #f_name = ''
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
     if isinstance(course, HttpResponse):
@@ -548,7 +551,6 @@ def generate_questions(request, course_code_slug, question_set_slug):
     #fname = ''
     #if fname:
     #    users_added = load_class_list(fname, course_code_slug)
-
     load_question_templates(request, course_code_slug, question_set_slug)
 
     course = validate_user(request, course_code_slug, question_set_slug,
@@ -561,6 +563,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
     # Now render, for every user, their questions from the question set
     which_users = UserProfile.objects.filter(courses=course)
     user_objs = [userP.user for userP in which_users if userP.slug == 'zhangbo-gu']
+    user_objs = [userP.user for userP in which_users] # if userP.slug == 'zhangbo-gu']
     for user in user_objs:
 
         if qset.random_choice:
@@ -570,13 +573,14 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
         question_list = []
         for idx, qt in enumerate(qts):
-            qa = QActual.objects.filter(qtemplate=qt.qtemplate,
+            # Check if ``QActual`` already exists:
+            qa = QActual.objects.filter(qtemplate=qt,
                                         qset=qset,
                                         user=user.get_profile(),
                                         is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
-                qa = render(qt.qtemplate, qset, user)
+                qa = render(qt, qset, user)
                 question_list.append(qa)
 
         n_questions = len(qts)
@@ -613,10 +617,10 @@ def generate_questions(request, course_code_slug, question_set_slug):
             to_list.append(to_address)
 
         if to_list:
-            out = send_email(to_list, subject, message_list)
+            out, to_list_out = send_email(to_list, subject, message_list)
         if out:
             logger.debug('Successfully sent multiple emails for sign in to %s'
-                         % str(to_list))
+                         % str(to_list_out))
         else:
             logger.error('Unable to send multiple sign-in emails to: %s' %
                         str(to_list))

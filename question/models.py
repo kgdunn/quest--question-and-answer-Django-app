@@ -288,5 +288,6 @@ class QActual(models.Model):
 
     def save(self, *args, **kwargs):
         """ Override the model's saving function to do some changes """
-        self.var_dict = json.dumps(self.var_dict, sort_keys=True)
+        if isinstance(self.var_dict, dict):
+            self.var_dict = json.dumps(self.var_dict, sort_keys=True)
         super(QActual, self).save(*args, **kwargs)

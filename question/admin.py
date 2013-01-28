@@ -5,26 +5,26 @@ class QTemplateAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'q_type', 'difficulty', 'max_grade', )
     list_display_links = ('name', )
     list_per_page = 1000
-    ordering = ('id',)
+    ordering = ('-id',)
 
 class QSetAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'min_total', 'max_total', 'course',
                     'ans_time_start', 'ans_time_final')
     list_display_links = ('name', 'ans_time_start', 'ans_time_final' )
     list_per_page = 1000
-    ordering = ('id',)
+    ordering = ('-id',)
 
 class InclusionAdmin(admin.ModelAdmin):
     list_display = ('id', 'qset', 'qtemplate', 'weight', )
     list_display_links = ('qset', 'qtemplate', 'weight' )
     list_per_page = 1000
-    ordering = ('id',)
+    ordering = ('-id',)
 
 class QActualAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'given_answer', 'is_submitted')
     list_display_links = ('user', )
     list_per_page = 100
-    ordering = ('id',)
+    ordering = ('-id',)
 
 
 admin.site.register(QTemplate, QTemplateAdmin)

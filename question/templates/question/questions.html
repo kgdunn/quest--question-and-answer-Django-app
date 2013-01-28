@@ -114,12 +114,12 @@ function countdown(element) {
                 }
             }
             if(minutes > 0) {
-                var minute_text = minutes + (minutes > 1 ? ' minutes' : ' minute');
+                var minute_text = minutes + (minutes > 1 ? ' mins' : ' min');
             } else {
                 var minute_text = '';
             }
-            var second_text = seconds > 1 ? 'seconds' : 'second';
-            el.innerHTML = 'Time remaining: ' + minute_text + ' ' + seconds + ' ' + second_text;
+            var second_text = seconds > 1 ? 'secs' : 'sec';
+            el.innerHTML = 'Time remaining:<br> ' + minute_text + ' ' + seconds + ' ' + second_text;
             seconds--;
        }, 1000)
 };

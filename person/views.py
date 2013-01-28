@@ -54,15 +54,12 @@ def create_sign_in_email(user, qset=None):
     Sign in at: %s
 
     You may re-use this link within the testing duration, or request a new link
-    from http://quest.mcmaster.ca
-    """ % token_address
+    from http://quest.mcmaster.ca\n\n""" % token_address
 
     if qset:
         subject = 'Quest website, %s' % qset.name
-        message += """\
-    * Test duration = %s hours and %s minute(s).
-    * Testing window closes at: %s; after which solutions are available.
-    """ % (qset.max_duration.strftime('%H'),
+        message += """* Test duration = %s hours and %s minute(s).\n* Testing window closes at: %s; after which solutions are available.""" % \
+          (qset.max_duration.strftime('%H'),
            qset.max_duration.strftime('%M'),
            qset.ans_time_final.strftime('%H:%M on %d %h %Y'))
     else:
