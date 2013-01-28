@@ -840,6 +840,7 @@ def render(qt, qset, user):
                                 as_displayed=html_q,
                                 html_solution=html_a,
                                 var_dict=var_dict)
+    logger.debug('Create QA with id = %s' % str(qa.id))
 
     return qa
 

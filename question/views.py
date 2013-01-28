@@ -325,7 +325,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                 start = 0
                 token_dict = json.loads(quest.given_answer)
                 for item in INPUT_RE.finditer(html_question):
-                    val = token_dict[item.group(2)]
+                    val = token_dict.get(item.group(2), '')
                     out += '%s%s%s%s%s%s' %\
                             (html_question[start:item.start()],
                              r'<input',
