@@ -119,7 +119,7 @@ def validate_user(request, course_code_slug, question_set_slug,
         # question set objects, as well as to validate the admin user
         return courses[0], qset[0]
     else:
-        quests = QActual.objects.filter(qset=qset[0]).filter(user=user)
+        quests = QActual.objects.filter(qset=qset[0]).filter(user=user).order_by('id')
 
     if len(quests) == 0:
         # I've seen this error only occur once; when the URL for the questions
