@@ -7,3 +7,4 @@ snippets.py
 logfile*
 mod.wsgi
 apache-logs
+database/
