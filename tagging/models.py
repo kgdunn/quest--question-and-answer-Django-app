@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 
 import logging
 logger = logging.getLogger('quest')
-logger.debug('Initializing quest::tagging::models.py')
+#logger.debug('Initializing quest::tagging::models.py')
 
 
 class Tag(models.Model):
