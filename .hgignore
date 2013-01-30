@@ -8,3 +8,4 @@ logfile*
 mod.wsgi
 apache-logs
 database/
+jsons/

@@ -48,6 +48,15 @@ class ParseError(Exception):
     pass
 
 
+def get_questions_for_user(qset, user):
+    """
+    Returns the QActual objects for a specific question set (quiz) for a
+    specific user. Use this function, because it is called elsewhere.
+    """
+    return QActual.objects.filter(qset=qset[0]).filter(user=user).\
+                                                                order_by('id')
+
+
 def validate_user(request, course_code_slug, question_set_slug,
                   question_id=None, admin=False, expiry_check=True):
     """
@@ -119,7 +128,8 @@ def validate_user(request, course_code_slug, question_set_slug,
         # question set objects, as well as to validate the admin user
         return courses[0], qset[0]
     else:
-        quests = QActual.objects.filter(qset=qset[0]).filter(user=user).order_by('id')
+        quests = get_questions_for_user(qset, user)
+
 
     if len(quests) == 0:
         # I've seen this error only occur once; when the URL for the questions

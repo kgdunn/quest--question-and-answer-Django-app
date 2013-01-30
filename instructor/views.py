@@ -23,7 +23,7 @@ import numpy as np
 
 # Our imports
 from question.models import (QTemplate, QActual, Inclusion)
-from question.views import validate_user
+from question.views import validate_user, get_questions_for_user
 from person.models import (UserProfile, User)
 from person.views import create_sign_in_email
 from tagging.views import get_and_create_tags
@@ -583,7 +583,8 @@ def generate_questions(request, course_code_slug, question_set_slug):
                 qa = render(qt, qset, user)
                 question_list.append(qa)
 
-        n_questions = len(qts)
+        question_list = get_questions_for_user(qset, user)
+        assert(len(question_list) == len(qts))
 
         # Run through a 2nd time to add the previous and next links
         for idx, qt in enumerate(question_list):
@@ -1119,4 +1120,5 @@ def fix_questions(request):
     for qa in QActual.objects.filter(qtemplate__id=21):
         qa.html_solution = u'<p>The average is \\(\\bar{x} = 49.6\\) and the standard deviation is \\(s=18.18\\). Use the \\(t\\)-distribution with 9 degrees of freedom to find the critical value, \\(c_t = 2.262\\) [found with R using <code>qt(0.975, 9)</code>]. </p>\n<p>Then the lower bound is \\(\\bar{x} - c_t \\dfrac{s}{\\sqrt{n}} = 49.6 - 2.262 \\dfrac{18.18}{\\sqrt{10}} = 36.6\\) and the upper bound is \\(49.6 + 2.262 \\dfrac{18.18}{\\sqrt{10}} = 62.6\\).</p>'
         qa.save()
+        logger.debug('Fixed question %d' % qa.id)
 
