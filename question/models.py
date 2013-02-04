@@ -63,6 +63,8 @@ class QTemplate(models.Model):
     t_grading = models.TextField()
     # Variables used in the templates (``t_question`` and ``t_solution``)
     t_variables = models.TextField(blank=True, null=True)
+    # Source code used to evaluate any variables and grading responses
+    t_code = models.TextField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         """ Override the model's saving function to do some checks """

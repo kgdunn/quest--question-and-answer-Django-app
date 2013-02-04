@@ -10,6 +10,7 @@ except ImportError:
     import json
 
 from math import floor
+from django.db.models.query import QuerySet
 from django.core.context_processors import csrf
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import (render_to_response, redirect, RequestContext,
@@ -53,8 +54,12 @@ def get_questions_for_user(qset, user):
     Returns the QActual objects for a specific question set (quiz) for a
     specific user. Use this function, because it is called elsewhere.
     """
-    return QActual.objects.filter(qset=qset[0]).filter(user=user).\
-                                                                order_by('id')
+    if isinstance(qset, QuerySet):
+        q = qset[0]
+    else:
+        q = qset
+
+    return QActual.objects.filter(qset=q).filter(user=user).order_by('id')
 
 
 def validate_user(request, course_code_slug, question_set_slug,

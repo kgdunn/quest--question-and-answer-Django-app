@@ -224,7 +224,7 @@ def parse_MCQ_TF_Multi(text, q_type):                             # helper
     return t_question, t_solution, t_grading
 
 
-def parse_OTHER(text, solution, grading, q_type):             # helper
+def parse_OTHER(text, solution, grading, q_type):                  # helper
     """
     Short and long answer questions are parsed and processed here.
     The solution test and grading text are also checked and returned.
@@ -294,7 +294,7 @@ def parse_question_text(text):                                    # helper
     [[solution]]
     From multiplication rules we have that a*b = 2.
     """
-    t_question = t_solution = t_grading = var_dict = ''
+    t_question = t_solution = t_grading = var_dict = t_code = ''
     # Force it into a list of strings.
     if isinstance(text, basestring):
         text = text.split('\n')
@@ -340,6 +340,14 @@ def parse_question_text(text):                                    # helper
                                                         sd['solution'],
                                                         sd['grading'],
                                                         sd['type'])
+
+    # If there's source code:
+    if 'code' in sd.keys():
+        sd['t_code'] = '\n'.join(sd['code'])
+        # TODO(KGD): check the first line starts with '#! ......'
+    else:
+        sd['t_code'] = t_code
+
 
     sd['contributor'] = 1
     sd['tags'] = ''
@@ -429,6 +437,7 @@ variable  must be specified as "{'choices': ['option a', 'option b', 'etc']}"\
     sd['t_grading'] = t_grading
     sd['t_variables'] = var_dict
 
+
     return sd
 
 
@@ -465,7 +474,8 @@ def create_question_template(text, user=None):
                             t_question = sd['t_question'],
                             t_solution = sd['t_solution'],
                             t_grading = sd['t_grading'],
-                            t_variables = sd['t_variables'] )
+                            t_variables = sd['t_variables'],
+                            t_code = sd['t_code'])
 
         for tag in get_and_create_tags(sd['tags']):
             qtemplate.tags.add(tag)
@@ -513,7 +523,7 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     """
     # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
 
-    f_name = '/home/kevindunn/quest/week-3.qset'
+    f_name = '/home/kevindunn/quest/week-4.qset'
     #f_name = ''
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
@@ -585,7 +595,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
         question_list = get_questions_for_user(qset, user)
         assert(len(question_list) == len(qts))
-
+        n_questions = len(question_list)
         # Run through a 2nd time to add the previous and next links
         for idx, qt in enumerate(question_list):
             prev_q = next_q = None
@@ -629,7 +639,28 @@ def generate_questions(request, course_code_slug, question_set_slug):
     return HttpResponse('All questions generated for all users for %s' % qset.slug)
 
 
-def render(qt, qset, user):
+def evaluate_template_code(code, var_dict):                         #helper
+
+    # Get the incoming variables
+    var_dict_rendered = {}
+    for key, values in var_dict.iteritems():
+        var_dict_rendered[str(key)] = values[1]
+
+    # Strip out the Language identifier
+    lang = code[0:code.find('\n')].strip('#!').strip().lower()
+    code = code[code.find('\n'):]
+
+    output = ({}, {})
+    if lang == 'python':
+        local_dict = {} #var_dict_rendered
+        global_dict = {}
+        #code += '\n\n_output_ = quest(locals())'
+        exec(code, global_dict, local_dict)
+        output = local_dict['quest'](**var_dict_rendered)
+
+    return output
+
+def render(qt, qset, user):                                          # helper
     """
     Renders templates to HTML.
     * Handles text
@@ -685,7 +716,8 @@ def render(qt, qset, user):
         for (final, value) in get_type(qt.t_grading, keytype='final'):
             lst.append(template % (q_type, name, value, final))
 
-        # Do not use <div> tags: content inside it is ignore by Markdown
+        # NOTE: Do not use <div> tags: content inside it is ignored by Markdown
+        #       Causes math not to be rendered.
         lst.insert(0, '<span class="quest-question-mcq">')
         lst.append('</span>')
         return lst
@@ -705,7 +737,14 @@ def render(qt, qset, user):
                 out += qt.t_question[start:item.start()]
                 key = item.groups()[0]
                 val = generate_random_token(8)
-                token_dict[val] = qt.t_grading.pop(key)  # transfer it over
+                try:
+                    token_dict[val] = qt.t_grading.pop(key)  # transfer it over
+                except KeyError:
+                    logger.error(('Error when rendering template %s: could '
+                                  'find key [%s] in the grading dict') %
+                                     (qt.name, key))
+                    raise
+
                 out += ans_str % val
                 start = item.end()
 
@@ -772,13 +811,64 @@ def render(qt, qset, user):
         tmplte = Template(rndr_string)
         cntxt = Context(var_dict_rendered)
         return tmplte.render(cntxt)
+    #---------
+    def clean_diplayed_answer(item, sig_figs=None):
+        """
+        Cleans any type of input data to ensure a string output is sent back.
+        """
+        from decimal import Decimal, Context
+        from math import log10, floor
+        if not(sig_figs):
+            step =4
+            sig_figs = int(abs(floor(log10(step/1000.0))))
 
-    # 1. First convert strings to dictionaries:
+
+        if isinstance(item, (float, int)):
+            out = [[],str(item)]
+
+        if isinstance(item, basestring):
+            out = [[], item]
+
+        if isinstance(item, list) or isinstance(item, np.ndarray):
+            # TODO(KGD): ndarrays of 2 or more dimensions should be formatted
+            #            is a 2D array
+            out = []
+            for entry in item:
+                temp = Context(prec=sig_figs, Emax=999,).\
+                                    create_decimal(str(entry))
+                out.append(float(temp))
+
+            out = [[],str(out)]  # so that it can correctly work with the
+                                  # subsequent ``insert_evaluate_variables()``
+
+        return out
+
+
+    # 1. Convert to strings
     if isinstance(qt.t_grading, basestring):
         qt.t_grading = json.loads(qt.t_grading)
         qt.t_variables = json.loads(qt.t_variables)
 
+    # 2. Random variables, if required.
+    var_dict = {}
+    if qt.t_variables:
+        var_dict = create_random_variables(qt.t_variables)
+
+    # 3. Evaluate source code
+    # The source code will expand the random variables in the dictionary that
+    # are particular to this user. It will also potentially create
+    # grading solutions.
+    new_variables, grading_variables = evaluate_template_code(qt.t_code,
+                                                              var_dict)
+    for key, value in new_variables.iteritems():
+        var_dict[key] = clean_diplayed_answer(value)
+    for key, value in grading_variables.iteritems():
+        qt.t_grading[key] = value
+
+
+    # 4. Render the HTML
     rndr_question = []
+    grading_answer = {}
     if qt.q_type in ('mcq', 'tf', 'multi'):
         rndr_question.append(qt.t_question)
         rndr_question.append('\n')
@@ -792,23 +882,14 @@ def render(qt, qset, user):
                                      'Enter your answer here ...')
         rndr_question.append(ans_str)
     elif qt.q_type == 'short':
-        out, token_dict = render_short_question(qt)
+        out, grading_answer = render_short_question(qt)
         rndr_question.append(out)
     elif qt.q_type == 'multipart':
         rndr_question.append(qt.t_question)
         rndr_question.append('\n')
 
 
-    # 2. Random variables, if required.
-    var_dict = {}
-    if qt.t_variables:
-        var_dict = create_random_variables(qt.t_variables)
-
-    # 3. Evaluate source code
-    # TODO(KGD)
-    pass
-
-    # 4. Evalute the solution string
+    # 5. Evalute the solution string
     rndr_solution = qt.t_solution
 
     # 5. Now call Django's template engine to render any templates, only if
@@ -831,7 +912,8 @@ def render(qt, qset, user):
 
     # 7. Dump the dictionary to a string for storage
     var_dict_str = json.dumps(var_dict, separators=(',', ':'), sort_keys=True)
-
+    grading_answer = json.dumps(grading_answer, separators=(',', ':'),
+                                sort_keys=True)
 
     # TODO(KGD): move the images in ``filenames``
 
@@ -840,7 +922,8 @@ def render(qt, qset, user):
                                 user=user.get_profile(),
                                 as_displayed=html_q,
                                 html_solution=html_a,
-                                var_dict=var_dict)
+                                var_dict=var_dict,
+                                grading_answer=grading_answer)
     logger.debug('Create QA with id = %s' % str(qa.id))
 
     return qa
@@ -943,7 +1026,8 @@ def create_random_variables(var_dict):
 
         #from decimal import Decimal, Context
         #from math import log10, floor
-        #sig_figs = abs(floor(log10(step/1000.0)))
+        #step =4
+        #sig_figs = int(abs(floor(log10(step/1000.0))))
         #out = Context(prec=sig_figs, Emax=999,).create_decimal(str(temp))
         #out = out.to_eng_string()
         #if v_type == 'int':

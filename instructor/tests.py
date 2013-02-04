@@ -53,6 +53,7 @@ class SimpleTests(TestCase):
         self.assertEqual(len(q), 1)
         self.assertEqual(q[0].difficulty, 3)
 
+
 class ParseTests(TestCase):
     fixtures = ['initial_data',]
     def test_mcq_basic_parse(self):
@@ -249,7 +250,6 @@ Some of the things that can be noticed in the plot are:
 ^
 """
         qtemplate = views.create_question_template(some_text)
-
 
 
 class RenderTests(TestCase):
