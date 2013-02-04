@@ -640,6 +640,12 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
 
 def evaluate_template_code(code, var_dict):                         #helper
+    """
+    This function will evaluate any source code included in the template.
+    """
+    output = ({}, {})
+    if not code():
+        return output
 
     # Get the incoming variables
     var_dict_rendered = {}
@@ -650,7 +656,7 @@ def evaluate_template_code(code, var_dict):                         #helper
     lang = code[0:code.find('\n')].strip('#!').strip().lower()
     code = code[code.find('\n'):]
 
-    output = ({}, {})
+
     if lang == 'python':
         local_dict = {} #var_dict_rendered
         global_dict = {}
