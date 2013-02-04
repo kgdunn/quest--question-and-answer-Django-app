@@ -644,7 +644,7 @@ def evaluate_template_code(code, var_dict):                         #helper
     This function will evaluate any source code included in the template.
     """
     output = ({}, {})
-    if not code():
+    if not code:
         return output
 
     # Get the incoming variables
