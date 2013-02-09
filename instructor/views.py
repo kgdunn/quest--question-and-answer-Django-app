@@ -674,17 +674,31 @@ def evaluate_template_code(code, var_dict):                         #helper
     lang = code[0:code.find('\n')].strip('#!').strip().lower()
     code = code[code.find('\n'):]
 
+    # Remove any Windows new lines (to be safe, replace them with regular
+    # newlines
+    code = code.replace('\r', '\n')
+
 
     if lang == 'python':
         local_dict = {} #var_dict_rendered
         global_dict = {}
         #code += '\n\n_output_ = quest(locals())'
-        exec(code, global_dict, local_dict)
-        output = local_dict['quest'](**var_dict_rendered)
+        try:
+            exec(code, None, local_dict)
+        except Exception, e:
+            logger.error(e)
+            raise
+
+        if local_dict.has_key('quest'):
+            output = local_dict['quest'](**var_dict_rendered)
+        else:
+            logger.warn('Python code must contain a "def quest(...)" function')
+            output = ({}, {})
 
     return output
 
-def render(qt):                                                     # helper
+
+def render(qt):                                                      # helper
     """
     Renders templates to HTML.
     * Handles text
@@ -765,8 +779,12 @@ def render(qt):                                                     # helper
                 try:
                     token_dict[val] = qt.t_grading.pop(key)  # transfer it over
                 except KeyError:
-                    logger.error(('Error when rendering template %s: could '
-                                  'find key [%s] in the grading dict') %
+                    if not(key):
+                        logger.error(('You forget to specify the variable '
+                                    'in the question [%s]') % qt.name)
+                    else:
+                        logger.error(('Error when rendering template %s:  '
+                              'could not find key [%s] in the grading dict') %
                                      (qt.name, key))
                     raise
 
@@ -1017,12 +1035,16 @@ def create_random_variables(var_dict):
             elif v_type == 'float':
                 hi = np.finfo(v_type).max
 
-        if dist == 'uniform':
+        if dist in ('uniform', 'unif'):
             rnd_val = np.random.uniform()
-        elif dist == 'normal':
+        elif dist in ('normal', 'norm'):
             # Map the range from 0 to 1.0 into the normal distribution centered
             # at 0.5 and sd=1/6*(1.0 - 0)
             rnd_val = np.random.normal(loc=0.5, scale=1.0/6.0)
+        else:
+            rnd_val = ('Please specify either "uniform" or "normal" as the '
+                       'random variable type.')
+
 
         temp = rnd_val * (hi - lo)
         # Randomly round ``temp`` down or round up:
@@ -1226,32 +1248,32 @@ def preview_question(request):
     """
     Allows an admin user to repeatedly preview a question
     """
-    if not request.POST:
+    if not(request.GET):
         ctxdict = {}
         ctxdict.update(csrf(request))
         return render_to_response('instructor/preview-question.html', ctxdict,
                                   context_instance=RequestContext(request))
     else:
-        qtemplate = request.POST['qtemplate']
+        qtemplate = request.GET['qtemplate']
         question = qtemplate.split('#----')[0]
 
         # Rather create a fake object than hit the database
         template = create_question_template(question, user=None)
 
         # Now render the template, again, without hitting the database
-        qa = render(template, qset, user)
+        html_q, html_a, var_dict, grading = render(template)
 
-        ctxdict = {'quest_list': quests,
-                   'item_id': q_id,
-                   'course': course_code_slug,
-                   'qset': question_set_slug,
-                   'item': quest,
+        ctxdict = {'quest_list': [],
+                   'item_id': 'Preview',
+                   'course': None,
+                   'qset': None,
+                   'item': None,
                    'timeout_time': 500,       # in the HTML template, XHR timeout
-                   'minutes_left': min_remain,
-                   'seconds_left': sec_remain,
-                   'html_question': html_question,
-                   'html_solution': html_solution,
-                   'last_question': q_id==len(quests)}
+                   'minutes_left': 0,
+                   'seconds_left': 0,
+                   'html_question': html_q,
+                   'html_solution': html_a,
+                   'last_question': True}
         ctxdict.update(csrf(request))
         return render_to_response('question/single-question.html', ctxdict,
                                   context_instance=RequestContext(request))

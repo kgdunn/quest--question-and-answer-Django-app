@@ -1,6 +1,6 @@
 {% extends "question/questions.html" %}
 {% block content %}
-<form name="input" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+<form name="input" action="" method="get" enctype="multipart/form-data">{% csrf_token %}
 Enter your question template here:
 <p><textarea name="qtemplate" cols="100" rows="30" autofocus="true"></textarea>
 <input type="submit" value="Preview the question">
