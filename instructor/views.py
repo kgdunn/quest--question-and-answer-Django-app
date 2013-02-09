@@ -11,10 +11,12 @@ import hashlib
 from collections import defaultdict
 
 from django.conf import settings
-from django.shortcuts import HttpResponse
+from django.core.context_processors import csrf
 from django.core.exceptions import ValidationError
 from django.template import Context, Template, Library
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import (HttpResponse, render_to_response,
+                              RequestContext)
 register = Library()
 
 # 3rd party imports
@@ -309,27 +311,27 @@ def parse_question_text(text):                                    # helper
         raise ParseError('[[question]] section not given')
 
     if isinstance(sd['type'], list):
-        sd['type'] = ''.join(sd['type']).strip().lower()
+        sd['q_type'] = ''.join(sd.pop('type')).strip().lower()
     elif isinstance(sd['type'], basestring):
-        sd['type'] = sd['type'].strip().lower()
+        sd['q_type'] = sd.pop('type').strip().lower()
 
-    if sd['type'] in ('tf', 'mcq', 'multi'):
+    if sd['q_type'] in ('tf', 'mcq', 'multi'):
         t_question, t_solution, t_grading = parse_MCQ_TF_Multi(sd['question'],
-                                                               sd['type'])
+                                                               sd['q_type'])
         if sd.has_key('solution'):
             t_solution += '\n\n' + '\n'.join(sd['solution'])
 
         sd.pop('question')
 
-    if sd['type'] in ('short', 'long', 'multipart'):
+    if sd['q_type'] in ('short', 'long', 'multipart'):
         if not sd.has_key('solution'):
             raise ParseError(('[[solution]] section not given for %s question'
-                              ' [%s...]') % (sd['type'],
+                              ' [%s...]') % (sd['q_type'],
                                             str(sd['question'])[0:30]))
         if not sd.has_key('grading'):
             raise ParseError(('[[grading]] section not given for %s question'
                               ' [%s...]. Required to assist person grading') %\
-                            (sd['type'], str(sd['question'])[0:30]))
+                            (sd['q_type'], str(sd['question'])[0:30]))
 
         # This function really doesn't do anything. Placeholder for now
         # Remmber that ``parse_question_text()`` is intended only to load
@@ -339,7 +341,7 @@ def parse_question_text(text):                                    # helper
         t_question, t_solution, t_grading = parse_OTHER(sd['question'],
                                                         sd['solution'],
                                                         sd['grading'],
-                                                        sd['type'])
+                                                        sd['q_type'])
 
     # If there's source code:
     if 'code' in sd.keys():
@@ -353,7 +355,7 @@ def parse_question_text(text):                                    # helper
     sd['tags'] = ''
     sd['difficulty'] = 1
     sd['max_grade'] = 1
-    sd['feedback'] = True
+    sd['enable_feedback'] = True
     if sd.has_key('attribs'):
         lines = sd['attribs']
         for line in lines:
@@ -372,8 +374,8 @@ def parse_question_text(text):                                    # helper
                 sd['max_grade'] = GRADES_RE.match(line).group(2)
 
             if FEEDBACK_RE.match(line):
-                sd['feedback'] = FEEDBACK_RE.match(line).group(2).lower() \
-                                                                     == 'true'
+                sd['enable_feedback'] = FEEDBACK_RE.match(line).group(2)\
+                                                        .lower() == 'true'
 
         # Remove this key: not required anymore
         sd.pop('attribs')
@@ -446,36 +448,44 @@ def create_question_template(text, user=None):
     Creates the QTemplate (question template) and adds it to the database.
     """
     sd = parse_question_text(text)
-    contributor = user or UserProfile.objects.filter(role='Grader')[0]
+    contributor = user
 
     # Maybe we've imported this template before. Update the previous ones.
     exist = QTemplate.objects.filter(name=sd['name'], contributor=contributor,
-                                     q_type=sd['type'])
+                                     q_type=sd['q_type'])
     if exist:
 
         # DO NOT EVER OVERWRITE AN EXISTING QTEMPLATE.
         # It will break the grading for questions that are in progress, but
         # not graded yet.
-
         logger.warn(('Found an existing question with the same/similar '
                      'template. Skipping it: [%s]') % sd['name'])
 
         # Return only the first instance of the template (there should only
         # be one anyway)
-        qtemplate = exist[0]
+        return exist[0]
 
+    # If it doesn't exist, create it, but use fake objects for testing and
+    # for previews. Only write actual templates to the database
+    if user is None:
+        class Fake_Template(object):
+            def __init__(self, initial_data):
+                for key in initial_data:
+                    setattr(self, key, initial_data[key])
+
+        qtemplate = Fake_Template(sd)
     else:
         qtemplate = QTemplate.objects.create(name=sd['name'],
-                            q_type=sd['type'],
-                            contributor=contributor,
-                            difficulty=sd['difficulty'],
-                            max_grade = sd['max_grade'],
-                            enable_feedback = sd['feedback'],
-                            t_question = sd['t_question'],
-                            t_solution = sd['t_solution'],
-                            t_grading = sd['t_grading'],
-                            t_variables = sd['t_variables'],
-                            t_code = sd['t_code'])
+                        q_type=sd['q_type'],
+                        contributor=contributor,
+                        difficulty=sd['difficulty'],
+                        max_grade = sd['max_grade'],
+                        enable_feedback = sd['enable_feedback'],
+                        t_question = sd['t_question'],
+                        t_solution = sd['t_solution'],
+                        t_grading = sd['t_grading'],
+                        t_variables = sd['t_variables'],
+                        t_code = sd['t_code'])
 
         for tag in get_and_create_tags(sd['tags']):
             qtemplate.tags.add(tag)
@@ -590,7 +600,15 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                         is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
-                qa = render(qt, qset, user)
+                html_q, html_a, var_dict, grading_answer = render(qt)
+                qa = QActual.objects.create(qtemplate=qt,
+                                            qset=qset,
+                                            user=user.get_profile(),
+                                            as_displayed=html_q,
+                                            html_solution=html_a,
+                                            var_dict=var_dict,
+                                            grading_answer=grading_answer)
+                logger.debug('Create QA with id = %s' % str(qa.id))
                 question_list.append(qa)
 
         question_list = get_questions_for_user(qset, user)
@@ -666,7 +684,7 @@ def evaluate_template_code(code, var_dict):                         #helper
 
     return output
 
-def render(qt, qset, user):                                          # helper
+def render(qt):                                                     # helper
     """
     Renders templates to HTML.
     * Handles text
@@ -690,6 +708,7 @@ def render(qt, qset, user):                                          # helper
         5 Render any variables using our templates.
         6 Convert this markup to HTML.
         7 Create QAactual object and return that
+
     """
     #---------
     def render_mcq_question(qt):
@@ -923,16 +942,7 @@ def render(qt, qset, user):                                          # helper
 
     # TODO(KGD): move the images in ``filenames``
 
-    qa = QActual.objects.create(qtemplate=qt,
-                                qset=qset,
-                                user=user.get_profile(),
-                                as_displayed=html_q,
-                                html_solution=html_a,
-                                var_dict=var_dict,
-                                grading_answer=grading_answer)
-    logger.debug('Create QA with id = %s' % str(qa.id))
-
-    return qa
+    return html_q, html_a, var_dict, grading_answer
 
 
 def create_random_variables(var_dict):
@@ -1202,7 +1212,6 @@ def clean_db(request):
             #{n_sample: [[4.0, 6.0, 1.0, '
 
 
-
 def fix_questions(request):
     """
     Fix an error in a question.
@@ -1211,4 +1220,39 @@ def fix_questions(request):
         qa.html_solution = u'<p>The average is \\(\\bar{x} = 49.6\\) and the standard deviation is \\(s=18.18\\). Use the \\(t\\)-distribution with 9 degrees of freedom to find the critical value, \\(c_t = 2.262\\) [found with R using <code>qt(0.975, 9)</code>]. </p>\n<p>Then the lower bound is \\(\\bar{x} - c_t \\dfrac{s}{\\sqrt{n}} = 49.6 - 2.262 \\dfrac{18.18}{\\sqrt{10}} = 36.6\\) and the upper bound is \\(49.6 + 2.262 \\dfrac{18.18}{\\sqrt{10}} = 62.6\\).</p>'
         qa.save()
         logger.debug('Fixed question %d' % qa.id)
+
+
+def preview_question(request):
+    """
+    Allows an admin user to repeatedly preview a question
+    """
+    if not request.POST:
+        ctxdict = {}
+        ctxdict.update(csrf(request))
+        return render_to_response('instructor/preview-question.html', ctxdict,
+                                  context_instance=RequestContext(request))
+    else:
+        qtemplate = request.POST['qtemplate']
+        question = qtemplate.split('#----')[0]
+
+        # Rather create a fake object than hit the database
+        template = create_question_template(question, user=None)
+
+        # Now render the template, again, without hitting the database
+        qa = render(template, qset, user)
+
+        ctxdict = {'quest_list': quests,
+                   'item_id': q_id,
+                   'course': course_code_slug,
+                   'qset': question_set_slug,
+                   'item': quest,
+                   'timeout_time': 500,       # in the HTML template, XHR timeout
+                   'minutes_left': min_remain,
+                   'seconds_left': sec_remain,
+                   'html_question': html_question,
+                   'html_solution': html_solution,
+                   'last_question': q_id==len(quests)}
+        ctxdict.update(csrf(request))
+        return render_to_response('question/single-question.html', ctxdict,
+                                  context_instance=RequestContext(request))
 

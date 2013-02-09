@@ -81,14 +81,24 @@ class Login_TestCases(TestCase):
         # Let's add a template, a QSet and render an actual question
         some_text = ('[[type]]\nMCQ\n[[question]]\nIf a=1, b=2. What is a*b?\n'
                      '--\n& 12\n&1\n^THE_SOLUTION\n& 4\n')
-        qtemplate = create_question_template(some_text)
-        qt = QTemplate.objects.get(id=qtemplate.id)
 
+        user = UserProfile.objects.filter(role='Grader')[0]
+        qtemplate = create_question_template(some_text, user=user)
+        qt = QTemplate.objects.get(id=qtemplate.id)
         course = Course.objects.all()[0]
         qset = QSet.objects.create(name="TEMPORARY-TEST", course=course)
 
+        # Render a question for the student
         student = UserProfile.objects.filter(role='Student')[0]
-        qa = render(qt, qset, student.user)
+        html_q, html_a, var_dict, grading_answer = render(qt)
+        qa = QActual.objects.create(qtemplate=qt,
+                                    qset=qset,
+                                    user=student,
+                                    as_displayed=html_q,
+                                    html_solution=html_a,
+                                    var_dict=var_dict,
+                                    grading_answer=grading_answer)
+
 
         now = datetime.datetime.now()
         delta = datetime.timedelta(seconds=600)

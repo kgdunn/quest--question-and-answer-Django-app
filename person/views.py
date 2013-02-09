@@ -58,14 +58,16 @@ def create_sign_in_email(user, qset=None):
 
     if qset:
         subject = 'Quest website, %s' % qset.name
-        message += """* Test duration = %s hours and %s minute(s).\n* Testing window closes at: %s; after which solutions are available.""" % \
+        message += """
+    * Test duration = %s hours and %s minute(s).
+    * Testing window closes at: %s; after which solutions are available.""" % \
           (qset.max_duration.strftime('%H'),
            qset.max_duration.strftime('%M'),
            qset.ans_time_final.strftime('%H:%M on %d %h %Y'))
     else:
         subject = 'Quest website access'
 
-    message += """\
+    message += """
 
     Please note: negative grading will be used for multiple-selection answers.
     In other words, do not check an answer unless you are certain it is correct.

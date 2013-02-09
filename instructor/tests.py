@@ -32,16 +32,12 @@ except ImportError:
 
 import wingdbstub
 from django.test import TestCase
-from question.models import QTemplate, QSet, QActual
-from person.models import User
-from course.models import Course
+from question.models import QTemplate
 import views
 from views import render
 
-# For all tests:
-course = Course.objects.all()[0]
-user = User.objects.all()[0]
-
+from person.models import UserProfile
+user = UserProfile.objects.filter(role='Grader')[0]
 
 class SimpleTests(TestCase):
     fixtures = ['initial_data',]
@@ -71,7 +67,7 @@ If a=1, b=2. What is a*b?
 ^2
 & 4
         """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         q = QTemplate.objects.get(id=qtemplate.id)
         self.assertEqual(q.difficulty, 1)
         self.assertEqual(q.q_type, 'mcq')
@@ -100,7 +96,7 @@ If a=1, b=2. What is a*b?
 & 1
 ^2
 & 4"""
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         q = QTemplate.objects.get(id=qtemplate.id)
         self.assertEqual(q.difficulty, 2)
         self.assertEqual(q.max_grade, 3)
@@ -135,7 +131,7 @@ Full grade for any reasonable answer. Our aim is to collect feedback.
 [[solution]]
 There is no solution for this question.
 """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         q = QTemplate.objects.get(id=qtemplate.id)
         self.assertEqual(q.difficulty, 3)
         self.assertEqual(q.max_grade, 5)
@@ -166,7 +162,7 @@ Difficulty: 1
 Tags: data visualization
 Grade: 1
 """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
         self.assertEqual(qt.t_solution, u'Goes here')
         t_grading = json.loads(qt.t_grading)
@@ -174,10 +170,9 @@ Grade: 1
         keys = t_grading.keys()
         self.assertEqual(keys, ['ans1', '2']) # <--- keys are strings
         self.assertEqual(vals, [['bar', 'BAR'], ['box']])
-        qset = QSet.objects.create(name="temporary", course=course)
 
-        qa = render(qt, qset, user)
-        self.assertEqual(qa.as_displayed[0:74], ('<p>Plots with both category '
+        html_q, _, _, _ = render(qt)
+        self.assertEqual(html_q[0:74], ('<p>Plots with both category '
                             'and value axes are known as <input type="text"'))
 
 
@@ -197,13 +192,12 @@ Some solution text would go here.
 [[grading]]
 Some grading text would go here.
         """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        qset = QSet.objects.create(name="temporary", course=course)
 
-        qa = render(qt, qset, user)
-        start = qa.as_displayed.find('for the <code>')
-        self.assertTrue(qa.as_displayed[start+14:start+18] in ('Opt1', 'Opt2', 'Opt3'))
+        html_q, _, _, _ = render(qt)
+        start = html_q.find('for the <code>')
+        self.assertTrue(html_q[start+14:start+18] in ('Opt1', 'Opt2', 'Opt3'))
 
 
     def test_question_missing_variable(self):
@@ -224,12 +218,11 @@ n: [4,6,1,int]
 The pass rate for this system is ({{n_total}}-1)/{{n_total}}), so
 """
         # The ``n_sample`` variable is not specified
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        qset = QSet.objects.create(name="temporary", course=course)
 
         with self.assertRaises(NameError):
-            qa = render(qt, qset, user)
+            render(qt)
 
 
     def test_dont_allow_no_answers_MCQ(self):
@@ -250,6 +243,7 @@ Some of the things that can be noticed in the plot are:
 ^
 """
         qtemplate = views.create_question_template(some_text)
+        # TODO(KGD): complete this test
 
 
 class RenderTests(TestCase):
@@ -267,21 +261,20 @@ The sun is hot.
 & False
 ^True
         """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        qset = QSet.objects.create(name="temporary", course=course)
 
-        qa = render(qt, qset, user)
+        html_q, _, _, _ = render(qt)
 
         key, value = views.get_type(qt.t_grading, 'key').next()
         self.assertTrue(key.startswith('True'))
-        start = qa.as_displayed.find(value)
-        self.assertEqual(qa.as_displayed[start+7:start+11], 'True')
+        start = html_q.find(value)
+        self.assertEqual(html_q[start+7:start+11], 'True')
 
         key, value = views.get_type(qt.t_grading, 'lure').next()
         self.assertTrue(key.startswith('False'))
-        start = qa.as_displayed.find(value)
-        self.assertEqual(qa.as_displayed[start+7:start+12], 'False')
+        start = html_q.find(value)
+        self.assertEqual(html_q[start+7:start+12], 'False')
 
 
     def test_tf_final_incorrect(self):
@@ -299,16 +292,14 @@ The sun is ....
 ^ Hot
 % None of the above.
         """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        qset = QSet.objects.create(name="temporary", course=course)
 
-        qa = render(qt, qset, user)
-
+        html_q, _, _, _ = render(qt)
         key, value = views.get_type(qt.t_grading, 'final-lure').next()
         self.assertTrue(key.startswith('None of the above.'))
-        start = qa.as_displayed.find(value)
-        self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
+        start = html_q.find(value)
+        self.assertEqual(html_q[start+7:start+11], 'None')
 
 
     def test_tf_final_correct(self):
@@ -326,16 +317,15 @@ The sun is ....
 & Warm
 %^ None of the above.
         """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        qset = QSet.objects.create(name="temporary", course=course)
 
-        qa = render(qt, qset, user)
+        html_q, _, _, _ = render(qt)
 
         key, value = views.get_type(qt.t_grading, 'final-key').next()
         self.assertTrue(key.startswith('None of the above.'))
-        start = qa.as_displayed.find(value)
-        self.assertEqual(qa.as_displayed[start+7:start+11], 'None')
+        start = html_q.find(value)
+        self.assertEqual(html_q[start+7:start+11], 'None')
         self.assertEqual(qt.t_solution, ('The solution is: "None of the '
                                          'above."'))
 
@@ -367,16 +357,13 @@ If a={{a}}, b={{b}}. What is a*b?
 a: [2, 5, 0.5, float]
 b: [5, 9, 1, int]
         """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        qset = QSet.objects.create(name="temporary", course=course)
 
-        qa = render(qt, qset, user)
-        qa = QActual.objects.get(id=qa.id)
-        var_dict = json.loads(qa.var_dict)
+        _, html_a, var_dict, _ = render(qt)
+
         true_answer = var_dict['a'][1] * var_dict['b'][1]
-        self.assertEqual(qa.html_solution, '<p>The solution is: "%s"</p>' %\
-                         true_answer)
+        self.assertEqual(html_a, '<p>The solution is: "%s"</p>' % true_answer)
 
 
     def test_mcq_bad_specified(self):
@@ -413,10 +400,9 @@ The image here contains oscillations
 & False
 ^ True
 """
-        qtemplate = views.create_question_template(some_text)
+        qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
-        qset = QSet.objects.create(name="temporary", course=course)
 
-        qa = render(qt, qset, user)
-        idx = qa.as_displayed.find('image_file_name.jpg')
-        self.assertEqual(qa.as_displayed[idx-3:idx], '/0/') # this is the subdir stored in
+        html_q, _, _, _ = render(qt)
+        idx = html_q.find('image_file_name.jpg')
+        self.assertEqual(html_q[idx-3:idx], '/0/') # this is the subdir stored in
