@@ -533,7 +533,7 @@ def load_question_templates(request, course_code_slug, question_set_slug):
     """
     # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
 
-    f_name = '/home/kevindunn/quest/week-4.qset'
+    f_name = '/home/kevindunn/quest/week-5.qset'
     #f_name = ''
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
