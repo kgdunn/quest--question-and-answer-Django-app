@@ -22,7 +22,7 @@ token_prefix = 'http://%s/%s/' % (settings.QUEST['FULL_DOMAIN_NO_HTTP'],
 
 
 logger = logging.getLogger('quest')
-logger.debug('Initializing person::views.py')
+#logger.debug('Initializing person::views.py')
 
 
 def create_new_account(user=None, **kwargs):
