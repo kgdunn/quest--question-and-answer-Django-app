@@ -22,8 +22,6 @@ token_prefix = 'http://%s/%s/' % (settings.QUEST['FULL_DOMAIN_NO_HTTP'],
 
 
 logger = logging.getLogger('quest')
-#logger.debug('Initializing person::views.py')
-
 
 def create_new_account(user=None, **kwargs):
     """
@@ -84,7 +82,6 @@ def sign_in(request):                             # URL: 'quest-main-page'
     Verifies the user. If they are registered, then they are emailed a
     token to sign in.
     """
-    logger.debug('person::sign-in')
     if request.method == 'POST':
         email = request.POST.get('user_mail_address', '')
         logger.info('POST::person::sign-in: ' + email)
@@ -115,7 +112,6 @@ def sign_in(request):                             # URL: 'quest-main-page'
 
     # Non-POST access of the sign-in page: display the login page to the user
     else:
-        logger.debug('Non-POST sign-in page request')
         ctxdict = {'email_placeholder': 'xxxxxxxx%s'  %
                                          settings.QUEST['email_placeholder']}
         ctxdict.update(csrf(request))

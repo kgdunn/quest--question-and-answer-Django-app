@@ -33,8 +33,6 @@ from utils import generate_random_token, send_email
 from course.models import Course
 
 logger = logging.getLogger('quest')
-logger.debug('Initializing quest::question::views.py')
-
 
 class BadVariableSpecification(Exception): pass
 

@@ -26,7 +26,6 @@ from course.models import Course
 from logitem.views import create_hit
 
 logger = logging.getLogger('quest')
-#logger.debug('Initializing quest::question::views.py')
 
 
 class BadVariableSpecification(Exception): pass
