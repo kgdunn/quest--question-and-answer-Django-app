@@ -119,7 +119,11 @@ function countdown(element) {
                 var minute_text = '';
             }
             var second_text = seconds > 1 ? 'secs' : 'sec';
-            el.innerHTML = 'Time remaining:<br> ' + minute_text + ' ' + seconds + ' ' + second_text;
+			  if(minutes > 3) {
+              el.innerHTML = 'Time remaining:<br> ' + minute_text;
+            } else {
+              el.innerHTML = 'Time remaining:<br> ' + minute_text + ' ' + seconds + ' ' + second_text;
+            }
             seconds--;
        }, 1000)
 };
