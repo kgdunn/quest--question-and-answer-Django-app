@@ -29,6 +29,7 @@ urlpatterns += patterns('',
 
     # Instructor specific URLs
     url(r'^_admin/', include('instructor.urls')),
+    url(r'^_grading/', include('grades.urls')),
 
     url(r'^$', person.views.sign_in, name='quest-main-page'),
 
