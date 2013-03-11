@@ -1,6 +1,9 @@
 #!/bin/bash
 #--------------------------------
 
+# So that the database dump can be completed first
+sleep 30s
+
 # Web root
 webrootdir="/var/django/quest/"
 
