@@ -1014,6 +1014,10 @@ def create_random_variables(var_dict):
         dist = dist.strip().lower()
         v_type = v_type.strip().lower()
 
+        # If the user is trying to specify a constant variable as
+        # [2.39, 2.39, 0.0], i.e. lo=2.39, hi=2.39, step=0.0
+        # this it will (rightly) fail. The user should just hard-code the
+        # value, since it isn't a variable anymore; it's a constant.
         if lo > hi:
             raise BadVariableSpecification(('[low, high, step]: low < high'))
         if step > (hi-lo):
