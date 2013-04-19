@@ -265,13 +265,17 @@ class QActual(models.Model):
     # student, depending on their specific question values
     grading_answer = models.TextField(blank=True)
 
-    # The user's answer (may be intermediate still)
+    # The user's comments
     user_comments = models.TextField(blank=True)
 
     # NOTE: it is a conscious decision not to assign grades to the ``QActual``
     #       objects. We rather assign grades in a ``grades.Grade`` object;
     #       these are smaller and we can deal with grading as a separate
     #       event.
+    grade = models.ForeignKey('grades.Grade', blank=True, null=True)
+
+    # Feedback from the student based on the grading
+    feedback = models.TextField(blank=True, null=True)
 
     # Has the question been submitted yet? True: used actively clicked the
     # submit button; ``False``: XHR stored answer.

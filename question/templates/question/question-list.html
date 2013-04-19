@@ -9,7 +9,8 @@
 	<ul>
 	{% for quest in quest_list %}
 		<li><a href="{% url quest-ask-specific-question course qset forloop.counter %}">
-			Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} point{{quest.qtemplate.max_grade|pluralize}}]</li>
+			Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} point{{quest.qtemplate.max_grade|pluralize}}]
+				{% if quest.grade %} | grade: {{quest.grade.grade_value|floatformat}} / {{quest.qtemplate.max_grade}} {% endif %} </li>
 	{% endfor %}
 	</ul>
 	<div class="quest-printing-options"></div>

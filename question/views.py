@@ -393,7 +393,8 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                'seconds_left': sec_remain,
                'html_question': html_question,
                'html_solution': html_solution,
-               'last_question': q_id==len(quests)}
+               'last_question': q_id==len(quests),
+               'grade': quest.grade}
     ctxdict.update(csrf(request))
     return render_to_response('question/single-question.html', ctxdict,
                               context_instance=RequestContext(request))

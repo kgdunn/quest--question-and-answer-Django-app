@@ -207,6 +207,12 @@ div#quest-section-body .align-center{
     text-align: center;
 }
 
+/* Styling for grading */
+
+div.quest-item-grading{
+	color: #ff0055;
+}
+
 /* Styling for <tt></tt> elements */
 tt {
 	background-color:#EEE;

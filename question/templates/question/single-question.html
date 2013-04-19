@@ -40,6 +40,8 @@
 						{{html_solution|safe}}
 					</div>{% endif %}
 					<div class="quest-item-grading">
+						{% if item.grade %} Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}} {% else %} Not graded yet {% endif %}
+
 					</div>
 					<div class="quest-item-feedback">
 					</div>

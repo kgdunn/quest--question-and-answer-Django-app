@@ -159,6 +159,7 @@ INSTALLED_APPS = (
     'course',
     'instructor',
     'utils',
+    'grades',
 )
 
 # Authentication related:

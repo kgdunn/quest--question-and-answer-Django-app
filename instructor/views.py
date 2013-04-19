@@ -1080,15 +1080,6 @@ def create_random_variables(var_dict):
     return var_dict
 
 
-def auto_grade():
-    """
-    Auto-grades a question set.
-    * Questions that cannot be auto-graded are distinctly shown as not
-      graded yet
-    """
-    pass
-
-
 def load_class_list(f_name, course_slug):
     """
     Load a CSV file class list (exported from Avenue via copy/paste to textfile)
