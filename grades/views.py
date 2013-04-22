@@ -136,12 +136,14 @@ def grade_short(qactual):
     #compare qactual.given_answer to qactual.grading_answer
     #``grading_answer`` doesn't exist for the earlier quests.
     grading = json.loads(qactual.qtemplate.t_grading)
+    keys = [item[0] for item in grading.items()]
+    grading[keys[0]]
 
     from question.templatetags.quest_render_tags import EvaluateString
-    a = EvaluateString(format_string='')
+    a = EvaluateString(format_string=)
 
 
-    keys = [item[0] for item in grading.items() if item[1][0]=='key']
+
     grade_per_key = qactual.qtemplate.max_grade
     grade_value = 0.0
     grade = Grade.objects.create(graded_by=get_auto_grader(),
