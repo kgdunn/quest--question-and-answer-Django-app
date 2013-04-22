@@ -4,7 +4,7 @@ try:
     import simplejson as json
 except ImportError:
     import json
-#import random
+import re
 #import logging
 #import hashlib
 #from collections import defaultdict
@@ -25,6 +25,7 @@ from question.models import (QTemplate, QActual, Inclusion)
 from question.views import validate_user
 from person.models import UserProfile
 from grades.models import Grade
+from utils import insert_evaluate_variables
 
 def get_auto_grader():
     """ Get the UserProfile for the ``auto-grader''
@@ -58,7 +59,12 @@ def process_grades(request, course_code_slug, question_set_slug):
                 # Do not re-grade a question that has already received a grade
                 continue
 
-            if qactual.qtemplate.q_type in ('tf', 'mcq', 'multi',):
+            if qactual.given_answer == '':
+                grade = Grade.objects.create(graded_by=get_auto_grader(),
+                                             approved=True,
+                                             grade_value=0.0)
+
+            elif qactual.qtemplate.q_type in ('tf', 'mcq', 'multi',):
                 grade = grade_MCQ(qactual)
 
             elif qactual.qtemplate.q_type in ('short'):
@@ -100,10 +106,8 @@ def grade_MCQ(qactual):
     grading = json.loads(qactual.qtemplate.t_grading)
 
     grade_value = 0.0
-    if qactual.given_answer == '':
-        grade_value = 0.0
 
-    elif qactual.qtemplate.q_type in ('tf', 'mcq',):
+    if qactual.qtemplate.q_type in ('tf', 'mcq',):
         # Either the person gets the answer right, or wrong.
         if grading[qactual.given_answer][0] == 'key':
             grade_value = qactual.qtemplate.max_grade
@@ -133,24 +137,75 @@ def grade_short(qactual):
     """
     Grades short answer questions.
     """
-    #compare qactual.given_answer to qactual.grading_answer
+    # Main idea: compare qactual.given_answer to qactual.grading_answer
+
+    grade_value = 0
+
     #``grading_answer`` doesn't exist for the earlier quests.
+    # this causes some unusual code here
     grading = json.loads(qactual.qtemplate.t_grading)
+    token_dict = json.loads(qactual.given_answer)
     keys = [item[0] for item in grading.items()]
-    grading[keys[0]]
+    grade_per_key = qactual.qtemplate.max_grade / (len(keys) + 0.0)
 
-    from question.templatetags.quest_render_tags import EvaluateString
-    a = EvaluateString(format_string=)
+    TOKEN = re.compile(r'\{\[(.*?)\]\}')
+    INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
+
+    if not qactual.grading_answer:
+        if len(keys) == 1:
+
+            # This is a quick_eval template:
+            if isinstance(grading.values()[0], list):
+                #deal_with_quick_eval(a
+                pass
 
 
 
-    grade_per_key = qactual.qtemplate.max_grade
-    grade_value = 0.0
+            if token_dict.values()[0].lower() in grading.values()[0]:
+                grade_value = qactual.qtemplate.max_grade
+            else:
+                grade_value = 0
+        else:
+            # this is going to be messy
+
+            html_iter = INPUT_RE.finditer(qactual.as_displayed)
+            for token in TOKEN.finditer(qactual.qtemplate.t_question):
+                link = html_iter.next().group(2)
+                html_key = token.group(1)
+                if string_match(grading[html_key],token_dict[link], qactual):
+
+                    Handle sig figs here
+
+                    Handle other error messages here
+
+                    grade_value += grade_per_key
+
     grade = Grade.objects.create(graded_by=get_auto_grader(),
                                  approved=True,
                                  grade_value=grade_value)
 
     return grade
+
+def deal_with_quick_eval(eval_str, given, qactual):
+    """
+    Given the quick_eval answer, and the given answer, makes a judgement on it,
+    i.e. returns True or False if it matches to the required degree of
+    significance.
+
+    e.g. string: '[{% quick_eval "20/2.053749" 3 %},1e-2,\'rel\']'
+         given:  9.76'
+
+    """
+
+    TAG_RE = re.compile(r'^(.*?){%(\s?)quick_eval(\s?)"(.*?)"(\s?)(\d?)(\s?)%},(\s?)(.*?),\'(.*)\'(.*)$')
+    TAG_RE = re.compile(r'^(.*?){%(.*?)%},(\s?)(.*?),\'(.*)\'(.*)$')
+    to_eval = '{%' + TAG_RE.search(eval_str).group(2) + '%}'
+    precision = TAG_RE.search(eval_str).group(4)
+    p_type = TAG_RE.search(eval_str).group(5)
+    var_dict = json.loads(qactual.var_dict)
+
+    correct = insert_evaluate_variables(to_eval, var_dict)
+    return compare_numeric_with_precision(correct, given, precision, p_type)
 
 
 def grade_long(qactual):
@@ -158,3 +213,93 @@ def grade_long(qactual):
     Grades long answer questions.
     """
     return None
+
+
+def string_match(correct, given, qactual=None):
+    """
+    Returns whether the ``given`` string matches the ``correct`` string
+
+    Ignores capitalization and hyphens
+    """
+    if isinstance(correct, basestring):
+        correct = [correct, ]
+
+    for item in correct:
+        item = item.strip()
+        given = given.strip()
+        if item.lower() == given.lower():
+            return True
+
+        given.replace('-', ' ')
+        if item.lower() == given.lower():
+            return True
+
+        # Wait, it might be a quick_eval string:
+        # Make sure the original case is used here, not lower case.
+        out = deal_with_quick_eval(item, given, qactual)
+        if out:
+            return out
+        else:
+            print('Given: [%s] to match with %s' % (given, str(item)))
+            return out
+
+    print('Given: [%s] to match with %s' % (given, str(correct)))
+    return False
+
+
+def compare_numeric_with_precision(correct, given, precision, p_type):
+    """
+    Compares precision of a ``given`` string to the ``correct`` string, to
+    a given level of ``precision``.
+
+    The precision type, ``p_type`` is either ``rel`` or ``abs``:
+
+    A ``rel``: correct if within +/- correct value * precision
+        e.g. correct value = 56.2 and precision is 1E-2
+             The answer is correct if within 56.2 +/- (56.2*1E-2)
+                                 i.e. within 56.2 +/- 0.562
+                                 i.e. within [55.638 to 56.762]
+
+    B ``abs``: correct within an absolute bound.
+        e.g. correct value is 71.34 and if precision is 1E-2
+             The answer is correct if within 71.34 +/- 0.01
+                                 i.e. within 71.33 or 71.35
+
+
+    Returns one of the following:
+    * True      (it matches, to within the level of precision)
+    * False     (the answer is incorrect)
+    * 'Too many significant figures'
+    * 'Could not convert answer to a numeric result'
+
+    For example, let ``correct`` is 67.1 and precision = 0.3, with ``abs`` type:
+
+    * if ``given`` is 67.14414,    then return 'SigFigs'
+    * if ``given`` is 62.2515677,  then return False
+    * if ``given`` is 67.2,        then return True
+    * if ``given`` is 67.21768363, then return 'SigFigs'
+    """
+
+    from decimal import Decimal, InvalidOperation
+    correct_d = Decimal(correct)
+
+    if p_type in ('rel', 'relative'):
+        delta = correct_d * Decimal(precision)
+    else:
+        delta = Decimal(precision)
+
+    lower_b, upper_b = correct_d - delta, correct_d + delta
+
+    try:
+        given_d = Decimal(given)
+    except InvalidOperation:
+        return 'Could not convert answer to a numeric result'
+    if given_d < lower_b or given_d > upper_b:
+        return False
+
+    # Test significant figures
+    correct_d_sigfigs = correct_d.quantize(given_d)
+    if correct_d_sigfigs.compare_total(correct_d) == Decimal('0'):
+        return True
+    else:
+        return 'Too many significant figures'

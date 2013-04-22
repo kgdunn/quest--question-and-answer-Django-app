@@ -13,7 +13,7 @@ from collections import defaultdict
 from django.conf import settings
 from django.core.context_processors import csrf
 from django.core.exceptions import ValidationError
-from django.template import Context, Template, Library
+from django.template import Library
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import (HttpResponse, render_to_response,
                               RequestContext)
@@ -29,7 +29,7 @@ from question.views import validate_user, get_questions_for_user
 from person.models import (UserProfile, User)
 from person.views import create_sign_in_email
 from tagging.views import get_and_create_tags
-from utils import generate_random_token, send_email
+from utils import generate_random_token, send_email, insert_evaluate_variables
 from course.models import Course
 
 logger = logging.getLogger('quest')
@@ -831,26 +831,7 @@ def render(qt):                                                      # helper
 
         # Undo the filtering in the HTML
         return out.replace('\\\\', '\\'), filenames
-    #---------
-    def insert_evaluate_variables(text, var_dict):
-        """
-        Uses the Django template library to insert and evaluate expressions.
-        A list of strings and the variable dictionary of key-value pairs to
-        insert must be provided.
-        """
-        if isinstance(text, list):
-            text.insert(0, '{% load quest_render_tags %}')
-            rndr_string = '\n'.join(text)
-        else:
-            rndr_string = r'{% load quest_render_tags %}' + text
 
-        var_dict_rendered = {}
-        for key, values in var_dict.iteritems():
-            var_dict_rendered[key] = values[1]
-
-        tmplte = Template(rndr_string)
-        cntxt = Context(var_dict_rendered)
-        return tmplte.render(cntxt)
     #---------
     def clean_diplayed_answer(item, sig_figs=None):
         """

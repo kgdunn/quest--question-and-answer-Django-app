@@ -17,3 +17,9 @@ class Grade(models.Model):
     # If ``approved``, then the grade is used in the calculations.
     approved = models.BooleanField(default=False)
 
+    # Reasons/description related to grading. e.g. could list deductions.
+    # such as '-0.5 for per incorrect multiple choice' or 'too many significant
+    # figures'
+    reason_description = models.CharField(blank=True, null=True,
+                                          max_length=250)
+

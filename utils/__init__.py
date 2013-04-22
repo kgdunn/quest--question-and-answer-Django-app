@@ -3,7 +3,7 @@ from django.conf import settings
 from django.core.mail import BadHeaderError
 from django.core.mail import send_mail as _send_mail
 from django.core.mail import send_mass_mail
-
+from django.template import Context, Template
 from pygments import formatters, highlight, lexers
 
 import re
@@ -263,3 +263,23 @@ def convert_percentage_to_letter(grade):
         letter = 'A+'
 
     return letter
+
+def insert_evaluate_variables(text, var_dict):
+    """
+    Uses the Django template library to insert and evaluate expressions.
+    A list of strings and the variable dictionary of key-value pairs to
+    insert must be provided.
+    """
+    if isinstance(text, list):
+        text.insert(0, '{% load quest_render_tags %}')
+        rndr_string = '\n'.join(text)
+    else:
+        rndr_string = r'{% load quest_render_tags %} ' + text
+
+    var_dict_rendered = {}
+    for key, values in var_dict.iteritems():
+        var_dict_rendered[key] = values[1]
+
+    tmplte = Template(rndr_string)
+    cntxt = Context(var_dict_rendered)
+    return tmplte.render(cntxt)
