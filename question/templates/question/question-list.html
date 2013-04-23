@@ -13,6 +13,10 @@
 				{% if quest.grade %} | grade: {{quest.grade.grade_value|floatformat}} / {{quest.qtemplate.max_grade}} {% endif %} </li>
 	{% endfor %}
 	</ul>
+	{% if grade_str %}<div class="quest-item-grading">{{grade_str}}</div> {% endif %}
+
+
+
 	<div class="quest-printing-options"></div>
 	{% endspaceless %}
 

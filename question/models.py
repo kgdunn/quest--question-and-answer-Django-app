@@ -282,9 +282,9 @@ class QActual(models.Model):
     is_submitted = models.BooleanField(default=False)
 
     # Links to the previous and next question in the series
-    next_q = models.ForeignKey('self', blank=True, null=True,
+    next_q = models.ForeignKey('self', blank=True, null=True, editable=False,
                                related_name='next_question')
-    prev_q = models.ForeignKey('self', blank=True, null=True,
+    prev_q = models.ForeignKey('self', blank=True, null=True, editable=False,
                                related_name='prev_question')
 
     def __unicode__(self):
@@ -297,3 +297,6 @@ class QActual(models.Model):
         if isinstance(self.var_dict, dict):
             self.var_dict = json.dumps(self.var_dict, sort_keys=True)
         super(QActual, self).save(*args, **kwargs)
+
+    def qtemplate_id(self, instance):
+            return instance.qtemplate.id

@@ -5,9 +5,10 @@
 
 {% block content %}
     {# TODO(KGD): hide table if there are no item.is_active entries in the list #}
+    <p>Welcome: <b>{{username}}</b>
         {% for qset in question_set_list %}
             <div id="quest-course-list-container">
-                <p>Welcome: <b>{{username}}</b>
+
                 <br>
                 <p>Course: {{qset.0.course.name}}
                 <br>
@@ -16,7 +17,8 @@
                         <th style="width:10%">Test name</th>
                         <th style="width:20%">Earliest starting time</th>
                         <th style="width:20%">Tests closes at</th>
-                        <th style="width:50%">Announcements</th>
+                        <th style="width:40%">Announcements</th>
+                        <th style="width:10%">Grade</th>
                     </tr>
                     {% for item in qset %}
                     {% if item.is_active %}
@@ -25,6 +27,7 @@
                         <td>{{item.ans_time_start|date:"d F Y"}} at {{item.ans_time_start|date:"g:i A"}}
                         <td>{{item.ans_time_final|date:"d F Y"}} at {{item.ans_time_final|date:"g:i A"}}
                         <td>{{item.announcement|safe}}
+                        <td>{% if item.grade %}<div class="quest-item-grading">{{item.grade}}</div>{% endif %}
                     </tr>
                     {% endif %}
                     {% endfor %}

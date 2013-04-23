@@ -283,3 +283,18 @@ def insert_evaluate_variables(text, var_dict):
     tmplte = Template(rndr_string)
     cntxt = Context(var_dict_rendered)
     return tmplte.render(cntxt)
+
+def grade_display(actual, max_grade):
+    """
+    Nicely formats the grades for display to the user
+    """
+    def formatter(value):
+        if round(value, 8) == round(value,0):
+            return '%0.0f' % value
+        else:
+            return '%0.1f' % value
+
+    if actual is not None:
+        return '%s/%s' % (formatter(actual), formatter(max_grade))
+    else:
+        return '%s' % formatter(max_grade)

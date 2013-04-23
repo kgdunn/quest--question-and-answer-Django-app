@@ -1211,11 +1211,29 @@ def fix_questions(request):
     """
     Fix an error in a question.
     """
-    for qa in QActual.objects.filter(qtemplate__id=21):
-        qa.html_solution = u'<p>The average is \\(\\bar{x} = 49.6\\) and the standard deviation is \\(s=18.18\\). Use the \\(t\\)-distribution with 9 degrees of freedom to find the critical value, \\(c_t = 2.262\\) [found with R using <code>qt(0.975, 9)</code>]. </p>\n<p>Then the lower bound is \\(\\bar{x} - c_t \\dfrac{s}{\\sqrt{n}} = 49.6 - 2.262 \\dfrac{18.18}{\\sqrt{10}} = 36.6\\) and the upper bound is \\(49.6 + 2.262 \\dfrac{18.18}{\\sqrt{10}} = 62.6\\).</p>'
-        qa.save()
-        logger.debug('Fixed question %d' % qa.id)
+    #for qa in QActual.objects.filter(qtemplate__id=21):
+        #qa.html_solution = u'<p>The average is \\(\\bar{x} = 49.6\\) and the standard deviation is \\(s=18.18\\). Use the \\(t\\)-distribution with 9 degrees of freedom to find the critical value, \\(c_t = 2.262\\) [found with R using <code>qt(0.975, 9)</code>]. </p>\n<p>Then the lower bound is \\(\\bar{x} - c_t \\dfrac{s}{\\sqrt{n}} = 49.6 - 2.262 \\dfrac{18.18}{\\sqrt{10}} = 36.6\\) and the upper bound is \\(49.6 + 2.262 \\dfrac{18.18}{\\sqrt{10}} = 62.6\\).</p>'
+        #qa.save()
+        #logger.debug('Fixed question %d' % qa.id)
 
+    for qa in QActual.objects.filter(qtemplate__id=42):
+        ga = json.loads(qa.grading_answer)
+        for key, value in ga.iteritems():
+            value = eval(value[0])
+            value[1] = 0.1
+            ga[key] = [json.dumps(value), ]
+        qa.grading_answer = json.dumps(ga)
+        qa.save()
+
+    for qa in QActual.objects.filter(qtemplate__id=43):
+            ga = json.loads(qa.grading_answer)
+            for key, value in ga.iteritems():
+                value = eval(value[0])
+                if value[1] > 0:
+                    value[1] = 0.1
+                ga[key] = [json.dumps(value), ]
+            qa.grading_answer = json.dumps(ga)
+            qa.save()
 
 def preview_question(request):
     """

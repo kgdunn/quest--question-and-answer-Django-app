@@ -59,6 +59,7 @@ def process_grades(request, course_code_slug, question_set_slug):
     students = UserProfile.objects.filter(courses__slug=course_code_slug)
     qset_questions = QActual.objects.filter(qset__slug=question_set_slug)
 
+    count = 0
     for student in students:
         for qactual in qset_questions.filter(user=student).order_by('id'):
 
@@ -96,9 +97,9 @@ def process_grades(request, course_code_slug, question_set_slug):
             # Save the grade
             qactual.grade = grade
             qactual.save()
+            count += 1
 
-
-    return HttpResponse('All graded')
+    return HttpResponse('Graded %d questions' % count)
 
 
 def grade_MCQ(qactual):
@@ -153,16 +154,14 @@ def grade_short(qactual):
 
     #``grading_answer`` doesn't exist for the earlier quests.
     # this causes some unusual code here
-    grading = json.loads(qactual.qtemplate.t_grading)
     token_dict = json.loads(qactual.given_answer)
-    if not(grading):
-        grading = json.loads(qactual.grading_answer)
-
-    keys = [item[0] for item in grading.items()]
-    grade_per_key = qactual.qtemplate.max_grade / (len(keys) + 0.0)
 
     # Main idea: compare qactual.given_answer to qactual.grading_answer
     if qactual.grading_answer:
+        grading = json.loads(qactual.grading_answer)
+        keys = [item[0] for item in grading.items()]
+        grade_per_key = qactual.qtemplate.max_grade / (len(keys) + 0.0)
+
         reason = []
         # Rather use this for ``grading``: it maps more directly
         grading = json.loads(qactual.grading_answer)
@@ -226,6 +225,8 @@ def grade_short(qactual):
     INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
 
     if not qactual.grading_answer:
+        grading = json.loads(qactual.qtemplate.t_grading)
+
         if len(keys) == 1:
 
             # This is a quick_eval template:
@@ -295,11 +296,11 @@ def string_match(correct, given, qactual=None):
             out = (False, None)
 
         if out[0]:  # if successfully matched with ``quick_eval``
-            print('Given: [%s] to match with %s: True' % (given, str(correct)))
+            #print('Given: [%s] to match with %s: True' % (given, str(correct)))
             return out
 
     # Default return: False
-    print('[%s] to match with %s: False' % (given, str(correct)))
+    #print('[%s] to match with %s: False' % (given, str(correct)))
     return (False, 'No match')
 
 
@@ -367,7 +368,7 @@ def compare_numeric_with_precision(correct, given):
 
     # These must be inequalities (do not use <= or >=)
     if given_d < lower_b or given_d > upper_b:
-        print('[%s] [%s] %s' % (correct_v, given, 'False'))
+        #print('[%s] [%s] %s' % (correct_v, given, 'False'))
         return (False, 'Wrong value')
 
     # Test significant figures
@@ -376,7 +377,7 @@ def compare_numeric_with_precision(correct, given):
 
 
     # TODO(KGD): deal with significant figures. Ignoring it for now.
-    print('[%s] [%s] %s' % (correct_v, given, 'True'))
+    #print('[%s] [%s] %s' % (correct_v, given, 'True'))
     return (True, None)
 
 

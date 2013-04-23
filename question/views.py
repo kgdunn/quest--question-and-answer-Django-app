@@ -24,6 +24,7 @@ from models import (QSet, QActual)
 from person.models import Token, Timing
 from course.models import Course
 from logitem.views import create_hit
+from utils import grade_display
 
 logger = logging.getLogger('quest')
 
@@ -179,12 +180,14 @@ def ask_question_set(request):        # URL: ``quest-question-set``
     for course in user.courses.all():
         # Which course(s) is the user registered for? Get all QSet's for them
         qsets[idx].extend(course.qset_set.order_by('-ans_time_start'))
+        for iterate, item in enumerate(qsets[idx]):
+            qsets[idx][iterate].grade = grades_for_quest(item, user)
         idx += 1
 
     # Show question sets
     ctxdict = {'question_set_list': qsets,
                'username': user.user.first_name + ' ' + user.user.last_name,
-               #'last_login': request.user.last_login <-- useless
+
               }
     ctxdict.update(csrf(request))
     return render_to_response('question/question-sets.html', ctxdict,
@@ -289,7 +292,9 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
                'qset': question_set_slug,
                'minutes_left': min_remain,
                'seconds_left': sec_remain,
-               'tag_list': list(tags)}
+               'tag_list': list(tags),
+               'grade_str': grades_for_quest(quests),
+               }
     ctxdict.update(csrf(request))
     return render_to_response('question/question-list.html', ctxdict,
                               context_instance=RequestContext(request))
@@ -508,3 +513,29 @@ def successful_submission(request, course_code_slug, question_set_slug):
                'quest_cut_off': final}
     return render_to_response('question/successfully-submitted.html', ctxdict,
                                 context_instance=RequestContext(request))
+
+
+def grades_for_quest(qactuals_or_qset, user=None):
+    """
+    Returns a string that shows the grades for the student, for their
+    set of quests.
+    """
+    if isinstance(qactuals_or_qset, QSet):
+        qactuals = QActual.objects.filter(qset=qactuals_or_qset, user=user)
+    else:
+        qactuals = qactuals_or_qset
+
+    max_grade = 0.0
+    actual_grade = 0.0
+    show_grades = True  # only show grade if all questions are graded
+    for item in qactuals:
+        max_grade += item.qtemplate.max_grade
+        if item.grade:
+            actual_grade += item.grade.grade_value
+        else:
+            show_grades = False
+
+    if show_grades:
+        return grade_display(actual_grade, max_grade)
+    else:
+        return None
