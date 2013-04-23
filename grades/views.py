@@ -14,9 +14,10 @@ from django.shortcuts import (HttpResponse, render_to_response,
 
 
 # 3rd party imports
+import numpy as np
 
 # Our imports
-from question.models import (QTemplate, QActual, Inclusion)
+from question.models import (QTemplate, QActual, Inclusion, QSet)
 from question.views import validate_user
 from person.models import UserProfile
 from grades.models import Grade
@@ -106,13 +107,10 @@ def grade_MCQ(qactual):
     """
     Grades multiple choice questions.
     """
-
-
     reason = []
 
     answer = qactual.given_answer
     grading = json.loads(qactual.qtemplate.t_grading)
-
     grade_value = 0.0
 
     if qactual.qtemplate.q_type in ('tf', 'mcq',):
@@ -150,11 +148,25 @@ def grade_short(qactual):
     """
     Grades short answer questions.
     """
-    grade_value = 0
-
-    #``grading_answer`` doesn't exist for the earlier quests.
-    # this causes some unusual code here
+    grade_value = 0.0
     token_dict = json.loads(qactual.given_answer)
+
+    if not qactual.grading_answer:
+        #``grading_answer`` doesn't exist for the earlier quests.
+        # this causes some unusual code here
+        grading = json.loads(qactual.qtemplate.t_grading)
+        TOKEN = re.compile(r'\{\[(.*?)\]\}')
+        INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
+        html_iter = INPUT_RE.finditer(qactual.as_displayed)
+
+        grading_answer = dict()
+        for token in TOKEN.finditer(qactual.qtemplate.t_question):
+            link = html_iter.next().group(2)
+            html_key = token.group(1)
+            grading_answer[link] = grading[html_key]
+
+        # Store this as the grading answer
+        qactual.grading_answer = json.dumps(grading_answer)
 
     # Main idea: compare qactual.given_answer to qactual.grading_answer
     if qactual.grading_answer:
@@ -163,8 +175,8 @@ def grade_short(qactual):
         grade_per_key = qactual.qtemplate.max_grade / (len(keys) + 0.0)
 
         reason = []
-        # Rather use this for ``grading``: it maps more directly
-        grading = json.loads(qactual.grading_answer)
+
+
         for key, value in grading.iteritems():
             string_answer = False
             if token_dict.has_key(key):
@@ -176,6 +188,8 @@ def grade_short(qactual):
                     except NameError:
                         if ',' in value[0]:
                             value = value[0].split(',')
+                    except:
+                        value = deal_with_quick_eval(value[0], qactual)
 
                 if isinstance(value, list) and len(value) == 3 and not\
                         all([isinstance(i, basestring) for i in value]):
@@ -205,7 +219,7 @@ def grade_short(qactual):
                                                          token_dict[key])
 
             else:
-                out = (False, reason_codes['Not answered'])
+                out = (False, 'Not answered')
 
             if out[0]:
                 grade_value += grade_per_key
@@ -221,39 +235,9 @@ def grade_short(qactual):
                                      grade_value=grade_value,
                                      reason_description=reason)
 
-    TOKEN = re.compile(r'\{\[(.*?)\]\}')
-    INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
 
-    if not qactual.grading_answer:
-        grading = json.loads(qactual.qtemplate.t_grading)
 
-        if len(keys) == 1:
-
-            # This is a quick_eval template:
-            if isinstance(grading.values()[0], list):
-                #deal_with_quick_eval(a
-                assert(False)
-
-            if token_dict.values()[0].lower() in grading.values()[0]:
-                grade_value = qactual.qtemplate.max_grade
-            else:
-                grade_value = 0
-        else:
-            # this is going to be messy
-
-            html_iter = INPUT_RE.finditer(qactual.as_displayed)
-            for token in TOKEN.finditer(qactual.qtemplate.t_question):
-                link = html_iter.next().group(2)
-                html_key = token.group(1)
-                assert(False)
-                #if string_match(grading[html_key],token_dict[link], qactual):
-
-                    #Handle sig figs here
-
-                    #Handle other error messages here
-
-                    #grade_value += grade_per_key
-
+    # This is the outer-most level
     grade = Grade.objects.create(graded_by=get_auto_grader(),
                                  approved=True,
                                  grade_value=grade_value)
@@ -265,7 +249,16 @@ def grade_long(qactual):
     """
     Grades long answer questions.
     """
-    return None
+    # TODO(KGD): short-term hack to get grading completed
+    if len(qactual.given_answer) < 100:
+        grade_value = 0.0
+    else:
+        grade_value = 5.0
+    grade = Grade.objects.create(graded_by=get_auto_grader(),
+                                 approved=True,
+                                 grade_value=grade_value,
+                                 )
+    return grade
 
 
 def string_match(correct, given, qactual=None):
@@ -392,11 +385,8 @@ def handle_special_cases(given):
 
     return given
 
-    #else:
-    #    return (True, 'SigFigs')
 
-
-def deal_with_quick_eval(eval_str, given, qactual):
+def deal_with_quick_eval(eval_str, qactual):
     """
     Given the quick_eval answer, and the given answer, makes a judgement on it,
     i.e. returns True or False if it matches to the required degree of
@@ -406,13 +396,43 @@ def deal_with_quick_eval(eval_str, given, qactual):
          given:  9.76'
 
     """
-
-    TAG_RE = re.compile(r'^(.*?){%(\s?)quick_eval(\s?)"(.*?)"(\s?)(\d?)(\s?)%},(\s?)(.*?),\'(.*)\'(.*)$')
-    TAG_RE = re.compile(r'^(.*?){%(.*?)%},(\s?)(.*?),\'(.*)\'(.*)$')
+    TAG_RE = re.compile(r'^(.*?){%(.*?)%},(.*?),(.*?)](.*?)$')
     to_eval = '{%' + TAG_RE.search(eval_str).group(2) + '%}'
-    precision = TAG_RE.search(eval_str).group(4)
-    p_type = TAG_RE.search(eval_str).group(5)
-    var_dict = json.loads(qactual.var_dict)
-
+    precision = TAG_RE.search(eval_str).group(3)
+    p_type = TAG_RE.search(eval_str).group(4)
+    var_dict = json.loads(qactual.var_dict.replace("'", '"').replace('""', '"'))
     correct = insert_evaluate_variables(to_eval, var_dict)
-    return compare_numeric_with_precision(correct, given, precision, p_type)
+    return [float(correct), float(precision), p_type]
+
+
+@login_required
+def grade_summary(request, course_code_slug):
+    results = dict()
+    students = UserProfile.objects.filter(courses__slug=course_code_slug)
+    for student in students:
+        print(student)
+        qset_grade = []
+        qset_maxes = []
+        for qset in QSet.objects.filter(course__slug=course_code_slug):
+            max_grade = 0.0
+            actual_grade = 0.0
+            for qa in QActual.objects.filter(qset=qset).filter(user=student):
+
+                max_grade += qa.qtemplate.max_grade
+                if qa.grade:
+                    actual_grade += qa.grade.grade_value
+                else:
+                    max_grade = np.NaN
+
+            qset_grade.append(actual_grade)
+            qset_maxes.append(max_grade)
+
+        results[student.slug] = np.round(np.array(qset_grade) / np.array(qset_maxes) * 100, 1)
+
+    out = []
+    for key, value in results.iteritems():
+
+        value = str(['%5.1f'%i for i in value])
+        out.append('%50s, %s' % (key, value[1:-1]))
+
+    return HttpResponse('\n'.join(out))
