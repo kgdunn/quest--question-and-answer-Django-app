@@ -1,13 +1,8 @@
-#import re
-#import csv
+import re
 try:
     import simplejson as json
 except ImportError:
     import json
-import re
-#import logging
-#import hashlib
-#from collections import defaultdict
 
 #from django.conf import settings
 #from django.core.context_processors import csrf
@@ -26,6 +21,15 @@ from question.views import validate_user
 from person.models import UserProfile
 from grades.models import Grade
 from utils import insert_evaluate_variables
+
+reason_codes = {'SigFigs': 'Too many significant figures',
+                'Negative MCQ': 'Lost grades for checking incorrect entries',
+                'Not answered': 'Question was not answered',
+                'Wrong value': 'Wrong answer given'}
+
+negative_deduction_multi = 0.5
+negative_sigfigs = 0.25
+
 
 def get_auto_grader():
     """ Get the UserProfile for the ``auto-grader''
@@ -98,10 +102,10 @@ def grade_MCQ(qactual):
     """
     Grades multiple choice questions.
     """
-    negative_grading_multi = True
-    negative_deduction_multi = 0.5
 
-    #
+
+    reason = []
+
     answer = qactual.given_answer
     grading = json.loads(qactual.qtemplate.t_grading)
 
@@ -122,13 +126,18 @@ def grade_MCQ(qactual):
         for ans in answer.split(','):
             if ans in keys:
                 grade_value += grade_per_key
-            elif negative_grading_multi:
+            elif negative_deduction_multi:
                 grade_value -= negative_deduction_multi
+
+        if grade_value != qactual.qtemplate.max_grade:
+            reason.append(reason_codes['Negative MCQ'])
 
 
     grade = Grade.objects.create(graded_by=get_auto_grader(),
                                  approved=True,
-                                 grade_value=grade_value)
+                                 grade_value=grade_value,
+                                 reason_description = reason,
+                                 )
 
     return grade
 
@@ -137,8 +146,6 @@ def grade_short(qactual):
     """
     Grades short answer questions.
     """
-    # Main idea: compare qactual.given_answer to qactual.grading_answer
-
     grade_value = 0
 
     #``grading_answer`` doesn't exist for the earlier quests.
@@ -147,6 +154,36 @@ def grade_short(qactual):
     token_dict = json.loads(qactual.given_answer)
     keys = [item[0] for item in grading.items()]
     grade_per_key = qactual.qtemplate.max_grade / (len(keys) + 0.0)
+
+    # Main idea: compare qactual.given_answer to qactual.grading_answer
+    if qactual.grading_answer:
+        reason = []
+        # Rather use this for ``grading``: it maps more directly
+        grading = json.loads(qactual.grading_answer)
+        for key, value in grading.iteritems():
+            if token_dict.has_key(key):
+                correct = json.loads(value[0].replace("'", '"'))
+                out = compare_numeric_with_precision(correct, token_dict[key])
+
+            else:
+                out = (False, reason_codes['Not answered'])
+
+            if out[0]:
+                grade_value += grade_per_key
+            else:
+                reason.append(reason_codes[out[1]])
+
+            if out[1] == 'SigFigs':
+                grade_value -= negative_sigfigs
+                reason.append(reason_codes['SigFigs'])
+
+        grade = Grade.objects.create(graded_by=get_auto_grader(),
+                                     approved=True,
+                                     grade_value=grade_value,
+                                     reason_description=reason)
+
+
+
 
     TOKEN = re.compile(r'\{\[(.*?)\]\}')
     INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
@@ -158,8 +195,6 @@ def grade_short(qactual):
             if isinstance(grading.values()[0], list):
                 #deal_with_quick_eval(a
                 pass
-
-
 
             if token_dict.values()[0].lower() in grading.values()[0]:
                 grade_value = qactual.qtemplate.max_grade
@@ -173,12 +208,12 @@ def grade_short(qactual):
                 link = html_iter.next().group(2)
                 html_key = token.group(1)
                 if string_match(grading[html_key],token_dict[link], qactual):
+                    pass
+                    #Handle sig figs here
 
-                    Handle sig figs here
+                    #Handle other error messages here
 
-                    Handle other error messages here
-
-                    grade_value += grade_per_key
+                    #grade_value += grade_per_key
 
     grade = Grade.objects.create(graded_by=get_auto_grader(),
                                  approved=True,
@@ -247,10 +282,12 @@ def string_match(correct, given, qactual=None):
     return False
 
 
-def compare_numeric_with_precision(correct, given, precision, p_type):
+def compare_numeric_with_precision(correct, given):
     """
-    Compares precision of a ``given`` string to the ``correct`` string, to
+    Compares precision of a ``given`` string to the ``correct`` item, to
     a given level of ``precision``.
+
+    ``correct`` is a list made of 3 parts [value, precision, p_type]
 
     The precision type, ``p_type`` is either ``rel`` or ``abs``:
 
@@ -272,16 +309,20 @@ def compare_numeric_with_precision(correct, given, precision, p_type):
     * 'Too many significant figures'
     * 'Could not convert answer to a numeric result'
 
-    For example, let ``correct`` is 67.1 and precision = 0.3, with ``abs`` type:
+    For example, let the correct value be 67.1, with precision = 0.3, and
+    ``abs`` precision. The ``correct`` = [67.1, 0.3, 'abs']:
 
-    * if ``given`` is 67.14414,    then return 'SigFigs'
-    * if ``given`` is 62.2515677,  then return False
-    * if ``given`` is 67.2,        then return True
-    * if ``given`` is 67.21768363, then return 'SigFigs'
+    * if ``given`` is 67.14414,    then return (True, 'SigFigs')
+    * if ``given`` is 62.2515677,  then return (False, 'Wrong value')
+    * if ``given`` is 67.2,        then return (True, None)
+    * if ``given`` is 34.21768363, then return (False, 'SigFigs')
     """
 
+    correct_v, precision, p_type = correct
+    correct_v = str(correct_v)
+    precision = str(precision)
     from decimal import Decimal, InvalidOperation
-    correct_d = Decimal(correct)
+    correct_d = Decimal(correct_v)
 
     if p_type in ('rel', 'relative'):
         delta = correct_d * Decimal(precision)
@@ -295,11 +336,11 @@ def compare_numeric_with_precision(correct, given, precision, p_type):
     except InvalidOperation:
         return 'Could not convert answer to a numeric result'
     if given_d < lower_b or given_d > upper_b:
-        return False
+        return (False, 'Wrong value')
 
     # Test significant figures
     correct_d_sigfigs = correct_d.quantize(given_d)
     if correct_d_sigfigs.compare_total(correct_d) == Decimal('0'):
-        return True
+        return (True, None)
     else:
-        return 'Too many significant figures'
+        return (True, 'SigFigs')
