@@ -33,3 +33,9 @@ import wingdbstub
             #self.assertEqual(resp.templates[0].name, 'person/sent-email.html')
         #else:
             #pass
+
+
+# Tests to add
+# --------------
+
+# \u2212 = "-"

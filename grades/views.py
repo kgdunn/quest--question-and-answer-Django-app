@@ -25,7 +25,10 @@ from utils import insert_evaluate_variables
 reason_codes = {'SigFigs': 'Too many significant figures',
                 'Negative MCQ': 'Lost grades for checking incorrect entries',
                 'Not answered': 'Question was not answered',
-                'Wrong value': 'Wrong answer given'}
+                'Wrong value': 'Wrong answer given',
+                'No match': 'Answer could not be matched with the template',
+                'Blank answer': 'Blank answer',
+                'Not convertable': 'Answer could not converted to a numeric result'}
 
 negative_deduction_multi = 0.5
 negative_sigfigs = 0.25
@@ -152,6 +155,9 @@ def grade_short(qactual):
     # this causes some unusual code here
     grading = json.loads(qactual.qtemplate.t_grading)
     token_dict = json.loads(qactual.given_answer)
+    if not(grading):
+        grading = json.loads(qactual.grading_answer)
+
     keys = [item[0] for item in grading.items()]
     grade_per_key = qactual.qtemplate.max_grade / (len(keys) + 0.0)
 
@@ -161,9 +167,43 @@ def grade_short(qactual):
         # Rather use this for ``grading``: it maps more directly
         grading = json.loads(qactual.grading_answer)
         for key, value in grading.iteritems():
+            string_answer = False
             if token_dict.has_key(key):
-                correct = json.loads(value[0].replace("'", '"'))
-                out = compare_numeric_with_precision(correct, token_dict[key])
+
+                # TODO(KGD): remove this, after quest 8, 9 and 10 are graded
+                if isinstance(value, list) and len(value) == 1 and isinstance(value[0], basestring):
+                    try:
+                        value = eval(value[0])
+                    except NameError:
+                        if ',' in value[0]:
+                            value = value[0].split(',')
+
+                if isinstance(value, list) and len(value) == 3 and not\
+                        all([isinstance(i, basestring) for i in value]):
+                    correct = value
+                elif isinstance(value, int):
+                    # TODO(KGD): Very unusual: don't allow this in the future
+                    correct = [value, 0, 'abs']
+                elif isinstance(value, list) and \
+                        all([isinstance(i, basestring) for i in value]):
+
+                    string_answer = True
+
+                elif isinstance(value[0], basestring):
+                    try:
+                        correct = json.loads(value[0].replace("'", '"'))
+                    except json.decoder.JSONDecodeError:
+                        # Happens, for example, if: u'[+1, 1E-1, "rel"]'
+                        # the "+1" does not happily get decoded.
+                        correct = eval(value[0].replace("'", '"'))
+                else:
+                    assert(False)
+
+                if string_answer:
+                    out = string_match(value, token_dict[key], qactual)
+                else:
+                    out = compare_numeric_with_precision(correct,
+                                                         token_dict[key])
 
             else:
                 out = (False, reason_codes['Not answered'])
@@ -182,9 +222,6 @@ def grade_short(qactual):
                                      grade_value=grade_value,
                                      reason_description=reason)
 
-
-
-
     TOKEN = re.compile(r'\{\[(.*?)\]\}')
     INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
 
@@ -194,7 +231,7 @@ def grade_short(qactual):
             # This is a quick_eval template:
             if isinstance(grading.values()[0], list):
                 #deal_with_quick_eval(a
-                pass
+                assert(False)
 
             if token_dict.values()[0].lower() in grading.values()[0]:
                 grade_value = qactual.qtemplate.max_grade
@@ -207,8 +244,9 @@ def grade_short(qactual):
             for token in TOKEN.finditer(qactual.qtemplate.t_question):
                 link = html_iter.next().group(2)
                 html_key = token.group(1)
-                if string_match(grading[html_key],token_dict[link], qactual):
-                    pass
+                assert(False)
+                #if string_match(grading[html_key],token_dict[link], qactual):
+
                     #Handle sig figs here
 
                     #Handle other error messages here
@@ -220,27 +258,6 @@ def grade_short(qactual):
                                  grade_value=grade_value)
 
     return grade
-
-def deal_with_quick_eval(eval_str, given, qactual):
-    """
-    Given the quick_eval answer, and the given answer, makes a judgement on it,
-    i.e. returns True or False if it matches to the required degree of
-    significance.
-
-    e.g. string: '[{% quick_eval "20/2.053749" 3 %},1e-2,\'rel\']'
-         given:  9.76'
-
-    """
-
-    TAG_RE = re.compile(r'^(.*?){%(\s?)quick_eval(\s?)"(.*?)"(\s?)(\d?)(\s?)%},(\s?)(.*?),\'(.*)\'(.*)$')
-    TAG_RE = re.compile(r'^(.*?){%(.*?)%},(\s?)(.*?),\'(.*)\'(.*)$')
-    to_eval = '{%' + TAG_RE.search(eval_str).group(2) + '%}'
-    precision = TAG_RE.search(eval_str).group(4)
-    p_type = TAG_RE.search(eval_str).group(5)
-    var_dict = json.loads(qactual.var_dict)
-
-    correct = insert_evaluate_variables(to_eval, var_dict)
-    return compare_numeric_with_precision(correct, given, precision, p_type)
 
 
 def grade_long(qactual):
@@ -263,23 +280,27 @@ def string_match(correct, given, qactual=None):
         item = item.strip()
         given = given.strip()
         if item.lower() == given.lower():
-            return True
+            return (True, None)
 
         given.replace('-', ' ')
         if item.lower() == given.lower():
-            return True
+            return (True, None)
 
         # Wait, it might be a quick_eval string:
         # Make sure the original case is used here, not lower case.
-        out = deal_with_quick_eval(item, given, qactual)
-        if out:
-            return out
+        if 'quick_eval' in item:
+            assert(False)
+            out = deal_with_quick_eval(item, given, qactual)
         else:
-            print('Given: [%s] to match with %s' % (given, str(item)))
+            out = (False, None)
+
+        if out[0]:  # if successfully matched with ``quick_eval``
+            print('Given: [%s] to match with %s: True' % (given, str(correct)))
             return out
 
-    print('Given: [%s] to match with %s' % (given, str(correct)))
-    return False
+    # Default return: False
+    print('[%s] to match with %s: False' % (given, str(correct)))
+    return (False, 'No match')
 
 
 def compare_numeric_with_precision(correct, given):
@@ -329,18 +350,68 @@ def compare_numeric_with_precision(correct, given):
     else:
         delta = Decimal(precision)
 
-    lower_b, upper_b = correct_d - delta, correct_d + delta
+    # Handle the case of negative ``correct_d`` values properly, using abs()
+    lower_b, upper_b = correct_d - abs(delta), correct_d + abs(delta)
 
     try:
         given_d = Decimal(given)
     except InvalidOperation:
-        return 'Could not convert answer to a numeric result'
+        if given:
+            # A few last tries for corner cases:
+            try:
+                given_d = Decimal(handle_special_cases(given))
+            except InvalidOperation:
+                return (False, 'Not convertable')
+        else:
+            return (False, 'Blank answer')
+
+    # These must be inequalities (do not use <= or >=)
     if given_d < lower_b or given_d > upper_b:
+        print('[%s] [%s] %s' % (correct_v, given, 'False'))
         return (False, 'Wrong value')
 
     # Test significant figures
-    correct_d_sigfigs = correct_d.quantize(given_d)
-    if correct_d_sigfigs.compare_total(correct_d) == Decimal('0'):
-        return (True, None)
-    else:
-        return (True, 'SigFigs')
+    #correct_d_sigfigs = correct_d.quantize(given_d)
+    #if correct_d_sigfigs.compare_total(correct_d) >= Decimal('0'):
+
+
+    # TODO(KGD): deal with significant figures. Ignoring it for now.
+    print('[%s] [%s] %s' % (correct_v, given, 'True'))
+    return (True, None)
+
+
+def handle_special_cases(given):
+    """
+    Handles some interesting corner cases that have been observed:
+
+    \u2212 = "-" (a hyphen, instead of a minus sign)
+    """
+    if u'\u2212' in given:
+        given = given.replace(u'\u2212', '-')
+
+    return given
+
+    #else:
+    #    return (True, 'SigFigs')
+
+
+def deal_with_quick_eval(eval_str, given, qactual):
+    """
+    Given the quick_eval answer, and the given answer, makes a judgement on it,
+    i.e. returns True or False if it matches to the required degree of
+    significance.
+
+    e.g. string: '[{% quick_eval "20/2.053749" 3 %},1e-2,\'rel\']'
+         given:  9.76'
+
+    """
+
+    TAG_RE = re.compile(r'^(.*?){%(\s?)quick_eval(\s?)"(.*?)"(\s?)(\d?)(\s?)%},(\s?)(.*?),\'(.*)\'(.*)$')
+    TAG_RE = re.compile(r'^(.*?){%(.*?)%},(\s?)(.*?),\'(.*)\'(.*)$')
+    to_eval = '{%' + TAG_RE.search(eval_str).group(2) + '%}'
+    precision = TAG_RE.search(eval_str).group(4)
+    p_type = TAG_RE.search(eval_str).group(5)
+    var_dict = json.loads(qactual.var_dict)
+
+    correct = insert_evaluate_variables(to_eval, var_dict)
+    return compare_numeric_with_precision(correct, given, precision, p_type)

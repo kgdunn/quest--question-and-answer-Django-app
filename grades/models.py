@@ -35,3 +35,7 @@ class Grade(models.Model):
             self.reason_description = json.dumps(self.reason_description)
         super(Grade, self).save(*args, **kwargs)
 
+    def __unicode__(self):
+
+        return '[%f]: %s' % (self.grade_value, str(self.reason_description))
+
