@@ -426,7 +426,10 @@ def grade_summary(request, course_code_slug):
         # All done with this student
         qset_grade.reverse()
         qset_maxes.reverse()
-        results[student.slug] = np.round(np.array(qset_grade) / np.array(qset_maxes) * 100, 1)
+        email = student.user.email
+        prefix = email[0:email.find('@')]
+        results[prefix] = np.round(np.array(qset_grade) \
+                                              / np.array(qset_maxes) * 100, 1)
 
     out = []
     for key, value in results.iteritems():
