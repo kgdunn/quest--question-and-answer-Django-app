@@ -454,7 +454,7 @@ def fix_glitch(request):
                         print('Changed [%s]:(%s) -> (%s)' %
                               (qactual.user.slug,
                                   qactual.grade.grade_value, grade.grade_value))
-                    qactual.grade.delete()
+                    #qactual.grade.delete()
                     qactual.grade = grade
                     qactual.save()
                 else:
