@@ -230,6 +230,7 @@ def grade_short(qactual):
                 grade_value -= negative_sigfigs
                 reason.append(reason_codes['SigFigs'])
 
+        reason = list(set(reason)) # remove duplicates
         grade = Grade.objects.create(graded_by=get_auto_grader(),
                                      approved=True,
                                      grade_value=grade_value,
