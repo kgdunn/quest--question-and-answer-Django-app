@@ -174,20 +174,25 @@ def ask_question_set(request):        # URL: ``quest-question-set``
     Ask which question set to display
     """
     user = request.user.profile
-    qsets = []
+    class qset_list(list): pass
+    qsets = qset_list()
     idx = 0
     qsets.append([])
     for course in user.courses.all():
         # Which course(s) is the user registered for? Get all QSet's for them
         qsets[idx].extend(course.qset_set.order_by('-ans_time_start'))
+        qsets.actual_total = 0.0
+        qsets.max_total = 0.0
         for iterate, item in enumerate(qsets[idx]):
-            qsets[idx][iterate].grade = grades_for_quest(item, user)
+            qsets[idx][iterate].grade, actual, max_grade = \
+                                               grades_for_quest(item, user)
+            qsets.actual_total += actual
+            qsets.max_total += max_grade
         idx += 1
 
     # Show question sets
     ctxdict = {'question_set_list': qsets,
                'username': user.user.first_name + ' ' + user.user.last_name,
-
               }
     ctxdict.update(csrf(request))
     return render_to_response('question/question-sets.html', ctxdict,
@@ -293,7 +298,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
                'minutes_left': min_remain,
                'seconds_left': sec_remain,
                'tag_list': list(tags),
-               'grade_str': grades_for_quest(quests),
+               'grade_str': grades_for_quest(quests)[0],
                }
     ctxdict.update(csrf(request))
     return render_to_response('question/question-list.html', ctxdict,
@@ -536,6 +541,6 @@ def grades_for_quest(qactuals_or_qset, user=None):
             show_grades = False
 
     if show_grades:
-        return grade_display(actual_grade, max_grade)
+        return grade_display(actual_grade, max_grade), actual_grade, max_grade
     else:
-        return None
+        return None, actual_grade, max_grade
