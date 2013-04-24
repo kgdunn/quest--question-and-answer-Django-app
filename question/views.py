@@ -174,25 +174,26 @@ def ask_question_set(request):        # URL: ``quest-question-set``
     Ask which question set to display
     """
     user = request.user.profile
-    class qset_list(list): pass
-    qsets = qset_list()
+    qsets = list()
     idx = 0
     qsets.append([])
     for course in user.courses.all():
         # Which course(s) is the user registered for? Get all QSet's for them
         qsets[idx].extend(course.qset_set.order_by('-ans_time_start'))
-        qsets.actual_total = 0.0
-        qsets.max_total = 0.0
+        grade = 0.0
         for iterate, item in enumerate(qsets[idx]):
             qsets[idx][iterate].grade, actual, max_grade = \
                                                grades_for_quest(item, user)
-            qsets.actual_total += actual
-            qsets.max_total += max_grade
+            grade += actual / (max_grade + 0.0)
+            print(actual, max_grade)
         idx += 1
+
+        average = grade / float(iterate+1) * 100
 
     # Show question sets
     ctxdict = {'question_set_list': qsets,
                'username': user.user.first_name + ' ' + user.user.last_name,
+               'average': average,
               }
     ctxdict.update(csrf(request))
     return render_to_response('question/question-sets.html', ctxdict,
