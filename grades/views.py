@@ -144,14 +144,14 @@ def grade_MCQ(qactual):
     return grade
 
 
-def grade_short(qactual):
+def grade_short(qactual, force_reload=False):
     """
     Grades short answer questions.
     """
     grade_value = 0.0
     token_dict = json.loads(qactual.given_answer)
 
-    if not qactual.grading_answer:
+    if not qactual.grading_answer or force_reload:
         #``grading_answer`` doesn't exist for the earlier quests.
         # this causes some unusual code here
         grading = json.loads(qactual.qtemplate.t_grading)
@@ -448,9 +448,14 @@ def fix_glitch(request):
                 pass
 
             elif qactual.qtemplate.q_type in ('short'):
-                grade = grade_short(qactual)
+                grade = grade_short(qactual, force_reload=True)
                 if qactual.grade:
-                    grade.delete()
-
-                qactual.grade = grade
-                qactual.save()
+                    if grade.grade_value != qactual.grade.grade_value:
+                        print('Changed [%s]:(%s) -> (%s)' %
+                              (qactual.user.slug,
+                                  qactual.grade.grade_value, grade.grade_value))
+                    qactual.grade.delete()
+                    qactual.grade = grade
+                    qactual.save()
+                else:
+                    assert(False)
