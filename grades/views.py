@@ -134,7 +134,7 @@ def grade_MCQ(qactual):
         if grade_value != qactual.qtemplate.max_grade:
             reason.append(reason_codes['Negative MCQ'])
 
-    reason = list(set(r)) # remove duplicates
+    reason = list(set(reason)) # remove duplicates
     grade = Grade.objects.create(graded_by=get_auto_grader(),
                                  approved=True,
                                  grade_value=grade_value,
