@@ -422,6 +422,10 @@ def grade_summary(request, course_code_slug):
             qset_grade.append(actual_grade)
             qset_maxes.append(max_grade)
 
+
+        # All done with this student
+        qset_grade.reverse()
+        qset_maxes.reverse()
         results[student.slug] = np.round(np.array(qset_grade) / np.array(qset_maxes) * 100, 1)
 
     out = []
@@ -431,6 +435,7 @@ def grade_summary(request, course_code_slug):
         out.append('%50s, %s|' % (key, value[1:-1]))
 
     return HttpResponse('\n'.join(out))
+
 
 def fix_glitch(request):
 
