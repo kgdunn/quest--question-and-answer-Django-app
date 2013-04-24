@@ -442,7 +442,7 @@ def grade_summary(request, course_code_slug):
 
 def fix_glitch(request):
 
-    course_code_slug = 'statistics-for-engineering-4c3'
+    course_code_slug = 'statistics-for-engineering-6c3'
     question_set_slug = 'week-3'
     # Iterate through all questions by all students in the QSet
     students = UserProfile.objects.filter(courses__slug=course_code_slug)
