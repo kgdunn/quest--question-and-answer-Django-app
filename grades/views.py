@@ -237,12 +237,6 @@ def grade_short(qactual):
                                      reason_description=reason)
 
 
-
-    # This is the outer-most level
-    grade = Grade.objects.create(graded_by=get_auto_grader(),
-                                 approved=True,
-                                 grade_value=grade_value)
-
     return grade
 
 
@@ -400,7 +394,7 @@ def deal_with_quick_eval(eval_str, qactual):
     TAG_RE = re.compile(r'^(.*?){%(.*?)%},(.*?),(.*?)](.*?)$')
     to_eval = '{%' + TAG_RE.search(eval_str).group(2) + '%}'
     precision = TAG_RE.search(eval_str).group(3)
-    p_type = TAG_RE.search(eval_str).group(4)
+    p_type = TAG_RE.search(eval_str).group(4).strip('"').strip("'")
     var_dict = json.loads(qactual.var_dict.replace("'", '"').replace('""', '"'))
     correct = insert_evaluate_variables(to_eval, var_dict)
     return [float(correct), float(precision), p_type]
@@ -437,3 +431,26 @@ def grade_summary(request, course_code_slug):
         out.append('%50s, %s|' % (key, value[1:-1]))
 
     return HttpResponse('\n'.join(out))
+
+def fix_glitch(request):
+
+    course_code_slug = 'statistics-for-engineering-4c3'
+    question_set_slug = 'week-3'
+    # Iterate through all questions by all students in the QSet
+    students = UserProfile.objects.filter(courses__slug=course_code_slug)
+    qset_questions = QActual.objects.filter(qset__slug=question_set_slug)
+
+
+    for student in students:
+        for qactual in qset_questions.filter(user=student).order_by('id'):
+
+            if qactual.given_answer == '':
+                pass
+
+            elif qactual.qtemplate.q_type in ('short'):
+                grade = grade_short(qactual)
+                if qactual.grade:
+                    grade.delete()
+
+                qactual.grade = grade
+                qactual.save()

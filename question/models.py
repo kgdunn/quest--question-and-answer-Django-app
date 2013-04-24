@@ -78,8 +78,10 @@ class QTemplate(models.Model):
         #                                     self.t_grading['lures'] if
         #                                     lure.strip()]
 
-        self.t_variables = json.dumps(self.t_variables, sort_keys=True)
-        self.t_grading = json.dumps(self.t_grading, sort_keys=True)
+        if isinstance(self.t_grading, dict):
+            self.t_variables = json.dumps(self.t_variables, sort_keys=True)
+        if isinstance(self.t_grading, dict):
+            self.t_grading = json.dumps(self.t_grading, sort_keys=True)
         self.max_grade = float(self.max_grade)
         self.difficulty = int(self.difficulty)
         self.difficulty = min(self.difficulty, 9)
