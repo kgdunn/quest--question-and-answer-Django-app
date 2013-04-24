@@ -434,6 +434,6 @@ def grade_summary(request, course_code_slug):
     for key, value in results.iteritems():
 
         value = str(['%5.1f'%i for i in value])
-        out.append('%50s, %s' % (key, value[1:-1]))
+        out.append('%50s, %s|' % (key, value[1:-1]))
 
     return HttpResponse('\n'.join(out))
