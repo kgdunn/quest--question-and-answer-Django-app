@@ -256,7 +256,7 @@ def grade_long(qactual):
     return grade
 
 
-def string_match(correct, given, qactual=None):
+def string_match(correct, given, multiple_tries=True):
     """
     Returns whether the ``given`` string matches the ``correct`` string
 
@@ -271,24 +271,11 @@ def string_match(correct, given, qactual=None):
         if item.lower() == given.lower():
             return (True, None)
 
-        given.replace('-', ' ')
-        if item.lower() == given.lower():
-            return (True, None)
+        if multiple_tries:
+            # Try once more.
+            given = handle_special_cases(given).replace('-', ' ')
+            return string_match(item, given, multiple_tries=False)
 
-        # Wait, it might be a quick_eval string:
-        # Make sure the original case is used here, not lower case.
-        if 'quick_eval' in item:
-            assert(False)
-            out = deal_with_quick_eval(item, given, qactual)
-        else:
-            out = (False, None)
-
-        if out[0]:  # if successfully matched with ``quick_eval``
-            #print('Given: [%s] to match with %s: True' % (given, str(correct)))
-            return out
-
-    # Default return: False
-    #print('[%s] to match with %s: False' % (given, str(correct)))
     return (False, 'No match')
 
 
