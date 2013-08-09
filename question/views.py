@@ -177,6 +177,7 @@ def ask_question_set(request):        # URL: ``quest-question-set``
     qsets = list()
     idx = 0
     qsets.append([])
+    average = None  # in case user is not registered in any courses
     for course in user.courses.all():
         # Which course(s) is the user registered for? Get all QSet's for them
         qsets[idx].extend(course.qset_set.order_by('-ans_time_start'))
