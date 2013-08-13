@@ -12,6 +12,7 @@ from django.shortcuts import (HttpResponse, render_to_response, redirect,
 # Our apps:
 from models import Token
 from utils import generate_random_token, send_email
+from logitem.models import Profile
 
 # http://quest.mcmaster.ca/tokens/
 # The Django ``reverse`` function is one of the hardest functions to get
@@ -163,11 +164,22 @@ def token_browser_profile(request):   # URL: 'quest-token-profile'
     These are used to learn more about the user, tracking uniqueness,
     fighting plagiarism, and general stats to improve the software.
     """
-    request.session['profile'] = '%s |*| %s |*| %s |*| %s' % (
-                                  request.GET.get('os', ''),
-                                  request.GET.get('display', ''),
-                                  request.GET.get('software', ''),
-                                  request.GET.get('browser', ''))
+    import hashlib
+    m = hashlib.md5()
+    m.update('%s |*| %s |*| %s |*| %s' % ( request.GET.get('os', ''),
+                                           request.GET.get('display', ''),
+                                           request.GET.get('software', ''),
+                                           request.GET.get('browser', '')))
+
+    profile = Profile(ua_string=request.GET.get('browser', ''),
+                       software=request.GET.get('software', ''),
+                       os=request.GET.get('os', ''),
+                       display=request.GET.get('display', ''))
+
+    profile.hashid = m.hexdigest()
+    profile.save()
+
+    request.session['profile'] = profile.hashid
 
     return HttpResponse('OK')
 

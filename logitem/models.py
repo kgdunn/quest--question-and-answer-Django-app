@@ -20,7 +20,7 @@ class PageHit(models.Model):
     ua_string = models.CharField(max_length=255)
 
     # profile of the browser
-    profile = models.CharField(max_length=1000, null=True, blank=True)
+    profile = models.CharField(max_length=32, null=True, blank=True)
     ip_address = models.IPAddressField()
     datetime = models.DateTimeField(auto_now=True)
     item = models.CharField(max_length=50)
@@ -28,8 +28,22 @@ class PageHit(models.Model):
     item_pk = models.IntegerField()
     extra_info = models.CharField(max_length=512, null=True, blank=True)
 
+
+class Profile(models.Model):
+    """
+    Creates the MD5 hash of the user profile
+    """
+    ua_string = models.CharField(max_length=255)
+    software = models.CharField(max_length=5000)
+    os = models.CharField(max_length=50)
+    display = models.CharField(max_length=255)
+    hashid = models.CharField(max_length=32)
+    datetime = models.DateTimeField(auto_now=True)
+
     def __unicode__(self):
-        return '%s at %s' % (self.item, self.datetime)
+        return self.hashid
+
+
 
     #def user_slug(self):
         #user = UserProfile.objects.filter(id=self.user_id)
