@@ -1,6 +1,7 @@
 from django.conf.urls import patterns, include, url
 import person
 import instructor
+import question
 from question.views import(ask_question_set, ask_show_questions,
                            ask_specific_question, store_answer,
                            submit_answers, successful_submission)
@@ -34,8 +35,9 @@ urlpatterns += patterns('',
     url(r'^$', person.views.sign_in, name='quest-main-page'),
 
     url(r'^tokens/(.*)/$', person.views.token_sign_in, name='quest-token-sign-in'),
+    url(r'^profile/$', person.views.token_browser_profile, name='quest-token-profile'),
 
-    url(r'^question-sets/$', ask_question_set, name='quest-question-set'),
+    url(r'^question-sets/$', question.views.ask_question_set, name='quest-question-set'),
 
     url(r'^successfully-submitted/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', successful_submission, name='quest-successful-submission'),
 

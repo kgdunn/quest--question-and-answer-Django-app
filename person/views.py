@@ -3,10 +3,11 @@ import logging
 import datetime
 
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, Http404
 from django.core.context_processors import csrf
 from django.contrib.auth import login, authenticate
-from django.shortcuts import render_to_response, redirect, RequestContext
+from django.shortcuts import (HttpResponse, render_to_response, redirect,
+                              RequestContext)
 
 # Our apps:
 from models import Token
@@ -146,4 +147,30 @@ def token_sign_in(request, token):  # URL: 'quest-token-sign-in'
     # Now proceed to show available question sets to the user
     response = redirect('quest-question-set')
     request.session['token'] = token
+
+    #AJAX request to store it in a session.
+    # Put JS in the template for the token accept HTML page
+    # some code that does a POST to write session information
+    # Put this in the Django function that receives the POST request
+
+
     return response
+
+def token_browser_profile(request):   # URL: 'quest-token-profile'
+    """
+    Store a profile of the user's browser, os, software and display type.
+
+    These are used to learn more about the user, tracking uniqueness,
+    fighting plagiarism, and general stats to improve the software.
+    """
+    request.session['profile'] = '%s |*| %s |*| %s |*| %s' % (
+                                  request.GET.get('os', ''),
+                                  request.GET.get('display', ''),
+                                  request.GET.get('software', ''),
+                                  request.GET.get('browser', ''))
+
+    return HttpResponse('OK')
+
+
+
+

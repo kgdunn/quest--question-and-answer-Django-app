@@ -16,7 +16,11 @@ class PageHit(models.Model):
 
     The only requirement is that the item must have an integer primary key.
     """
-    ua_string = models.CharField(max_length=255) # browser's user agent
+    # browser's user agent
+    ua_string = models.CharField(max_length=255)
+
+    # profile of the browser
+    profile = models.CharField(max_length=1000, null=True, blank=True)
     ip_address = models.IPAddressField()
     datetime = models.DateTimeField(auto_now=True)
     item = models.CharField(max_length=50)
