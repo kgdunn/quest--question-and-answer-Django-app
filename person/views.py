@@ -22,7 +22,6 @@ token_addr = 'tokens'
 token_prefix = 'http://%s/%s/' % (settings.QUEST['FULL_DOMAIN_NO_HTTP'],
                                   token_addr)
 
-
 logger = logging.getLogger('quest')
 
 def create_new_account(user=None, **kwargs):
@@ -37,7 +36,6 @@ def create_new_account(user=None, **kwargs):
         # Create a UserProfile object in the DB
         new_user_profile = models.UserProfile.objects.create(user=new_user)
         new_user_profile.save()
-
 
 def create_sign_in_email(user, qset=None):
     """
@@ -77,7 +75,6 @@ def create_sign_in_email(user, qset=None):
     """
 
     return subject, message, user.email
-
 
 def sign_in(request):                             # URL: 'quest-main-page'
     """
@@ -119,8 +116,6 @@ def sign_in(request):                             # URL: 'quest-main-page'
         ctxdict.update(csrf(request))
         return render_to_response('person/sign-in-form.html', ctxdict,
                                   context_instance=RequestContext(request))
-
-
 def token_sign_in(request, token):  # URL: 'quest-token-sign-in'
     """ Signs the user in for a limited period.
     """
