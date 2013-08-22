@@ -167,10 +167,10 @@ def token_browser_profile(request):        # URL: 'quest-token-profile'
                                            request.GET.get('software', ''),
                                            request.GET.get('browser', '')))
 
-    profile = Profile(ua_string=request.GET.get('browser', ''),
-                       software=request.GET.get('software', ''),
-                       os=request.GET.get('os', ''),
-                       display=request.GET.get('display', ''))
+    profile = Profile(ua_string=request.GET.get('browser', '')[0:255],
+                       software=request.GET.get('software', '')[0:10000],
+                       os=request.GET.get('os', '')[0:50],
+                       display=request.GET.get('display', '')[0:255])
 
     profile.hashid = m.hexdigest()
     profile.save()

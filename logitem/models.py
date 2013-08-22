@@ -34,7 +34,7 @@ class Profile(models.Model):
     Creates the MD5 hash of the user profile
     """
     ua_string = models.CharField(max_length=255)
-    software = models.CharField(max_length=5000)
+    software = models.CharField(max_length=10000)
     os = models.CharField(max_length=50)
     display = models.CharField(max_length=255)
     hashid = models.CharField(max_length=32)
