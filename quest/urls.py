@@ -37,7 +37,9 @@ urlpatterns += patterns('',
     url(r'^tokens/(.*)/$', person.views.token_sign_in, name='quest-token-sign-in'),
     url(r'^profile/$', person.views.token_browser_profile, name='quest-token-profile'),
 
-    url(r'^question-sets/$', question.views.ask_question_set, name='quest-question-set'),
+    url(r'^course-selection/$', question.views.course_selection, name='quest-course-selection'),
+
+    url(r'^question-sets/(?P<course_code_slug>.+)/$', question.views.ask_question_set, name='quest-question-set'),
 
     url(r'^successfully-submitted/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', successful_submission, name='quest-successful-submission'),
 

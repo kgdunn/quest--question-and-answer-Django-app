@@ -1,7 +1,7 @@
 {% extends "question/questions.html" %}
 
 {% block title %}{{quest_list.0.qset.course.code}}{% endblock %}
-{% block headerleft %}<a href="{% url quest-question-set %}">&lt; Back to list of all available tests</a>{% endblock %}
+{% block headerleft %}<a href="{% url quest-question-set course_code_slug=course%}">&lt; Back to list of all available tests</a>{% endblock %}
 
 {% block content %}
 <div class="colmask threecol">

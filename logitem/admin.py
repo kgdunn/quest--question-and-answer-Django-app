@@ -2,7 +2,7 @@ from django.contrib import admin
 from logitem.models import PageHit, Profile
 
 class PageHitAdmin(admin.ModelAdmin):
-    list_display = ('datetime', 'ip_address', 'item', 'item_pk', 'ua_string',
+    list_display = ('datetime', 'ip_address', 'item', 'item_pk', 'profile',
                     'extra_info', 'user_id')
     list_per_page = 1000
 

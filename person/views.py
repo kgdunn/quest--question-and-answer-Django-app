@@ -76,7 +76,7 @@ def create_sign_in_email(user, qset=None):
 
     return subject, message, user.email
 
-def sign_in(request):                             # URL: 'quest-main-page'
+def sign_in(request):                        # URL: 'quest-main-page'
     """
     Verifies the user. If they are registered, then they are emailed a
     token to sign in.
@@ -116,7 +116,8 @@ def sign_in(request):                             # URL: 'quest-main-page'
         ctxdict.update(csrf(request))
         return render_to_response('person/sign-in-form.html', ctxdict,
                                   context_instance=RequestContext(request))
-def token_sign_in(request, token):  # URL: 'quest-token-sign-in'
+
+def token_sign_in(request, token):          # URL: 'quest-token-sign-in'
     """ Signs the user in for a limited period.
     """
     logger.debug('About to process received token: ' + str(token))
@@ -141,7 +142,7 @@ def token_sign_in(request, token):  # URL: 'quest-token-sign-in'
     login(request, user)
 
     # Now proceed to show available question sets to the user
-    response = redirect('quest-question-set')
+    response = redirect('quest-course-selection')
     request.session['token'] = token
 
     #AJAX request to store it in a session.
@@ -152,7 +153,7 @@ def token_sign_in(request, token):  # URL: 'quest-token-sign-in'
 
     return response
 
-def token_browser_profile(request):   # URL: 'quest-token-profile'
+def token_browser_profile(request):        # URL: 'quest-token-profile'
     """
     Store a profile of the user's browser, os, software and display type.
 

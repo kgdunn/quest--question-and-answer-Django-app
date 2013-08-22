@@ -85,7 +85,7 @@ def validate_user(request, course_code_slug, question_set_slug,
                         (user, question_set_slug))
             return redirect('quest-main-page')
 
-    token = request.session['token']
+    token = request.session.get('token', '')
     token_obj = Token.objects.filter(token_address=token).filter(user=user)
     if not token_obj:
         logger.info('Bad token used: [%s]; request path="%s"' %
@@ -143,6 +143,9 @@ def validate_user(request, course_code_slug, question_set_slug,
         # However, it is sensible to verify this, because if the use is trying
         # to view a qset for which there are no quests, then there is nothing
         # to display.
+        # This has also occured when a user has been added to a course by
+        # mistake (i.e. no quests have been generated for the user, since they
+        # were retroactively added to the course, after quest generation)
         logger.info('No quests for token [%s]; URL [%s]' %
                     (token_obj[0], request.path_info))
         return redirect('quest-main-page')
@@ -169,27 +172,45 @@ def validate_user(request, course_code_slug, question_set_slug,
         return quests
 
 @login_required
-def ask_question_set(request):        # URL: ``quest-question-set``
+def course_selection(request):        # URL: ``quest-course-selection``
+    """
+    User picks for which course they want to answer questions
+    """
+    user = request.user.profile
+
+    ctxdict = {'course_list':  user.courses.all(),
+               'username': user.user.first_name + ' ' + user.user.last_name,
+              }
+    ctxdict.update(csrf(request))
+    return render_to_response('question/course-selection.html', ctxdict,
+                              context_instance=RequestContext(request))
+
+@login_required                          # URL: ``quest-question-set``
+def ask_question_set(request, course_code_slug):
     """
     Ask which question set to display
     """
     user = request.user.profile
     qsets = list()
-    idx = 0
-    qsets.append([])
-    average = None  # in case user is not registered in any courses
-    for course in user.courses.all():
-        # Which course(s) is the user registered for? Get all QSet's for them
-        qsets[idx].extend(course.qset_set.order_by('-ans_time_start'))
-        grade = 0.0
-        for iterate, item in enumerate(qsets[idx]):
-            qsets[idx][iterate].grade, actual, max_grade = \
-                                               grades_for_quest(item, user)
-            grade += actual / (max_grade + 0.0)
-            print(actual, max_grade)
-        idx += 1
+    course = Course.objects.filter(slug=course_code_slug)
+    if len(course) != 1:
+        return redirect('quest-course-selection')
+    else:
+        course = course[0]
 
-        average = grade / float(iterate+1) * 100
+    average = None  # in case user is not registered in any courses
+    qsets.extend(course.qset_set.order_by('-ans_time_start'))
+    grade = 0.0
+    for iterate, item in enumerate(qsets):
+        qsets[iterate].grade, actual, max_grade = \
+                                           grades_for_quest(item, user)
+        if max_grade > 0.0:
+            grade += actual / (max_grade + 0.0)
+        else:
+            grade = 0.0
+
+    # Calculate the average afterwards
+    average = grade / float(iterate+1) * 100
 
     # Show question sets
     ctxdict = {'question_set_list': qsets,

@@ -6,6 +6,7 @@
 # easy_install -U numpy      <--- version 1.6.2
 # easy_install -U pygments   <--- version 1.6rc1
 # easy_install -U pil        <--- version 1.1.7  (for ImageField)
+# easy_install -U psychopg2  <--- version 2.5.1
 
 import os
 import django.conf.global_settings as DEFAULT_SETTINGS

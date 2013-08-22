@@ -72,7 +72,7 @@ class Login_TestCases(TestCase):
         self.assertEqual(resp.templates, [])
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(resp['Location'], 'http://testserver%s' %
-                                               reverse('quest-question-set'))
+                                               reverse('quest-course-selection'))
 
     def test_student_process(self):
         """ Create a QSet that is currently valid; check that the user can
