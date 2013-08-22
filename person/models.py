@@ -4,6 +4,19 @@ from django.db import models
 # Our apps:
 from utils import unique_slugify
 
+class Group(models.Model):
+    """
+    Users (below) may belong to a group.
+    """
+    name = models.CharField(verbose_name='Group name',
+                           max_length=50,
+                           help_text='Users might belong to a group',
+                           )
+
+    def __unicode__(self):
+        return self.name
+
+
 class UserProfile(models.Model):
     # See https://docs.djangoproject.com/en/1.3/topics/auth/
     user = models.OneToOneField(User, unique=True, related_name="profile")
@@ -27,6 +40,8 @@ class UserProfile(models.Model):
 
     courses = models.ManyToManyField('course.Course')
 
+    group = models.ForeignKey(Group, blank=True, null=True)
+
     class Meta:
         verbose_name_plural = 'users'
 
@@ -41,6 +56,8 @@ class UserProfile(models.Model):
 
     def __unicode__(self):
         return 'Profile for: ' + self.user.username
+
+
 
 
 class Token(models.Model):

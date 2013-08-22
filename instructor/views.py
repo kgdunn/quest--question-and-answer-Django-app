@@ -26,7 +26,7 @@ import numpy as np
 # Our imports
 from question.models import (QTemplate, QActual, Inclusion)
 from question.views import validate_user, get_questions_for_user
-from person.models import (UserProfile, User)
+from person.models import (UserProfile, User, Group)
 from person.views import create_sign_in_email
 from tagging.views import get_and_create_tags
 from utils import generate_random_token, send_email, insert_evaluate_variables
@@ -558,16 +558,73 @@ def load_question_templates(request, course_code_slug, question_set_slug):
 
     return HttpResponse('All questions loaded')
 
+@login_required                       # URL: ``admin-load-class-list``
+def load_class_list(request):
+    """
+    Load a CSV file class list (exported from Avenue via copy/paste to textfile)
+    LASTNAME, FIRSTNAME,email.prefix,0001231  <-- student number
+    """
+    if request.method == 'GET':
+        ctxdict = {'course_list': Course.objects.all(),
+                   'suffix': '@mcmaster.ca',
+                  }
+        ctxdict.update(csrf(request))
+        return render_to_response('instructor/course-list-load.html', ctxdict,
+                                    context_instance=RequestContext(request))
+
+    elif request.method == 'POST':
+        course_slug = request.POST.get('course_slug', '')
+        course = Course.objects.filter(slug=course_slug)[0]
+        email_suffix = request.POST.get('email_suffix', '')
+
+
+        users_added = []
+        rdr = csv.reader(request.FILES['csv_file'], delimiter=',')
+        for row in rdr:
+            if len(row)==4:
+                last, first, email_id, student_id = row
+                group = None
+            if len(row)==5:
+                last, first, email_id, student_id, group = row
+                group_obj = Group.objects.filter(name=group)
+                if len(group_obj) == 0:
+                    pass
+
+
+            username = '%s-%s' % (first.strip().lower(),
+                                  last.strip().lower())
+
+            if '@' not in email_id:
+                email = email_id+email_suffix
+            else:
+                email = email_id
+            try:
+                obj = User.objects.get(email=email)
+            except User.DoesNotExist:
+                obj = User(username=username,
+                           first_name=first.strip(),
+                           last_name=last.strip(),
+                           email=email_id+email_suffix,
+                           group=group)
+                obj.save()
+                logger.info('Created user for %s with name: %s' % (course_slug,
+                                                                   username))
+                users_added.append(obj)
+
+            profile = obj.get_profile()
+            profile.role = 'Student'
+            profile.student_number = student_id.strip()
+            profile.courses.add(course)
+            profile.save()
+
+            return users_added
+
 @login_required                             # URL: ``admin-generate-questions``
 def generate_questions(request, course_code_slug, question_set_slug):
     """
     1. Generates the questions from the question sets, rendering templates
     2. Emails users in the class the link to sign in and start answering
     """
-    #fname = '/home/kevindunn/quest/class-list.csv'
-    #fname = ''
-    #if fname:
-    #    users_added = load_class_list(fname, course_code_slug)
     load_question_templates(request, course_code_slug, question_set_slug)
 
     course = validate_user(request, course_code_slug, question_set_slug,
@@ -1061,59 +1118,15 @@ def create_random_variables(var_dict):
     return var_dict
 
 
-def load_class_list(f_name, course_slug):
-    """
-    Load a CSV file class list (exported from Avenue via copy/paste to textfile)
-    LASTNAME, FIRSTNAME,email.prefix,0001231  <-- student number
-    """
-    # These fields require list drop-downs and validation. They are hard coded
-    # for now
-    course = Course.objects.filter(slug=course_slug)[0]
-    email_suffix = '@mcmaster.ca'
-
-    f_handle = open(f_name, 'rb')
-    #with open(f_name, 'rb') as csvfile:
-    users_added = []
-    rdr = csv.reader(f_handle, delimiter=',')
-    for row in rdr:
-        last, first, email_id, student_id = row
-        username = '%s-%s' % (first.strip().lower(),
-                              last.strip().lower())
-
-        if '@' not in email_id:
-            email = email_id+email_suffix
-        else:
-            email = email_id
-        try:
-            obj = User.objects.get(email=email)
-        except User.DoesNotExist:
-            obj = User(username=username,
-                       first_name=first.strip(),
-                       last_name=last.strip(),
-                       email=email_id+email_suffix)
-            obj.save()
-            logger.info('Created user for %s with name: %s' % (course_slug,
-                                                               username))
-            users_added.append(obj)
-
-        profile = obj.get_profile()
-        profile.role = 'Student'
-        profile.student_number = student_id.strip()
-        profile.courses.add(course)
-        profile.save()
-
-    return users_added
-
-
 def clean_db(request):
     """
     During week-2 the database got corrupted; this is an attempt to clean it.
     """
     from django.core import serializers
     from question import models
-    from person.models import User
-    import sys
-    qset = models.QSet.objects.all()
+    #from person.models import User
+    #import sys
+    #qset = models.QSet.objects.all()
     import gc
 
     for idn in range(1479, 1489):
@@ -1226,14 +1239,14 @@ def fix_questions(request):
         qa.save()
 
     for qa in QActual.objects.filter(qtemplate__id=43):
-            ga = json.loads(qa.grading_answer)
-            for key, value in ga.iteritems():
-                value = eval(value[0])
-                if value[1] > 0:
-                    value[1] = 0.1
-                ga[key] = [json.dumps(value), ]
-            qa.grading_answer = json.dumps(ga)
-            qa.save()
+        ga = json.loads(qa.grading_answer)
+        for key, value in ga.iteritems():
+            value = eval(value[0])
+            if value[1] > 0:
+                value[1] = 0.1
+            ga[key] = [json.dumps(value), ]
+        qa.grading_answer = json.dumps(ga)
+        qa.save()
 
 def preview_question(request):
     """

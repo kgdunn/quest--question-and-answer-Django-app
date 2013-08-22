@@ -1,5 +1,5 @@
 from django.contrib import admin
-from models import User, UserProfile, Token, Timing
+from models import User, UserProfile, Token, Timing, Group
 from django.db.models import signals
 
 # Create a ``UserProfile`` for every user
@@ -12,6 +12,13 @@ class UserProfileAdmin(admin.ModelAdmin):
     list_per_page = 1000
     ordering = ('user',)
 admin.site.register(UserProfile, UserProfileAdmin)
+
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ('pk', 'name', )
+    list_display_links = ('name',)
+    list_per_page = 1000
+    ordering = ('name',)
+admin.site.register(Group, GroupAdmin)
 
 
 class TokenAdmin(admin.ModelAdmin):
