@@ -93,7 +93,7 @@ class TimerStart(models.Model):
     time = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(UserProfile)
     referrer = models.CharField(max_length=511, blank=True, null=True)
-    other_info = models.CharField(max_length=500, blank=True, null=True,
+    other_info = models.CharField(max_length=5000, blank=True, null=True,
                                   default=None)
     # get if from: request.session.get('profile', None)
     profile = models.ForeignKey(Profile, null=True, blank=True)

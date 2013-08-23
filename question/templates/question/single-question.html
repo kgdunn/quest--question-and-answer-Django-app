@@ -3,81 +3,86 @@
 {% block title %}Question {{item_id}} of {{quest_list|length}}{% endblock %}
 
 {% block headerleft %}<a href="{% url quest-ask-show-questions course_code_slug=course, question_set_slug=qset%}">&lt; Back to all questions</a>{% endblock %}
+{% block headerright %}
+    <table>
+    <tr><td>Name:   </td><td style="text-align: left"><b>{{user.get_full_name}}</b></td></tr>
+    <tr><td>Course: </td><td style="text-align: left">{{course_name}}</td></tr>
+    <tr><td>Question set: </td><td style="text-align: left">{{qset_name}}</td></tr>
+    </table>{% endblock %}
 
 {% block content %}
 
 <div class="colmask threecol">
+<div class="colmid">
 
-	<div class="colmid">
+<div class="colleft">
 
-		<div class="colleft">
+<div class="col1">
 
-			<div class="col1">
+<h2>Question {{item_id}} of {{quest_list|length}}&nbsp;&nbsp;&nbsp; [{{item.qtemplate.max_grade}} point{{item.qtemplate.max_grade|pluralize}}]</h2>
+    {% if last_question %}
+    <div id="quest-item-header-left">{% if item.prev_q %}
+        <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
+            </div>
+        <div id="quest-item-header-right"></div>
+        {% else %}
+    <div id="quest-item-header-left">{% if item.prev_q %}
+        <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
+            </div>
+        <div id="quest-item-header-right">{% if item.next_q %}
+        <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}
+            </div>
+        {% endif %}
 
-				<h2>Question {{item_id}} of {{quest_list|length}}&nbsp;&nbsp;&nbsp; [{{item.qtemplate.max_grade}} point{{item.qtemplate.max_grade|pluralize}}]</h2>
-				{% if last_question %}
-						<div id="quest-item-header-left">{% if item.prev_q %}
-							<a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
-						</div>
-						<div id="quest-item-header-right"></div>
-				{% else %}
-					<div id="quest-item-header-left">{% if item.prev_q %}
-						<a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
-					</div>
-					<div id="quest-item-header-right">{% if item.next_q %}
-					    <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}
-					</div>
-				{% endif %}
+<div id="quest-itemdisp-container">
+    <div class="quest-item-question">
+        {% if html_solution %}<i>The question was</i>:{% endif %}
+            <br>
+            {{html_question|safe}}
+            </div>
+        {% if html_solution %}
+        <div class="quest-item-solution">
+        {{html_solution|safe}}
+            </div>{% endif %}
+        <div class="quest-item-grading">
+        {% if item.grade %} Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
+            {% else %} Not graded yet {% endif %}
 
-				<div id="quest-itemdisp-container">
-					<div class="quest-item-question">
-						{% if html_solution %}<i>The question was</i>:{% endif %}
-						<br>
-						{{html_question|safe}}
-					</div>
-					{% if html_solution %}
-					<div class="quest-item-solution">
-						{{html_solution|safe}}
-					</div>{% endif %}
-					<div class="quest-item-grading">
-						{% if item.grade %} Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
-						{% else %} Not graded yet {% endif %}
+</div>
+    <div class="quest-item-feedback">
+    </div>
+    <div class="quest-item-graders-comments">
+    </div>
+    </div>
 
-					</div>
-					<div class="quest-item-feedback">
-					</div>
-					<div class="quest-item-graders-comments">
-					</div>
-				</div>
+<div style="clear: both;"><p>&nbsp;
+    </div>
 
-				<div style="clear: both;"><p>&nbsp;
-				</div>
-
-			</div>
-			<div class="col2" id="quest-sidebar">
-				{% spaceless %}
-				<ul>
-				{% for quest in quest_list %}
-					<li><a href="{% url quest-ask-specific-question course qset forloop.counter %}" target="">
-						Question {{forloop.counter}} of {{quest_list|length}}</a></li>
-				{% endfor %}
-				</ul>
-				<br><br>
-				{% if not html_solution %}
-				<form action="{% url quest-submit-final-check course_code_slug=course, question_set_slug=qset%}" method="GET" enctype="multipart/form-data">{% csrf_token %}
-					<input type="submit" name="submit-questions" value="Submit answers">
-				</form>
-				{% endif %}
-				<div class="quest-printing-options"></div>
-				{% endspaceless %}
-			</div>
-			<div class="col3">
-				<span id='quest-countdown'></span>
-				<div style="clear: both;">
-				<br>
-				<div id="ajaxDiv"></div>
-			</div>
-		</div>
-	</div>
+</div>
+    <div class="col2" id="quest-sidebar">
+    {% spaceless %}
+        <ul>
+        {% for quest in quest_list %}
+        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}" target="">
+            Question {{forloop.counter}} of {{quest_list|length}}</a></li>
+                {% endfor %}
+        </ul>
+        <br><br>
+        {% if not html_solution %}
+        <form action="{% url quest-submit-final-check course_code_slug=course, question_set_slug=qset%}" method="GET" enctype="multipart/form-data">{% csrf_token %}
+        <input type="submit" name="submit-questions" value="Submit answers">
+            </form>
+        {% endif %}
+        <div class="quest-printing-options"></div>
+        {% endspaceless %}
+        </div>
+    <div class="col3">
+    <span id='quest-countdown'></span>
+        <div style="clear: both;">
+        <br>
+        <div id="ajaxDiv"></div>
+        </div>
+    </div>
+</div>
 </div>
 {% endblock %}

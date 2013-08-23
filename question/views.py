@@ -455,17 +455,23 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
 
     TimerStart.objects.create(event=event_type,
-                            user=request.user.profile,
-                            profile=get_profile(request),
-                            item_pk= quest.qtemplate.id,
-                            item_type='QTemplate',
-                            referrer=request.META.get('HTTP_REFERER', ''),
-                            other_info='QActual=[%d]; current answer: %s' %
-                                      (quest.id, quest.given_answer))
+                        user=request.user.profile,
+                        profile=get_profile(request),
+                        item_pk= quest.qtemplate.id,
+                        item_type='QTemplate',
+                        referrer=request.META.get('HTTP_REFERER', '')[0:510],
+                        other_info='QActual=[%d]; current answer: %s' %
+                                       (quest.id, quest.given_answer[0:4999]))
+
+    # We can access [0] because we've validated at the top already
+    course = Course.objects.filter(slug=course_code_slug)[0]
+    qset = QSet.objects.filter(slug=question_set_slug).filter(course=course)[0]
 
     ctxdict = {'quest_list': quests,
                'item_id': q_id,
+               'course_name': course,
                'course': course_code_slug,
+               'qset_name': qset.name,
                'qset': question_set_slug,
                'item': quest,
                'timeout_time': 500,       # in the HTML template, XHR timeout
