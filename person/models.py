@@ -55,9 +55,7 @@ class UserProfile(models.Model):
         super(UserProfile, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return 'Profile for: ' + self.user.username
-
-
+        return self.user.username
 
 
 class Token(models.Model):
