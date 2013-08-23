@@ -5,90 +5,90 @@
 {% block html_headers %}
 {# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
 <script language="javascript" type="text/javascript">
-	$(document).ready(function() {
-		$(':checkbox').click(function() {
-			var selected = new Array();
-			$('.quest-item-question input:checked').each(function() {
-				selected.push($(this).attr('value'));
-			});
-			//alert('Selected: ' + selected);
-			var valueSelected = this.value;
-			var buttonSelected = this.id.replace(valueSelected + '_','');
-			$.ajax(
-			{
-				type: "GET",
-				url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + selected,
-				data:  '',
-				cache: false,
-				success: function(result) {$('#ajaxDiv').html(result);},
-				error: function (response, desc, exception) {// custom error
-				}
-			});
-		});
-	});
-	$(document).ready(function() {
-        $(':radio').click(function() {
+    $(document).ready(function() {
+        $(':checkbox').click(function() {
+            var selected = new Array();
+            $('.quest-item-question input:checked').each(function() {
+                selected.push($(this).attr('value'));
+            });
+            //alert('Selected: ' + selected);
             var valueSelected = this.value;
             var buttonSelected = this.id.replace(valueSelected + '_','');
-            $.ajax({
-				type: "GET",
-              url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + valueSelected,
-              data:  '',
-              cache: false,
-              success: function(result) {$('#ajaxDiv').html(result);},
-				error: function (response, desc, exception) {// custom error
-			    }
-          });
-		});
-	});
-	$(document).ready(function() {
-		var timer = null;
-		$('.quest-item-question').find('textarea').keydown(function() {
-			itemValue = encodeURIComponent($(this).val());
-			if (timer){
-				window.clearTimeout(timer);
-			};
-			timer = window.setTimeout(function()
-			{
-				$.ajax(
-				{
-					type: "GET",
-					url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,
-					data:  '',
-					cache: false,
-					success: function(result) {$('#ajaxDiv').html(result);},
-					error: function (response, desc, exception) {// custom error
-					}
-				});
-			}, {{timeout_time}});
-		});
-		$('.quest-item-question').find('input').keydown(function() {
-			if (timer){
-				window.clearTimeout(timer);
-			};
-			timer = window.setTimeout(function()
-			{
-				var url_out = '?';
-				//var typed_values = new Array();
-				//var box_names = new Array();
-				$('.quest-item-question input').each(function() {
-					url_out += $(this).attr('name') + '=' + encodeURIComponent($(this).val()) + '&';
-					//typed_values.push();
-					//box_names.push($(this).attr('name'));
-				});
-				$.ajax(
-				{
-					type: "GET",
-					url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}' + url_out,//?entered=' + typed_values + '&box_names=' + box_names,
-					data:  '',
-					cache: false,
-					success: function(result) {$('#ajaxDiv').html(result);},
-					error: function (response, desc, exception) {// custom error
-					}
-				});
-			}, {{timeout_time}});
-		});
-	});
+            $.ajax(
+            {
+                type: "GET",
+                url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + selected,
+                data:  '',
+                cache: false,
+                success: function(result) {$('#ajaxDiv').html(result);},
+                error: function (response, desc, exception) {// custom error
+                }
+            });
+        });
+    });
+    $(document).ready(function() {
+    $(':radio').click(function() {
+        var valueSelected = this.value;
+        var buttonSelected = this.id.replace(valueSelected + '_','');
+        $.ajax({
+            type: "GET",
+        url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + valueSelected,
+        data:  '',
+        cache: false,
+        success: function(result) {$('#ajaxDiv').html(result);},
+            error: function (response, desc, exception) {// custom error
+        }
+    });
+        });
+    });
+    $(document).ready(function() {
+        var timer = null;
+        $('.quest-item-question').find('textarea').keydown(function() {
+            itemValue = encodeURIComponent($(this).val());
+            if (timer){
+                window.clearTimeout(timer);
+            };
+            timer = window.setTimeout(function()
+            {
+                $.ajax(
+                {
+                    type: "GET",
+                    url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}?entered=' + itemValue,
+                    data:  '',
+                    cache: false,
+                    success: function(result) {$('#ajaxDiv').html(result);},
+                    error: function (response, desc, exception) {// custom error
+                    }
+                });
+            }, {{timeout_time}});
+        });
+        $('.quest-item-question').find('input').keydown(function() {
+            if (timer){
+                window.clearTimeout(timer);
+            };
+            timer = window.setTimeout(function()
+            {
+                var url_out = '?';
+                //var typed_values = new Array();
+                //var box_names = new Array();
+                $('.quest-item-question input').each(function() {
+                    url_out += $(this).attr('name') + '=' + encodeURIComponent($(this).val()) + '&';
+                    //typed_values.push();
+                    //box_names.push($(this).attr('name'));
+                });
+                $.ajax(
+                {
+                    type: "GET",
+                    url: '{% url quest-store-answer course_code_slug=course, question_set_slug=qset, question_id=item_id %}' + url_out,//?entered=' + typed_values + '&box_names=' + box_names,
+                    data:  '',
+                    cache: false,
+                    success: function(result) {$('#ajaxDiv').html(result);},
+                    error: function (response, desc, exception) {// custom error
+                    }
+                });
+            }, {{timeout_time}});
+        });
+    });
 {# http://stackoverflow.com/questions/1620602/javascript-jquery-make-an-ajax-request-when-a-user-is-typing-in-a-textarea    http://stackoverflow.com/questions/10018437/jquery-ajax-autosave-for-textareas #}
 </script>
 
@@ -104,28 +104,28 @@ function countdown(element) {
     interval = setInterval(function() {
     var el = document.getElementById(element);
         if(seconds == 0) {
-                if(minutes == 0) {
-                    el.innerHTML = "The testing period has expired";
-                    clearInterval(interval);
-                    return;
-                } else {
-                    minutes--;
-                    seconds = 60;
-                }
-            }
-            if(minutes > 0) {
-                var minute_text = minutes + (minutes > 1 ? ' mins' : ' min');
+            if(minutes == 0) {
+                el.innerHTML = "The testing period has expired";
+                clearInterval(interval);
+                return;
             } else {
-                var minute_text = '';
+                minutes--;
+                seconds = 60;
             }
-            var second_text = seconds > 1 ? 'secs' : 'sec';
-			  if(minutes > 3) {
-              el.innerHTML = 'Time remaining:<br> ' + minute_text;
-            } else {
-              el.innerHTML = 'Time remaining:<br> ' + minute_text + ' ' + seconds + ' ' + second_text;
-            }
-            seconds--;
-       }, 1000)
+        }
+        if(minutes > 0) {
+            var minute_text = minutes + (minutes > 1 ? ' mins' : ' min');
+        } else {
+            var minute_text = '';
+        }
+        var second_text = seconds > 1 ? 'secs' : 'sec';
+            if(minutes > 3) {
+        el.innerHTML = 'Time remaining:<br> ' + minute_text;
+        } else {
+            el.innerHTML = 'Time remaining:<br> ' + minute_text + ' ' + seconds + ' ' + second_text;
+        }
+        seconds--;
+    }, 1000)
 };
 </script>
 

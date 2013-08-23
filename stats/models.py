@@ -2,9 +2,6 @@ from django.db import models
 
 from person.models import UserProfile
 
-# When loading from old DB to new DB:
-# sed -i 's/logitem.pagehit/stats.pagehit/g' all-dumped.json
-
 class PageHit(models.Model):
     """ Records each hit (page view) of an item
 
@@ -21,7 +18,6 @@ class PageHit(models.Model):
     user_id = models.IntegerField()
     item_pk = models.IntegerField()
     extra_info = models.CharField(max_length=512, null=True, blank=True)
-
 
 class Profile(models.Model):
     """
@@ -46,36 +42,11 @@ class Profile(models.Model):
     def __unicode__(self):
         return self.hashid
 
-    #def user_slug(self):
-        #user = UserProfile.objects.filter(id=self.user_id)
-        #if user:
-            #return user.slug
-        #else:
-            #return 'User not found'
-    #user_slug.short_description = "User's slug"
-
-
-    #def most_viewed(self, field):
-        #""" Most viewed in terms of a certain item.
-        #"""
-        #return PageHit.objects.filter(item=field)\
-                            #.annotate(score=models.Count('revision'))\
-                            #.order_by('-score', 'username')
-
-
-    ## Tracking on the question
-    ## ---------------------------
-    ## TODO When was the question displayed in the browser [comma-separated list]
-    #times_displayed = models.ManyToManyField(DateTimes,
-                                             #related_name='displayed')
-
-    ## When was the question answered by the users [comma-separated list]
-    #times_answered = models.ManyToManyField(DateTimes,
-                                            #related_name='answered')
-
-    ## Browser ID
-    #browsers = models.ManyToManyField(BrowserID)
-
+    # Tracking on the question
+    # ---------------------------
+    # TODO When was the question displayed in the browser [comma-separated list]
+    #      When was the question answered by the users [comma-separated list]
+    #      times_answered
 
 class TimerStart(models.Model):
     """General timinig statistics about the site usage are summarized here."""
@@ -95,13 +66,10 @@ class TimerStart(models.Model):
     referrer = models.CharField(max_length=511, blank=True, null=True)
     other_info = models.CharField(max_length=5000, blank=True, null=True,
                                   default=None)
-    # get if from: request.session.get('profile', None)
+    # Get if from: request.session.get('profile', None)
     profile = models.ForeignKey(Profile, null=True, blank=True)
-
-    item_pk = models.IntegerField()      # store the referencing item's PK
+    item_pk = models.IntegerField()      # Store the referencing item's PK
     item_type = models.CharField(max_length=80, null=True, blank=True)
-
-
 
     def __unicode__(self):
         return '%s [%s]' % (self.event, self.user.slug)

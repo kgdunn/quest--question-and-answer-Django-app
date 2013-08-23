@@ -5,33 +5,33 @@
 
 {% block content %}
 <div class="colmask threecol">
-	{% spaceless %}
-	<ul>
-	{% for quest in quest_list %}
-		<li><a href="{% url quest-ask-specific-question course qset forloop.counter %}">
-			Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} point{{quest.qtemplate.max_grade|pluralize}}]
-				{% if quest.grade %} | grade: {{quest.grade.grade_value|floatformat}} / {{quest.qtemplate.max_grade}} {% endif %} </li>
-	{% endfor %}
-	</ul>
-	{% if grade_str %}<div class="quest-item-grading">{{grade_str}}</div> {% endif %}
+    {% spaceless %}
+    <ul>
+    {% for quest in quest_list %}
+        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}">
+            Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} point{{quest.qtemplate.max_grade|pluralize}}]
+                {% if quest.grade %} | grade: {{quest.grade.grade_value|floatformat}} / {{quest.qtemplate.max_grade}} {% endif %} </li>
+    {% endfor %}
+    </ul>
+    {% if grade_str %}<div class="quest-item-grading">{{grade_str}}</div> {% endif %}
 
 
 
-	<div class="quest-printing-options"></div>
-	{% endspaceless %}
+    <div class="quest-printing-options"></div>
+    {% endspaceless %}
 
-	<div class="colmid">
-		<div class="colleft" id="quest-sidebar">
-			<div class="col1">			</div>
-			<div class="col2">			</div>
-			<div class="col3">			</div>
-		</div>
-	</div>
+    <div class="colmid">
+        <div class="colleft" id="quest-sidebar">
+            <div class="col1">			</div>
+            <div class="col2">			</div>
+            <div class="col3">			</div>
+        </div>
+    </div>
 </div>
 
-			Topics in this quiz:
-			<br>
-			{% for topic in tag_list %}<div class="quest-tag">{{topic}}</div>{% endfor %}
+    Topics in this quiz:
+    <br>
+    {% for topic in tag_list %}<div class="quest-tag">{{topic}}</div>{% endfor %}
 
 {% endblock %}
 
