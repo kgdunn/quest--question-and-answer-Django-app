@@ -569,7 +569,7 @@ def load_class_list(request):
                    'suffix': '@mcmaster.ca',
                   }
         ctxdict.update(csrf(request))
-        return render_to_response('instructor/course-list-load.html', ctxdict,
+        return render_to_response('instructor/load-class-list.html', ctxdict,
                                     context_instance=RequestContext(request))
 
     elif request.method == 'POST':
@@ -588,8 +588,10 @@ def load_class_list(request):
                 last, first, email_id, student_id, group = row
                 group_obj = Group.objects.filter(name=group)
                 if len(group_obj) == 0:
-                    pass
-
+                    group = Group(name=group)
+                    group.save()
+                else:
+                    group = group_obj[0]
 
             username = '%s-%s' % (first.strip().lower(),
                                   last.strip().lower())
@@ -600,12 +602,12 @@ def load_class_list(request):
                 email = email_id
             try:
                 obj = User.objects.get(email=email)
+                logger.info('User [%s] already exists' % username)
             except User.DoesNotExist:
                 obj = User(username=username,
                            first_name=first.strip(),
                            last_name=last.strip(),
-                           email=email_id+email_suffix,
-                           group=group)
+                           email=email_id+email_suffix)
                 obj.save()
                 logger.info('Created user for %s with name: %s' % (course_slug,
                                                                    username))
@@ -613,11 +615,13 @@ def load_class_list(request):
 
             profile = obj.get_profile()
             profile.role = 'Student'
+            profile.group = group
             profile.student_number = student_id.strip()
             profile.courses.add(course)
             profile.save()
 
-            return users_added
+        # Finally, return when completed
+        return HttpResponse(content='Added users<br>%s' % str(users_added))
 
 @login_required                             # URL: ``admin-generate-questions``
 def generate_questions(request, course_code_slug, question_set_slug):

@@ -1,7 +1,7 @@
 {% block content %}
 <form name="input" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
 
-<p>Email suffix: <input type="text" name="email_suffix" autofocus="true"
+<p>Email suffix to add to student email addresses: <input type="text" name="email_suffix" autofocus="true"
                         value="{{suffix}}">
 <p>Course code:
 <select name="course_slug">
@@ -13,9 +13,10 @@
 <p>The CSV file must have the following format
 <ul>
 <li> Only 5 columns: <tt>last_name, first_name, email_prefix, student_number, group </tt>
-<li> Use commas for separators
-<li> No header row
-<li> The file can easily be created by a copy/paste from Avenue to a text file
+<li> The fifth column is optional.
+<li> Use commas for separators.
+<li> No header row.
+<li> The file can easily be created by a copy/paste from Avenue to a text file.
 </li>
 <p><input type="submit" value="Load the class list">
 </form>
