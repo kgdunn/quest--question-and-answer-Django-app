@@ -10,10 +10,11 @@ urlpatterns = patterns('',
     #url(r'load-class-list/$', views.load_class_list, name='admin-load-class-list'),
     url(r'load-class-list/$', views.load_class_list, name='admin-load-class-list'),
 
+    url(r'generate-questions/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$',
+        views.generate_questions, name='admin-generate-questions'),
 
-    url(r'generate-questions/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', views.generate_questions, name='admin-generate-questions'),
-
-    url(r'load-from-template/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', views.load_question_templates, name='admin-load-question-templates'),
+    url(r'load-from-template/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/',
+        views.load_question_templates, name='admin-load-question-templates'),
 
     url(r'fix-questions/', views.fix_questions),
 

@@ -518,7 +518,12 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     quests = validate_user(request, course_code_slug, question_set_slug,
                             question_id)
     if isinstance(quests, HttpResponse):
-        return quests
+        # This will show awkward HTML in the sidebar
+        #return quests
+
+        # Rather show nothing if the user isn't validated
+        return HttpResponse('Please sign in again; answer <b>NOT recorded</b>')
+
     if isinstance(quests, tuple):
         quests, q_id = quests
 
