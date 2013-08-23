@@ -269,6 +269,9 @@ class QActual(models.Model):
 
     # The user's comments
     user_comments = models.TextField(blank=True)
+    # Feedback from the student based on the grading. (How does this differ
+    # from the above field?)
+    feedback = models.TextField(blank=True, null=True)
 
     # NOTE: it is a conscious decision not to assign grades to the ``QActual``
     #       objects. We rather assign grades in a ``grades.Grade`` object;
@@ -276,8 +279,8 @@ class QActual(models.Model):
     #       event.
     grade = models.ForeignKey('grades.Grade', blank=True, null=True)
 
-    # Feedback from the student based on the grading
-    feedback = models.TextField(blank=True, null=True)
+    # Helps to relate the item to webserver logs, traceability, etc
+    last_edit = models.DateTimeField(auto_now=True, blank=True, null=True)
 
     # Has the question been submitted yet? True: used actively clicked the
     # submit button; ``False``: XHR stored answer.
