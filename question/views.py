@@ -16,16 +16,15 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import (render_to_response, redirect, RequestContext,
                               HttpResponse)
 
-
 # 3rd party imports
 
 # Our imports
 from models import (QSet, QActual)
 from person.models import Token, Timing
 from course.models import Course
-from logitem.views import create_hit
+from stats.views import create_hit, get_profile
+from stats.models import TimerStart
 from utils import grade_display
-
 logger = logging.getLogger('quest')
 
 
@@ -212,6 +211,14 @@ def ask_question_set(request, course_code_slug):
     # Calculate the average afterwards
     average = grade / float(iterate+1) * 100
 
+    # Log it
+    TimerStart.objects.create(event='show-all-course-quests',
+                              user=user,
+                              profile=get_profile(request),
+                              item_pk=course.id,
+                              item_type='Course',
+                              referrer=request.META.get('HTTP_REFERER', ''))
+
     # Show question sets
     ctxdict = {'question_set_list': qsets,
                'username': user.user.first_name + ' ' + user.user.last_name,
@@ -249,6 +256,12 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     start_time = datetime.datetime.now()
     if exist:
         final_time = exist[0].final_time
+        TimerStart.objects.create(event='review-a-quest-session',
+                                user=request.user.profile,
+                                profile=get_profile(request),
+                                item_pk=qset.id,
+                                item_type='QSet',
+                                referrer=request.META.get('HTTP_REFERER', ''))
     else:
         done_timing = False
 
@@ -261,8 +274,9 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
             return render_to_response('question/not-started-yet.html',
                         ctxdict, context_instance=RequestContext(request))
 
-        # Test has finished: give the user 60 mins to review the solutions
-        # after that they need to sign in again.
+        # Test has finished and solutions may be displayed.
+        # Allow the users Timing Token 60 mins to review the solutions
+        # after that they need to sign in again to see the solutions again
         if qset.ans_time_final.replace(tzinfo=None) \
                                                <= datetime.datetime.now():
             final_time = datetime.datetime.now() + \
@@ -288,10 +302,20 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
 
             token = request.session['token']
             token_obj = Token.objects.filter(token_address=token)
-            Timing.objects.create(user=request.user.profile, qset=qset,
-                                  start_time=start_time,
-                                  final_time=final_time,
-                                  token=token_obj[0])
+            timing_obj = Timing.objects.create(user=request.user.profile,
+                                               qset=qset,
+                                               start_time=start_time,
+                                               final_time=final_time,
+                                               token=token_obj[0])
+
+            TimerStart.objects.create(event='start-a-quest-session',
+                                user=request.user.profile,
+                                profile=get_profile(request),
+                                item_pk= timing_obj.id,
+                                item_type='Timing',
+                                referrer=request.META.get('HTTP_REFERER', ''),
+                                other_info='QSet.id = %d' % qset.id)
+
 
     request.session['expires'] = final_time
     request.session.save()
@@ -346,6 +370,8 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
     q_type = quest.qtemplate.q_type
     # Has the user answered this question (even temporarily?).
     if quest.given_answer:
+
+
         if q_type in ('mcq', 'tf'):
             html_question = re.sub(r'"'+quest.given_answer+r'"',
                                 r'"'+quest.given_answer+r'" checked',
@@ -363,7 +389,6 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                 html_question = '%s%s%s' % (html_question[0:re_exp.start(2)],
                                             quest.given_answer,
                                             html_question[re_exp.end(2):])
-
 
         if q_type in ('short'):
             out = ''
@@ -389,6 +414,16 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                 html_question = out
 
 
+    #TimerStart.objects.create(event='review-a-quest-session',
+                                    #user=request.user.profile,
+                                    #profile=get_profile(request),
+                                    #item_pk=qset.id,
+                                    #item_type='QSet',
+                                    #referrer=request.META.get('HTTP_REFERER', ''))
+
+
+
+
     qset = quests[0].qset
     now_time = datetime.datetime.now()
     exist = Timing.objects.filter(user=request.user.profile, qset=qset)
@@ -405,16 +440,28 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
     if final_time > now_time:                  # The testing period is running
         html_solution = ''                      # don't show the solutions yet
+        event_type = 'review-a-quest-question-during'
     else:
         html_solution = quest.html_solution
+        event_type = 'review-a-quest-question-post'
 
         # Make the inputs disabled when displaying solutions:
-        html_question = re.sub(r'<input', r'<input disabled="true"',
-                                html_question)
+        html_question = re.sub(r'<input', (r'<input disabled="true" '
+                               r'style="color: #B00"'), html_question)
 
         if q_type in ('long'):
             html_question = re.sub(r'<textarea', r'<textarea disabled="true"',
                                 html_question)
+
+
+    TimerStart.objects.create(event=event_type,
+                            user=request.user.profile,
+                            profile=get_profile(request),
+                            item_pk= quest.qtemplate.id,
+                            item_type='QTemplate',
+                            referrer=request.META.get('HTTP_REFERER', ''),
+                            other_info='QActual=[%d]; current answer: %s' %
+                                      (quest.id, quest.given_answer))
 
     ctxdict = {'quest_list': quests,
                'item_id': q_id,
@@ -466,7 +513,7 @@ def submit_answers(request, course_code_slug, question_set_slug):
 @login_required                          # URL: ``quest-store-answer``
 def store_answer(request, course_code_slug, question_set_slug, question_id):
     """
-    The user is submitting their final answer.
+    The user is submitting an answer.
     """
     quests = validate_user(request, course_code_slug, question_set_slug,
                             question_id)
@@ -516,10 +563,6 @@ def successful_submission(request, course_code_slug, question_set_slug):
         create_hit(request, quests[0].qset, extra_info='Submitted answers')
 
     token = request.session['token']
-    #timing = Timing.objects.filter(token=token)
-    #if timing:
-        #timing[0].is_valid = False
-        #timing[0].save()
 
     try:
         del request.session['expires']

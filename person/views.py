@@ -12,7 +12,8 @@ from django.shortcuts import (HttpResponse, render_to_response, redirect,
 # Our apps:
 from models import Token
 from utils import generate_random_token, send_email
-from logitem.models import Profile
+from stats.models import Profile, TimerStart
+from stats.views import get_profile
 
 # http://quest.mcmaster.ca/tokens/
 # The Django ``reverse`` function is one of the hardest functions to get
@@ -141,43 +142,22 @@ def token_sign_in(request, token):          # URL: 'quest-token-sign-in'
     user = authenticate(remote_user=user.username)
     login(request, user)
 
+    TimerStart.objects.create(event='login',
+                              user=request.user.profile,
+                              profile=get_profile(request),
+                              item_pk=user.id,
+                              item_type='User',
+                              referrer=request.META.get('HTTP_REFERER', ''))
+
     # Now proceed to show available question sets to the user
     response = redirect('quest-course-selection')
     request.session['token'] = token
 
-    #AJAX request to store it in a session.
-    # Put JS in the template for the token accept HTML page
-    # some code that does a POST to write session information
-    # Put this in the Django function that receives the POST request
-
-
+    # AJAX request to store user's profile in a session key appears in the
+    # HTML for the redirect above.
     return response
 
-def token_browser_profile(request):        # URL: 'quest-token-profile'
-    """
-    Store a profile of the user's browser, os, software and display type.
 
-    These are used to learn more about the user, tracking uniqueness,
-    fighting plagiarism, and general stats to improve the software.
-    """
-    import hashlib
-    m = hashlib.md5()
-    m.update('%s |*| %s |*| %s |*| %s' % ( request.GET.get('os', ''),
-                                           request.GET.get('display', ''),
-                                           request.GET.get('software', ''),
-                                           request.GET.get('browser', '')))
-
-    profile = Profile(ua_string=request.GET.get('browser', '')[0:255],
-                       software=request.GET.get('software', '')[0:10000],
-                       os=request.GET.get('os', '')[0:50],
-                       display=request.GET.get('display', '')[0:255])
-
-    profile.hashid = m.hexdigest()
-    profile.save()
-
-    request.session['profile'] = profile.hashid
-
-    return HttpResponse('OK')
 
 
 

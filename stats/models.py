@@ -1,15 +1,9 @@
 from django.db import models
+
 from person.models import UserProfile
 
-#class BrowserID(models.Model):
-    #""" Collects information about the user so we can track and enhance
-    #the experience in the future"""
-    ## https://panopticlick.eff.org/resources/fetch_whorls.js
-    #user_agent = models.CharField(max_length=200, blank=True) # HTTP_USER_AGENT
-    #http_accept = models.CharField(max_length=100, blank=True)# HTTP_ACCEPT
-    #resolution = models.CommaSeparatedIntegerField(max_length=50, blank=True)
-    #timezone = models.SmallIntegerField(blank=True)
-
+# When loading from old DB to new DB:
+# sed -i 's/logitem.pagehit/stats.pagehit/g' all-dumped.json
 
 class PageHit(models.Model):
     """ Records each hit (page view) of an item
@@ -17,7 +11,7 @@ class PageHit(models.Model):
     The only requirement is that the item must have an integer primary key.
     """
     # browser's user agent
-    ua_string = models.CharField(max_length=255)
+    ua_string = models.CharField(max_length=255, null=True, blank=True)
 
     # profile of the browser
     profile = models.CharField(max_length=32, null=True, blank=True)
@@ -33,17 +27,24 @@ class Profile(models.Model):
     """
     Creates the MD5 hash of the user profile
     """
+    # The user's user agent string
     ua_string = models.CharField(max_length=255)
+
+    # The user's browser plugins
     software = models.CharField(max_length=10000)
+
+    # The user's operating system
     os = models.CharField(max_length=50)
+
+    # The user's display settings
     display = models.CharField(max_length=255)
+
+    # A hash created from the above 4 profiling objects
     hashid = models.CharField(max_length=32)
-    datetime = models.DateTimeField(auto_now=True)
+    datetime = models.DateTimeField(auto_now_add=True)
 
     def __unicode__(self):
         return self.hashid
-
-
 
     #def user_slug(self):
         #user = UserProfile.objects.filter(id=self.user_id)
@@ -74,3 +75,36 @@ class Profile(models.Model):
 
     ## Browser ID
     #browsers = models.ManyToManyField(BrowserID)
+
+
+class TimerStart(models.Model):
+    """General timinig statistics about the site usage are summarized here."""
+    event_type = (
+        ('login', 'login'),
+        ('show-all-course-quests', 'show-all-course-quests'),
+        ('start-a-quest-session', 'start-a-quest-session'),
+        ('review-a-quest-session', 'start-a-quest-session'),
+        ('review-a-quest-question-during', 'review-a-quest-question-during'),
+        ('review-a-quest-question-post', 'review-a-quest-question-post'),
+        ('start-question', 'start-question'),
+        ('modify-answer', 'modify-answer'),
+                  )
+    event = models.CharField(max_length=80, choices=event_type)
+    time = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(UserProfile)
+    referrer = models.CharField(max_length=511, blank=True, null=True)
+    other_info = models.CharField(max_length=500, blank=True, null=True,
+                                  default=None)
+    # get if from: request.session.get('profile', None)
+    profile = models.ForeignKey(Profile, null=True, blank=True)
+
+    item_pk = models.IntegerField()      # store the referencing item's PK
+    item_type = models.CharField(max_length=80, null=True, blank=True)
+
+
+
+    def __unicode__(self):
+        return '%s [%s]' % (self.event, self.user.slug)
+
+
+

@@ -3,7 +3,7 @@ from collections import defaultdict
 from datetime import date
 
 # Our models
-import logitem.models as models
+import stats.models as models
 from utils import get_IP_address
 
 static_items = {'spc-main-page': 1,
@@ -26,15 +26,15 @@ def create_hit(request, item, extra_info=None):
         extra_info = request.META.get('HTTP_REFERER', None)
     try:
         page_hit = models.PageHit(ip_address=ip_address,
-                                  ua_string=ua_string,
                                   profile=request.session['profile'],
                                   item=item._meta.module_name,
                                   item_pk=item.pk,
                                   extra_info=extra_info,
                                   user_id=request.user.id)
     except AttributeError:
+        # in cases when the session profile is not available
         page_hit = models.PageHit(ip_address=ip_address,
-                                  ua_string=ua_string,
+                                  ua_string=ua_string, # store as surrogate
                                   item=item,
                                   item_pk=static_items.get(item, 0),
                                   extra_info=extra_info,

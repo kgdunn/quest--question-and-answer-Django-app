@@ -156,12 +156,12 @@ INSTALLED_APPS = (
     # Our apps
     'person',
     'tagging',
-    'logitem',
     'question',
     'course',
     'instructor',
     'utils',
     'grades',
+    'stats'
 )
 
 # Authentication related:
