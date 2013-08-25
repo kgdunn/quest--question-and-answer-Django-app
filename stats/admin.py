@@ -3,8 +3,16 @@ from stats.models import PageHit, Profile, TimerStart
 
 class PageHitAdmin(admin.ModelAdmin):
     list_display = ('datetime', 'ip_address', 'item', 'item_pk', 'profile',
-                    'extra_info', 'user_id')
-    list_per_page = 1000
+                    'extra_info', 'user_id', 'username')
+    readonly_fields = ('username',)
+
+    def username(self, instance):
+        if instance.userp:
+            return instance.userp.slug
+        else:
+            'None'
+
+    list_per_page = 100
 admin.site.register(PageHit, PageHitAdmin)
 
 

@@ -15,9 +15,19 @@ class PageHit(models.Model):
     ip_address = models.IPAddressField()
     datetime = models.DateTimeField(auto_now=True)
     item = models.CharField(max_length=50)
-    user_id = models.IntegerField()
+
     item_pk = models.IntegerField()
     extra_info = models.CharField(max_length=512, null=True, blank=True)
+
+    # Also record the user_id, so we can sort based on it in the Admin interface
+    user_id = models.IntegerField()
+    userp = models.ForeignKey(UserProfile, null=True, blank=True, default=None)
+
+    def __unicode__(self):
+        if self.userp:
+            return "%s [%s]" % (self.item, self.userp.slug)
+        else:
+            return self.item
 
 class Profile(models.Model):
     """
