@@ -45,7 +45,10 @@ class QTemplate(models.Model):
                 ('fib',      'Fill in the blanks'),
                 ('multipart','Multipart questions'),
     )
-    name = models.CharField(max_length=250)     # e.g. "The misbehaving clock"
+    # e.g. "The misbehaving clock", if given explictly, else it is the first
+    # few characters of the question itself.
+    name = models.CharField(max_length=250)
+
     q_type = models.CharField(max_length=10, choices=question_type)
     contributor = models.ForeignKey('person.UserProfile', blank=True)
     tags = models.ManyToManyField('tagging.Tag', blank=True)
@@ -296,8 +299,11 @@ class QActual(models.Model):
                                related_name='prev_question')
 
     def __unicode__(self):
-        return u'%s [for %s]' % (self.qtemplate.name,
-                                 self.user.user.username)
+        return u'%s, for user "%s", in %s of course "%s"' % (
+            self.qtemplate.name,
+            self.user.user.username,
+            self.qset.name,
+            self.qset.course)
 
 
     def save(self, *args, **kwargs):
