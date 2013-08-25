@@ -269,8 +269,8 @@ class QActual(models.Model):
 
     # The user's comments on the question; user uploaded material
     user_comments = models.TextField(blank=True)
-    user_material = models.FileField(upload_to='user-uploads/%Y/%m/%d',
-                                      blank=True)
+    #user_material = models.FileField(upload_to='user-uploads/%Y/%m/%d',
+    #                                  blank=True)
 
     # Feedback from the student based on the grading. (How does this differ
     # from the above field?)

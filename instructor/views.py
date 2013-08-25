@@ -608,6 +608,9 @@ def load_class_list(request):
                            first_name=first.strip(),
                            last_name=last.strip(),
                            email=email_id+email_suffix)
+                from utils import unique_slugify
+
+                unique_slugify(obj, obj.username, 'username')
                 obj.save()
                 logger.info('Created user for %s with name: %s' % (course_slug,
                                                                    username))

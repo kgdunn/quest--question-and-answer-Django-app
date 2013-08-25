@@ -111,6 +111,7 @@ def create_hit(request, item, extra_info=None):
                            item_pk=item.pk,
                            extra_info=extra_info,
                            user_id=request.user.id)
+                           #user=request.session.user)
     except AttributeError:
         # in cases when the session profile is not available
         page_hit = PageHit(ip_address=ip_address,
