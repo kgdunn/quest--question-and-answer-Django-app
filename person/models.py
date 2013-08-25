@@ -55,7 +55,7 @@ class UserProfile(models.Model):
         super(UserProfile, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return self.user.username
+        return self.slug
 
 
 class Token(models.Model):
@@ -84,7 +84,7 @@ class Timing(models.Model):
 
     def __unicode__(self):
         return 'User %s -- Start: [%s] and Final [%s]' % \
-                            (self.user.user.username,
+                            (self.user.slug,
                              self.start_time.strftime('%H:%M:%S on %d %h %Y'),
                              self.final_time.strftime('%H:%M:%S on %d %h %Y'))
 

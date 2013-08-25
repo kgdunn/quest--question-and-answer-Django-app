@@ -200,6 +200,7 @@ def ask_question_set(request, course_code_slug):
     average = None  # in case user is not registered in any courses
     qsets.extend(course.qset_set.order_by('-ans_time_start'))
     grade = 0.0
+    iterate = 0
     for iterate, item in enumerate(qsets):
         qsets[iterate].grade, actual, max_grade = \
                                            grades_for_quest(item, user)
@@ -591,6 +592,10 @@ def successful_submission(request, course_code_slug, question_set_slug):
     #_ = Token.objects.update(id=token_obj[0].id, user=user.user,
     #                         has_been_used=True,
     #                         token_address=token_obj[0].token_address)
+
+
+    # TODO(KGD): log stats
+    # TODO(KGD): send an email
     ctxdict = {'token': token,
                'quest_cut_off': final}
     return render_to_response('question/successfully-submitted.html', ctxdict,

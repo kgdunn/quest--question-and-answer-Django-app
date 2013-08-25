@@ -267,8 +267,11 @@ class QActual(models.Model):
     # student, depending on their specific question values
     grading_answer = models.TextField(blank=True)
 
-    # The user's comments
+    # The user's comments on the question; user uploaded material
     user_comments = models.TextField(blank=True)
+    user_material = models.FileField(upload_to='user-uploads/%Y/%m/%d',
+                                      blank=True)
+
     # Feedback from the student based on the grading. (How does this differ
     # from the above field?)
     feedback = models.TextField(blank=True, null=True)
@@ -301,6 +304,10 @@ class QActual(models.Model):
         """ Override the model's saving function to do some changes """
         if isinstance(self.var_dict, dict):
             self.var_dict = json.dumps(self.var_dict, sort_keys=True)
+
+        #if self.user_material:
+        # TODO(KGD): validate the user's upload is OK
+
         super(QActual, self).save(*args, **kwargs)
 
     def qtemplate_id(self, instance):
