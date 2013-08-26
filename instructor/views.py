@@ -24,7 +24,7 @@ import markdown
 import numpy as np
 
 # Our imports
-from question.models import (QTemplate, QActual, Inclusion)
+from question.models import (QTemplate, QActual, Inclusion, QSet)
 from question.views import validate_user, get_questions_for_user
 from person.models import (UserProfile, User, Group)
 from person.views import create_sign_in_email
@@ -444,6 +444,10 @@ variable  must be specified as "{'choices': ['option a', 'option b', 'etc']}"\
 def create_question_template(text, user=None):
     """
     Creates the QTemplate (question template) and adds it to the database.
+
+    Assumes the ``text`` is well-formatted. This should be checked external
+    to this function. (e.g. it has all the necessary parts for a complete
+    question)
     """
     sd = parse_question_text(text)
     contributor = user
@@ -456,7 +460,6 @@ def create_question_template(text, user=None):
                                      enable_feedback = sd['enable_feedback'],
                                      t_question = sd['t_question'],
                                      t_solution = sd['t_solution'],
-                                     t_grading = sd['t_grading'],
                                      t_variables = sd['t_variables'])
     if exist:
 
@@ -527,43 +530,61 @@ def choose_random_questions(qset, user):
     return qts
 
 
-@login_required                       # URL: ``admin-load-question-templates``
-def load_question_templates(request, course_code_slug, question_set_slug):
+@login_required                       # URL: ``admin-load-from-template``
+def load_from_template(request):
     """
     Given a text file, loads various question templates for a course.
 
-    NOTE: does not need the ``question_set_slug`` actually.
-
     Each question is split by "#----" in the text file
     """
-    # http://localhost/_admin/load-from-template/4C3-6C3/week-1/
+    if request.POST:
+        #f_name = '/home/kevindunn/quest/week-10.qset'
+        question_set_slug = request.POST.get('qset_slug')
+        course_code_slug = request.POST.get('course_slug')
+        course = validate_user(request, course_code_slug, question_set_slug,
+                               admin=True)
+        questions = request.FILES.get('template_file').read().split('#----')
 
-    f_name = '/home/kevindunn/quest/week-10.qset'
-    course = validate_user(request, course_code_slug, question_set_slug,
-                           admin=True)
-    if isinstance(course, HttpResponse):
-        return course
-    if isinstance(course, tuple):
-        course, qset = course
+        if isinstance(course, HttpResponse):
+            return course
+        if isinstance(course, tuple):
+            course, qset = course
 
-    if not f_name:
-        return HttpResponse('No templates loaded')
+        additional = []
+        for question in questions:
+            if not question.strip():  # avoid empty text
+                continue
+            template = create_question_template(question,
+                                                user=request.user.get_profile())
+            included_item = Inclusion(qset=qset, qtemplate=template)
+            try:
+                included_item.save()
+            except ValidationError, e:
+                text = ('This template [ID=%d] has already been included in '
+                        'this question set [%s]') % (template.id, qset.name)
+                logger.warn(text)
+                additional.append(text)
 
-    f_handle = open(f_name, 'r')
-    questions = f_handle.read().split('#----')
-    f_handle.close()
 
-    for question in questions:
-        template = create_question_template(question,
-                                            user=request.user.get_profile())
-        included_item = Inclusion(qset=qset, qtemplate=template)
-        try:
-            included_item.save()
-        except ValidationError, e:
-            logger.warn(('This template [%d] has already been included in '
-                         'this question set [%s]') % (template.id, qset.name))
+        ctxdict = {'output': 'All questions loaded from the template.',
+                   'additional': str(['<li> %s'%item for item in additional]),
+                   'course_code_slug':  course_code_slug,
+                   'question_set_slug': question_set_slug,
+                   }
+        ctxdict.update(csrf(request))
+        return render_to_response('instructor/generate-questions.html',
+                                  ctxdict,
+                                  context_instance=RequestContext(request))
 
-    return HttpResponse('All questions loaded')
+    else:
+        ctxdict = {'course_list': Course.objects.all(),
+                   'qset_list': QSet.objects.all(),
+                  }
+        ctxdict.update(csrf(request))
+        return render_to_response('instructor/load-from-template.html',
+                                  ctxdict,
+                                  context_instance=RequestContext(request))
+
 
 @login_required                       # URL: ``admin-load-class-list``
 def load_class_list(request):
@@ -583,7 +604,6 @@ def load_class_list(request):
         course_slug = request.POST.get('course_slug', '')
         course = Course.objects.filter(slug=course_slug)[0]
         email_suffix = request.POST.get('email_suffix', '')
-
 
         users_added = []
         rdr = csv.reader(request.FILES['csv_file'], delimiter=',')
@@ -631,7 +651,9 @@ def load_class_list(request):
             profile.save()
 
         # Finally, return when completed
-        return HttpResponse(content='Added users<br>%s' % str(users_added))
+
+        return HttpResponse(content='Added users<br>%s' % \
+                            str(['<li> %s'%item for item in users_added]))
 
 @login_required                       # URL: ``admin-generate-questions``
 def generate_questions(request, course_code_slug, question_set_slug):
@@ -639,8 +661,6 @@ def generate_questions(request, course_code_slug, question_set_slug):
     1. Generates the questions from the question sets, rendering templates
     2. Emails users in the class the link to sign in and start answering
     """
-    load_question_templates(request, course_code_slug, question_set_slug)
-
     course = validate_user(request, course_code_slug, question_set_slug,
                            admin=True)
     if isinstance(course, HttpResponse):
@@ -650,8 +670,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
 
     # Now render, for every user, their questions from the question set
     which_users = UserProfile.objects.filter(courses=course)
-    user_objs = [userP.user for userP in which_users if userP.slug == 'zhangbo-gu']
-    user_objs = [userP.user for userP in which_users] # if userP.slug == 'zhangbo-gu']
+    user_objs = [userP.user for userP in which_users]
     for user in user_objs:
 
         if qset.random_choice:

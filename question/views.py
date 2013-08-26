@@ -86,24 +86,25 @@ def validate_user(request, course_code_slug, question_set_slug,
                         (user, question_set_slug))
             return redirect('quest-main-page')
 
-    token = request.session.get('token', '')
-    token_obj = Token.objects.filter(token_address=token).filter(user=user)
-    if not token_obj:
-        logger.info('Bad token used: [%s]; request path="%s"' %
-                    (token, request.path_info))
-        return redirect('quest-main-page')
+    if not admin:
+        token = request.session.get('token', '')
+        token_obj = Token.objects.filter(token_address=token).filter(user=user)
+        if not token_obj:
+            logger.info('Bad token used: [%s]; request path="%s"' %
+                        (token, request.path_info))
+            return redirect('quest-main-page')
 
-    if token_obj[0].has_been_used:
-        logger.info('Token used: [%s]; session token="%s"' %
-                    (request.path_info, request.session['token']))
-        page_content = {}
-        return render_to_response('person/invalid-expired-token.html',
-                                  page_content)
+        if token_obj[0].has_been_used:
+            logger.info('Token used: [%s]; session token="%s"' %
+                        (request.path_info, request.session['token']))
+            page_content = {}
+            return render_to_response('person/invalid-expired-token.html',
+                                      page_content)
 
-    if request.session['token'] != token:
-        logger.info('Token mismatch: [%s]; session token="%s"' %
-                    (request.path_info, request.session['token']))
-        return redirect('quest-main-page')
+        if request.session['token'] != token:
+            logger.info('Token mismatch: [%s]; session token="%s"' %
+                        (request.path_info, request.session['token']))
+            return redirect('quest-main-page')
 
     if expiry_check and not(admin):
         t_objs = Timing.objects.filter(user=request.user.profile, qset=qset)

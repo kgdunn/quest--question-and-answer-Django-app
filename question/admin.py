@@ -2,7 +2,8 @@ from django.contrib import admin
 from models import QSet, QTemplate, QActual, Inclusion
 
 class QTemplateAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'q_type', 'difficulty', 'max_grade', )
+    list_display = ('id', 'name', 'q_type', 'difficulty', 'max_grade',
+                    'when_uploaded')
     list_display_links = ('name', )
     list_per_page = 1000
     ordering = ('-id',)

@@ -2,12 +2,12 @@
 <form name="input" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
 
 <p>Email suffix to add to student email addresses: <input type="text" name="email_suffix" autofocus="true"
-                        value="{{suffix}}">
+    value="{{suffix}}">
 <p>Course code:
 <select name="course_slug">
-  {% for course in course_list %}
-    <option value="{{course.slug}}">{{course.name}} [{{course.year}}]</option>
-  {% endfor %}
+    {% for course in course_list %}
+        <option value="{{course.slug}}">{{course.name}} [{{course.year}}]</option>
+    {% endfor %}
 </select>
 <p>CSV file: <input type="file" name="csv_file" size="40">
 <p>The CSV file must have the following format

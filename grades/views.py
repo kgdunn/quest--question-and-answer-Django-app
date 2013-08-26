@@ -109,6 +109,7 @@ def do_grading(qactual):
     qactual.save()
     return grade  # used by outside functions that only care for the grade
 
+
 def grade_MCQ(qactual):
     """
     Grades multiple choice questions.

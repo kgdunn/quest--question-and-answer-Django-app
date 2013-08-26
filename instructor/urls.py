@@ -13,8 +13,8 @@ urlpatterns = patterns('',
     url(r'generate-questions/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$',
         views.generate_questions, name='admin-generate-questions'),
 
-    url(r'load-from-template/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/',
-        views.load_question_templates, name='admin-load-question-templates'),
+    url(r'load-from-template/$', #(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/',
+        views.load_from_template, name='admin-load-from-template'),
 
     url(r'fix-questions/', views.fix_questions),
 

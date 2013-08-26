@@ -1,0 +1,11 @@
+{% block content %}
+
+<p>{{output}}
+<p>Additional information provided:
+<code>
+{{additional|safe}}
+</code>
+<p><a href="{% url admin-generate-questions course_code_slug question_set_slug %}">
+                     Generate questions from this template for all students</a>
+
+{% endblock %}

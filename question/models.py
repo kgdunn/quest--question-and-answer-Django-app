@@ -28,8 +28,11 @@ except ImportError:
     import json
 from django.db import models
 from django.core.urlresolvers import reverse
-from django.template.defaultfilters import slugify
+#from django.template.defaultfilters import slugify
 from django.core.exceptions import ValidationError
+
+# Our imports
+from utils import unique_slugify
 
 class QTemplate(models.Model):
     """
@@ -57,6 +60,10 @@ class QTemplate(models.Model):
 
     # Can students provide feedback on this question
     enable_feedback = models.BooleanField(default=True)
+
+    # When uploaded
+    when_uploaded = models.DateTimeField(auto_now_add=True, blank=True,
+                                         null=True)
 
     # The question template
     t_question = models.TextField()
@@ -163,7 +170,10 @@ class QSet(models.Model):
         """ Override  model's saving function to do some checks """
         # Call the "real" save() method.
 
-        slug = slugify(self.name)
+        # http://docs.djangoproject.com/en/dev/topics/db/models/
+                                            #overriding-predefined-model-methods
+        unique_slugify(self, self.name + '-' + self.course.code, 'slug')
+
         # happens if the slug is totally unicode characters
         if len(slug) == 0:
             raise ValidationError('QSet slug contains invalid characters')
@@ -186,7 +196,7 @@ class QSet(models.Model):
 
 
     def __unicode__(self):
-        return u'%s [%s]' % (self.name, self.course.name)
+        return '%s [%s]' % (self.name, self.course.name)
 
 
 class Inclusion(models.Model):
@@ -300,11 +310,16 @@ class QActual(models.Model):
                                related_name='prev_question')
 
     def __unicode__(self):
-        return u'%s, for user "%s", in %s of course "%s"' % (
-            self.qtemplate.name,
-            self.user.user.username,
-            self.qset.name,
-            self.qset.course)
+        if self.qset:
+            return u'%s, for user "%s", in %s of course "%s"' % (
+                self.qtemplate.name,
+                self.user.user.username,
+                self.qset.name,
+                self.qset.course)
+        else:
+            return u'%s, for user "%s"' % (
+                            self.qtemplate.name,
+                            self.user.user.username)
 
     def save(self, *args, **kwargs):
         """ Override the model's saving function to do some changes """
