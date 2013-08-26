@@ -449,8 +449,15 @@ def create_question_template(text, user=None):
     contributor = user
 
     # Maybe we've imported this template before. Update the previous ones.
-    exist = QTemplate.objects.filter(name=sd['name'], contributor=contributor,
-                                     q_type=sd['q_type'])
+    exist = QTemplate.objects.filter(name=sd['name'],
+                                     contributor=contributor,
+                                     difficulty=sd['difficulty'],
+                                     max_grade = sd['max_grade'],
+                                     enable_feedback = sd['enable_feedback'],
+                                     t_question = sd['t_question'],
+                                     t_solution = sd['t_solution'],
+                                     t_grading = sd['t_grading'],
+                                     t_variables = sd['t_variables'])
     if exist:
 
         # DO NOT EVER OVERWRITE AN EXISTING QTEMPLATE.
@@ -626,7 +633,7 @@ def load_class_list(request):
         # Finally, return when completed
         return HttpResponse(content='Added users<br>%s' % str(users_added))
 
-@login_required                             # URL: ``admin-generate-questions``
+@login_required                       # URL: ``admin-generate-questions``
 def generate_questions(request, course_code_slug, question_set_slug):
     """
     1. Generates the questions from the question sets, rendering templates
@@ -766,7 +773,7 @@ def render(qt):                                                      # helper
     * MathJax math
     * Pictures/images
     * Calls external code before rendering
-    * Create a QActual object, which is returned
+    * Generate and return the components used to create a QActual object
 
     To maintain integrity, rendering from ``QTemplate`` to a ``QActual`` is
     only and ever done ONCE (at rendering time). Later, when the question is
@@ -1226,7 +1233,6 @@ def clean_db(request):
 
             #{n_sample: [[4.0, 6.0, 1.0, '
 
-
 def fix_questions(request):
     """
     Fix an error in a question.
@@ -1255,7 +1261,7 @@ def fix_questions(request):
         qa.grading_answer = json.dumps(ga)
         qa.save()
 
-def preview_question(request):
+def preview_question(request):    # URL: ``admin-preview-question``
     """
     Allows an admin user to repeatedly preview a question
     """
@@ -1268,17 +1274,25 @@ def preview_question(request):
         qtemplate = request.GET['qtemplate']
         question = qtemplate.split('#----')[0]
 
-        # Rather create a fake object than hit the database
-        template = create_question_template(question, user=None)
+        preview_user = UserProfile.objects.filter(slug='quest-grader')[0]
+        template = create_question_template(question, user=preview_user)
 
         # Now render the template, again, without hitting the database
-        html_q, html_a, var_dict, grading = render(template)
+        html_q, html_a, var_dict, grading_answer = render(template)
+
+        qa = QActual.objects.create(qtemplate=template,
+                                    qset=None,
+                                    user=preview_user,
+                                    as_displayed=html_q,
+                                    html_solution=html_a,
+                                    var_dict=var_dict,
+                                    grading_answer=grading_answer)
 
         ctxdict = {'quest_list': [],
                    'item_id': 'Preview',
                    'course': None,
                    'qset': None,
-                   'item': None,
+                   'item': qa,
                    'timeout_time': 500,       # in the HTML template, XHR timeout
                    'minutes_left': 0,
                    'seconds_left': 0,

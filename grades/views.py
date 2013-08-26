@@ -63,45 +63,51 @@ def process_grades(request, course_code_slug, question_set_slug):
     count = 0
     for student in students:
         for qactual in qset_questions.filter(user=student).order_by('id'):
-
             if qactual.grade:
                 # Do not re-grade a question that has already received a grade
                 continue
-
-            if qactual.given_answer == '':
-                grade = Grade.objects.create(graded_by=get_auto_grader(),
-                                             approved=True,
-                                             grade_value=0.0)
-
-            elif qactual.qtemplate.q_type in ('tf', 'mcq', 'multi',):
-                grade = grade_MCQ(qactual)
-
-            elif qactual.qtemplate.q_type in ('short'):
-                grade = grade_short(qactual)
-
-            elif qactual.qtemplate.q_type in ('long'):
-                grade = grade_long(qactual)
-
-            elif qactual.qtemplate.q_type in ('numeric'):
-                grade = grade_numeric(qactual)
-
-            elif qactual.qtemplate.q_type in ('fib'):
-                grade = grade_fib(qactual)
-
-            elif qactual.qtemplate.q_type in ('multipart',):
-                grade = grade_multipart(qactual)
-
             else:
-                # TODO(KGD): else, raise an error: unspecified question type
-                assert(False)
-
-            # Save the grade
-            qactual.grade = grade
-            qactual.save()
+                do_grading()
             count += 1
 
     return HttpResponse('Graded %d questions' % count)
 
+
+def do_grading(qactual):
+    """
+    Performs the grading of a question (QActual) for a single student.
+    """
+    if qactual.given_answer == '':
+        grade = Grade.objects.create(graded_by=get_auto_grader(),
+                                     approved=True,
+                                     grade_value=0.0)
+
+    elif qactual.qtemplate.q_type in ('tf', 'mcq', 'multi',):
+        grade = grade_MCQ(qactual)
+
+    elif qactual.qtemplate.q_type in ('short'):
+        grade = grade_short(qactual)
+
+    elif qactual.qtemplate.q_type in ('long'):
+        grade = grade_long(qactual)
+
+    elif qactual.qtemplate.q_type in ('numeric'):
+        grade = grade_numeric(qactual)
+
+    elif qactual.qtemplate.q_type in ('fib'):
+        grade = grade_fib(qactual)
+
+    elif qactual.qtemplate.q_type in ('multipart',):
+        grade = grade_multipart(qactual)
+
+    else:
+        # TODO(KGD): else, raise an error: unspecified question type
+        assert(False)
+
+    # Save the grade
+    qactual.grade = grade
+    qactual.save()
+    return grade  # used by outside functions that only care for the grade
 
 def grade_MCQ(qactual):
     """

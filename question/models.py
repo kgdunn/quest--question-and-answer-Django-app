@@ -242,7 +242,8 @@ class QActual(models.Model):
     qtemplate = models.ForeignKey(QTemplate)
 
     # Which question set was this question used in?
-    qset = models.ForeignKey(QSet)
+    # Only allow/expect blanks with Previews and unit tests
+    qset = models.ForeignKey(QSet, null=True, blank=True)
 
     # Who is answering this question?
     user = models.ForeignKey('person.UserProfile')
@@ -304,7 +305,6 @@ class QActual(models.Model):
             self.user.user.username,
             self.qset.name,
             self.qset.course)
-
 
     def save(self, *args, **kwargs):
         """ Override the model's saving function to do some changes """

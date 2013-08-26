@@ -18,6 +18,7 @@ urlpatterns = patterns('',
 
     url(r'fix-questions/', views.fix_questions),
 
-    url('preview-question/', views.preview_question),
+    url('preview-question/', views.preview_question,
+        name='admin-preview-question'),
 
 )

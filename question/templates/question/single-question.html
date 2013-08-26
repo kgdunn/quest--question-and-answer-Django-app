@@ -21,18 +21,18 @@
 
 <h2>Question {{item_id}} of {{quest_list|length}}&nbsp;&nbsp;&nbsp; [{{item.qtemplate.max_grade}} point{{item.qtemplate.max_grade|pluralize}}]</h2>
     {% if last_question %}
-    <div id="quest-item-header-left">{% if item.prev_q %}
-        <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
-            </div>
+        <div id="quest-item-header-left">{% if item.prev_q %}
+            <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
+        </div>
         <div id="quest-item-header-right"></div>
-        {% else %}
-    <div id="quest-item-header-left">{% if item.prev_q %}
-        <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
-            </div>
+    {% else %}
+        <div id="quest-item-header-left">{% if item.prev_q %}
+            <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"-1" %}">Previous</a>{% endif %}
+        </div>
         <div id="quest-item-header-right">{% if item.next_q %}
-        <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}
-            </div>
-        {% endif %}
+            <a href="{% url quest-ask-specific-question course_code_slug=course, question_set_slug=qset, question_id=item_id|add:"1" %}">Next</a>{% endif %}
+        </div>
+    {% endif %}
 
 <div id="quest-itemdisp-container">
     <div class="quest-item-question">
@@ -45,8 +45,16 @@
         {{html_solution|safe}}
             </div>{% endif %}
         <div class="quest-item-grading">
-        {% if item.grade %} Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
-            {% else %} Not graded yet {% endif %}
+        {% if item.grade %}
+            Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
+        {% else %}
+            Not graded yet
+            {% if item_id == 'Preview' %}
+                <form action="{% url admin-preview-question %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
+                    <input type="submit" value="Check grading">
+                </form>
+            {% endif %}
+        {% endif %}
 
 </div>
     <div class="quest-item-feedback">

@@ -66,6 +66,8 @@ def validate_user(request, course_code_slug, question_set_slug,
     """
     Some validation code that is common to functions below.
     """
+    if admin and course_code_slug=='None' and question_set_slug=='None':
+        return Quest.objects.filter
     user = request.user.profile
     courses = Course.objects.filter(slug=course_code_slug)
     if not courses:
@@ -480,8 +482,8 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                'seconds_left': sec_remain,
                'html_question': html_question,
                'html_solution': html_solution,
-               'last_question': q_id==len(quests),
-               'grade': quest.grade}
+               'last_question': q_id==len(quests)
+               }
     ctxdict.update(csrf(request))
     return render_to_response('question/single-question.html', ctxdict,
                               context_instance=RequestContext(request))
