@@ -96,7 +96,7 @@ def validate_user(request, course_code_slug, question_set_slug,
 
         if token_obj[0].has_been_used:
             logger.info('Token used: [%s]; session token="%s"' %
-                        (request.path_info, request.session['token']))
+                        (request.path_info, token))
             page_content = {}
             return render_to_response('person/invalid-expired-token.html',
                                       page_content)
@@ -326,15 +326,16 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
                 return render_to_response('question/honesty-check.html',
                             ctxdict, context_instance=RequestContext(request))
 
-            token = request.session['token']
-            token_obj = Token.objects.filter(token_address=token)
-            timing_obj = Timing.objects.create(user=request.user.profile,
-                                               qset=qset,
-                                               start_time=start_time,
-                                               final_time=final_time,
-                                               token=token_obj[0])
+            token = request.session.get('token', None)
+            if token:
+                token_obj = Token.objects.filter(token_address=token)
+                timing_obj = Timing.objects.create(user=request.user.profile,
+                                                   qset=qset,
+                                                   start_time=start_time,
+                                                   final_time=final_time,
+                                                   token=token_obj[0])
 
-            TimerStart.objects.create(event='start-a-quest-session',
+                TimerStart.objects.create(event='start-a-quest-session',
                                 user=request.user.profile,
                                 profile=get_profile(request),
                                 item_pk= timing_obj.id,

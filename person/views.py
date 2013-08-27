@@ -152,6 +152,7 @@ def token_sign_in(request, token):          # URL: 'quest-token-sign-in'
     # Now proceed to show available question sets to the user
     response = redirect('quest-course-selection')
     request.session['token'] = token
+    request.session.save()
 
     # AJAX request to store user's profile in a session key appears in the
     # HTML for the redirect above.

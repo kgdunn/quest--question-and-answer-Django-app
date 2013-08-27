@@ -106,7 +106,7 @@ def create_hit(request, item, extra_info=None):
         extra_info = request.META.get('HTTP_REFERER', None)
     try:
         page_hit = PageHit(ip_address=ip_address,
-                           profile=request.session['profile'],
+                           profile=request.session.get('profile', None),
                            item=item._meta.module_name,
                            item_pk=item.pk,
                            extra_info=extra_info,
