@@ -172,7 +172,8 @@ class QSet(models.Model):
 
         # http://docs.djangoproject.com/en/dev/topics/db/models/
                                             #overriding-predefined-model-methods
-        unique_slugify(self, self.name + '-' + self.course.code, 'slug')
+        unique_slugify(self, '%s %s %s' % (self.name, self.course.code,
+                                           self.course.year), 'slug')
 
         # happens if the slug is totally unicode characters
         if len(self.slug) == 0:
