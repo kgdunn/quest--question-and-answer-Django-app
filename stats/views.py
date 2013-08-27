@@ -66,16 +66,15 @@ def token_browser_profile(request):        # URL: 'quest-token-profile'
     fighting plagiarism, and general stats to improve the software.
     """
     m = hashlib.md5()
-    m.update('%s |*| %s |*| %s |*| %s' % ( request.GET.get('os', ''),
-                                           request.GET.get('display', ''),
-                                           request.GET.get('software', ''),
-                                           request.GET.get('browser', '')))
+    m.update('%s |*| %s |*| %s |*| %s' % ( request.POST.get('os', ''),
+                                           request.POST.get('display', ''),
+                                           request.POST.get('software', ''),
+                                           request.POST.get('browser', '')))
 
     profile = Profile(ua_string=request.POST.get('browser', '')[0:255],
                        software=request.POST.get('software', '')[0:10000],
                        os=request.POST.get('os', '')[0:50],
                        display=request.POST.get('display', '')[0:255])
-
     profile.hashid = m.hexdigest()
     profile.save()
 
