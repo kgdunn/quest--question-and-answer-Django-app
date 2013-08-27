@@ -8,7 +8,10 @@ from django.test import TestCase
 #from question.models import (QTemplate, QActual, QSet)
 #import datetime
 
-import wingdbstub
+try:
+    import wingdbstub
+except ImportError:
+    pass
 
 #class Login_TestCases(TestCase):
     #def test_login_before_start(self):
