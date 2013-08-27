@@ -1,14 +1,15 @@
 {% extends "question/questions.html" %}
+{% load url from future %}
 
 {% block title %}{{quest_list.0.qset.course.code}}{% endblock %}
-{% block headerleft %}<a href="{% url quest-question-set course_code_slug=course%}">&lt; Back to list of all available tests</a>{% endblock %}
+{% block headerleft %}<a href="{% url 'quest-question-set'   course_code_slug=course  %}">&lt; Back to list of all available tests</a>{% endblock %}
 
 {% block content %}
 <div class="colmask threecol">
     {% spaceless %}
     <ul>
     {% for quest in quest_list %}
-        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}">
+        <li><a href="{% url 'quest-ask-specific-question'   course   qset   forloop.counter %}">
             Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} point{{quest.qtemplate.max_grade|pluralize}}]
                 {% if quest.grade %} | grade: {{quest.grade.grade_value|floatformat}} / {{quest.qtemplate.max_grade}} {% endif %} </li>
     {% endfor %}

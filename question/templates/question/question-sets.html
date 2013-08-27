@@ -1,9 +1,9 @@
 {% extends "question/questions.html" %}
 {% load humanize %}
+{% load url from future %}
 
 {% block title %}All questions for {{question_set_list.0.course.code}}{% endblock %}
-{% block headerleft %}<a href="{% url quest-course-selection%}">&lt; List of all courses</a>{% endblock %}
-
+{% block headerleft %}<a href="{% url 'quest-course-selection' %}">&lt; List of all courses</a>{% endblock %}
 
 {% block content %}
 
@@ -27,7 +27,7 @@
                     {% for item in question_set_list %}
                     {% if item.is_active %}
                     <tr>
-                        <td><a href="{% url quest-ask-show-questions item.course.slug item.slug %}">{{item.name}}</a>
+                        <td><a href="{% url 'quest-ask-show-questions'  item.course.slug   item.slug %}">{{item.name}}</a>
                         <td>{{item.ans_time_start|date:"d F Y"}} at {{item.ans_time_start|date:"g:i A"}}
                         <td>{{item.ans_time_final|date:"d F Y"}} at {{item.ans_time_final|date:"g:i A"}}
                         <td>{{item.announcement|safe}}

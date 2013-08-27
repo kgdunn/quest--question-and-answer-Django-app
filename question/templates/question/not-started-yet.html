@@ -1,4 +1,5 @@
 {% extends "question/questions.html" %}
+{% load url from future %}
 
 {% block title %}Not started yet{% endblock %}
 
@@ -6,6 +7,6 @@
 
 <p>This test may not be started until {{time_to_start|date:"d F Y G:i"}}.
 
-<p>Return back to <a href="{% url quest-course-selection %}">list of available courses</a>.
+<p>Return back to <a href="{% url 'quest-course-selection' %}">list of available courses</a>.
 
 {% endblock %}

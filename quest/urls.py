@@ -8,6 +8,11 @@ from question.views import(ask_question_set, ask_show_questions,
                            submit_answers, successful_submission)
 from django.conf import settings
 
+
+# Uncomment these lines to find DeprecationWarning
+#import warnings
+#warnings.simplefilter('error', DeprecationWarning)
+
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
@@ -35,7 +40,7 @@ urlpatterns += patterns('',
 
     url(r'^$', person.views.sign_in, name='quest-main-page'),
 
-    url(r'^tokens/(.*)/$', person.views.token_sign_in, name='quest-token-sign-in'),
+    url(r'^tokens/(.*)/$', person.views.TokenSignIn.as_view(), name='quest-token-sign-in'),
     url(r'^profile/$', stats.views.token_browser_profile, name='quest-token-profile'),
 
     url(r'^course-selection/$', question.views.course_selection, name='quest-course-selection'),

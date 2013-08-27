@@ -1,10 +1,11 @@
 {% extends "base.html" %}
+{% load url from future %}
 
 {% block title %}Invalid sign in{% endblock %}
 
 {% block content %}
 <p>That web address has expired or is invalid. Sign-in emails are only valid
-for a single use. You may <a href="{% url quest-main-page%}">request a new
+for a single use. You may <a href="{% url 'quest-main-page' %}">request a new
 web address</a> to sign in again.
 
 <p>If you think there is some other problem, please contact {{ADMIN_NAME}} at

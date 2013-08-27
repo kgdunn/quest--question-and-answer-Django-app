@@ -1,4 +1,5 @@
 {% extends "question/questions.html" %}
+{% load url from future %}
 
 {% block title %}{{quest_list.0.qset.course.code}}{% endblock %}
 
@@ -7,7 +8,7 @@
     {% spaceless %}
     <ul>
     {% for quest in quest_list %}
-        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}"
+        <li><a href="{% url 'quest-ask-specific-question'   course    qset   forloop.counter %}"
                target="_blank">Question {{forloop.counter}} of {{quest_list|length}}</a>
                [{{quest.qtemplate.max_grade}} points]:
                {% if quest.given_answer %}You provded an answer{% else %}<span class="quest-unanswered-question">You did not answer this question</span> {% endif %}

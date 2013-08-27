@@ -1,11 +1,12 @@
 {% block content %}
+{% load url from future %}
 
 <p>{{output}}
 <p>Additional information provided:
 <code>
 {{additional|safe}}
 </code>
-<p><a href="{% url admin-generate-questions course_code_slug question_set_slug %}">
+<p><a href="{% url 'admin-generate-questions' course_code_slug    question_set_slug %}">
                      Generate questions from this template for all students</a>
 
 {% endblock %}

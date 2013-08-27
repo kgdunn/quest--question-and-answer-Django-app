@@ -1,4 +1,5 @@
 {% extends "question/questions.html" %}
+{% load url from future %}
 
 {% block title %}Successfully submitted{% endblock %}
 
@@ -8,7 +9,7 @@
        been automatically signed out of the Quest system. For reference, your
        session code was: <b><tt>{{token}}</tt></b>
     <p>If you have time left on the test, you may
-       <a href="{% url quest-main-page%}">request a new sign in code</a> and
+       <a href="{% url 'quest-main-page' %}">request a new sign in code</a> and
        update any of your answers. Solutions will be available after the cut
        off time, {{quest_cut_off}}.
     {% endspaceless %}

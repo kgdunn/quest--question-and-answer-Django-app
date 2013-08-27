@@ -4,8 +4,10 @@ import datetime
 
 from django.conf import settings
 from django.core.urlresolvers import reverse, Http404
+from django.http import HttpResponseRedirect
 from django.core.context_processors import csrf
 from django.contrib.auth import login, authenticate
+from django.views.generic.base import View
 from django.shortcuts import (HttpResponse, render_to_response, redirect,
                               RequestContext)
 
@@ -118,45 +120,50 @@ def sign_in(request):                        # URL: 'quest-main-page'
         return render_to_response('person/sign-in-form.html', ctxdict,
                                   context_instance=RequestContext(request))
 
-def token_sign_in(request, token):          # URL: 'quest-token-sign-in'
-    """ Signs the user in for a limited period.
-    """
-    logger.debug('About to process received token: ' + str(token))
-    token_item = Token.objects.filter(token_address=token)
 
-    if len(token_item) == 0 or token_item[0].has_been_used:
-        logger.info('Invalid/expired token received: ' + token)
-        page_content = {}
-        ctxdict = {}
-        ctxdict.update(csrf(request))
-        return render_to_response('person/invalid-expired-token.html',
-                                  ctxdict,
-                                  context_instance=RequestContext(request))
+class TokenSignIn(View):                    # URL: 'quest-token-sign-in'
+    """ Signs the user in for a limited period.  """
+    def get(self, request, token):
+        logger.debug('About to process received token: ' + str(token))
+        token_item = Token.objects.filter(token_address=token)
 
-    # Valid token found. Continue on.
-    user = token_item[0].user
+        if len(token_item) == 0 or token_item[0].has_been_used:
+            logger.info('Invalid/expired token received: ' + token)
+            page_content = {}
+            ctxdict = {}
+            ctxdict.update(csrf(request))
+            return render_to_response('person/invalid-expired-token.html',
+                                      ctxdict,
+                                      context_instance=RequestContext(request))
 
-    # Use Django's auth framework to mark the user as signed-in
-    # authenticate() <--- use this in the future to authenticate against
-    #                     other systems. We are using tokens for now.
-    user = authenticate(remote_user=user.username)
-    login(request, user)
+        # Valid token found. Continue on.
+        user = token_item[0].user
 
-    TimerStart.objects.create(event='login',
-                              user=request.user.profile,
-                              profile=get_profile(request),
-                              item_pk=user.id,
-                              item_type='User',
-                              referrer=request.META.get('HTTP_REFERER', ''))
+        # Use Django's auth framework to mark the user as signed-in
+        # authenticate() <--- use this in the future to authenticate against
+        #                     other systems. We are using tokens for now.
+        user = authenticate(remote_user=user.username)
+        login(request, user)
 
-    # Now proceed to show available question sets to the user
-    response = redirect('quest-course-selection')
-    request.session['token'] = token
-    request.session.save()
+        TimerStart.objects.create(event='login',
+                                user=request.user.profile,
+                                profile=get_profile(request),
+                                item_pk=user.id,
+                                item_type='User',
+                                referrer=request.META.get('HTTP_REFERER', ''))
 
-    # AJAX request to store user's profile in a session key appears in the
-    # HTML for the redirect above.
-    return response
+        # Now proceed to show available question sets to the user
+        # response = redirect('quest-course-selection')
+        request.session['token'] = token
+        request.session.save()
+
+        # AJAX request to store user's profile in a session key appears in the
+        # HTML for the redirect above.
+        return HttpResponseRedirect(reverse('quest-course-selection'))
+
+
+#def token_sign_in(request, token):
+#    """ Signs the user in for a limited period.  """
 
 
 

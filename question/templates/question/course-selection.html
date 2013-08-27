@@ -1,5 +1,7 @@
 {% extends "question/questions.html" %}
 {% load humanize %}
+{% load url from future %}
+
 
 {% block title %}All questions available{% endblock %}
 
@@ -170,7 +172,7 @@
         'software': software(),
         'csrfmiddlewaretoken': '{{ csrf_token }}'
     }
-    $.post({% url quest-token-profile %}, postdata);
+    $.post({% url 'quest-token-profile' %}, postdata);
 });
 </script>
 
@@ -180,7 +182,7 @@
         <p>You are registered for these courses. Please pick the one you wish to answer questions for:
         <ul>
         {% for course in course_list %}
-            <li><a href="{% url quest-question-set course_code_slug=course.slug%}">{{course.name}}</a>
+            <li><a href="{% url 'quest-question-set' course.slug %}">{{course.name}}</a>
         {% endfor %}
         </ul>
 {% endblock %}
