@@ -38,11 +38,11 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
             user_prof.save()
 
 
-        if len(User.objects.filter(username='quest-grader')) == 0:
+        if len(User.objects.filter(username='quest-grader-previewer')) == 0:
             # Only create this user if it doesn't exist
-            auto_user = User.objects.create(username='quest-grader',
-                                            email='quest.grader@example.com',
-                                            is_active=False)
+            auto_user = User.objects.create(username='quest-grader-previewer',
+                                    email='quest.grader.previewer@example.com',
+                                    is_active=False)
             auser = user_class.objects.create(user=auto_user)
             auser.role = 'Grader'
             auser.save()

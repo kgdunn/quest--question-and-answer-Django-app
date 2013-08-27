@@ -1,6 +1,6 @@
 # Project dependancies
 # ----------------------
-# easy_install -U django       <--- version 1.4.3 used during development
+# easy_install -U django       <--- version 1.5.2 used during development
 # easy_install -U simplejson   <--- version 2.6.2
 # easy_install -U psychopg2    <--- version 2.5.1
 # easy_install -U python-magic <--- version 0.4.3
@@ -176,6 +176,7 @@ AUTH_PROFILE_MODULE = 'person.UserProfile'
 QUEST = {}
 this_dir = __file__[0:__file__.find('settings.py')]
 try:
+    #pass
     execfile(this_dir + os.sep + 'local_settings.py')
 except IOError:
     # See https://docs.djangoproject.com/en/1.5/ref/settings for EMAIL settings
@@ -243,11 +244,13 @@ LOGGING = {
     'loggers': {
         'django.request': {
             'handlers': ['mail_admins'],
+            'filters': ['require_debug_false'],
             'level': 'ERROR',
             'propagate': True,
         },
         'quest': {
             'handlers': ['file', 'mail_admins'],
+            'filters': ['require_debug_false'],
             'level': 'DEBUG',
             'propagate': True,
         },

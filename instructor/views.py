@@ -297,7 +297,13 @@ def parse_question_text(text):                                    # helper
     t_question = t_solution = t_grading = var_dict = t_code = ''
     # Force it into a list of strings.
     if isinstance(text, basestring):
-        text = text.split('\n')
+        if text.count('\n') == text.count('\r'):
+            text = text.split('\r\n')
+        elif text.count('\n') and text.count('\r') == 0:
+            text = text.split('\n')
+        else:
+            # Shouldn't have to execute this, but rather
+            text = text.replace('\r', '').split('\n')
 
     # ``sd`` = section dictionary; see comments for function below.
     sd = split_sections(text)
@@ -1309,7 +1315,7 @@ def preview_question(request):    # URL: ``admin-preview-question``
         elif len(question) == 1:
             question = question[0]
 
-        preview_user = UserProfile.objects.filter(slug='quest-grader')[0]
+        preview_user = UserProfile.objects.filter(slug='quest-grader-previewer')[0]
         template = create_question_template(question, user=preview_user)
 
         # Now render the template, again, without hitting the database

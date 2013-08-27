@@ -123,9 +123,20 @@ class Login_TestCases(TestCase):
         self.assertEqual(resp.templates, [])
         self.assertEqual(resp.status_code, 302)
         self.assertEqual(resp['Location'], 'http://testserver%s' %
-                                               reverse('quest-question-set'))
+                                            reverse('quest-course-selection'))
 
-        resp = self.client.get(reverse('quest-question-set'))
+        resp = self.client.get(reverse('quest-course-selection'))
+        self.assertEqual(resp.templates[0].name, 'question/course-selection.html')
+        self.assertEqual(resp.templates[1].name, 'question/questions.html')
+        start = resp.content.find('TEMPORARY-TEST')
+        url = resp.content[start-200:start].split(r'<a href="')
+        explode = url[-1].split('/')
+        to_get = '/' + '/'.join([item for item in explode if item.strip('">')])
+
+
+
+        resp = self.client.get(reverse('quest-question-set',
+                                       args=(qset.course.slug, )))
         self.assertEqual(resp.templates[0].name, 'question/question-sets.html')
         self.assertEqual(resp.templates[1].name, 'question/questions.html')
         start = resp.content.find('TEMPORARY-TEST')
@@ -155,6 +166,15 @@ class Login_TestCases(TestCase):
 
         resp = self.client.get(to_get, follow=True)
 
+        # First there is an honesty check
+        self.assertEqual(resp.templates[0].name, 'question/honesty-check.html')
+        start = resp.content.find('Start the Quest')
+        url = resp.content[start-200:start].split(r'<a href="')
+        explode = url[-1].split('/')
+        to_get = '/' + '/'.join([item for item in explode if item.strip('">')])
+
+        # Then we can start the test
+        resp = self.client.get(to_get, follow=True)
         self.assertEquals(self.client.session['expires'], qset.ans_time_final)
         self.assertTrue(resp.context['minutes_left'] in (9, 10))
         timer = Timing.objects.filter(user=user[0], qset=qset)
@@ -186,7 +206,8 @@ class Login_TestCases(TestCase):
         resp = c.get(reverse('quest-token-sign-in',
                               args=(su_token.token_address,)), follow=True)
         before = datetime.datetime.now()
-        resp = c.get(to_get, follow=True)
+        resp = c.get(to_get, follow=True)  # will return the honesty check
+        resp = c.get(to_get, follow=True)  # will continue on after the honesty
         self.assertTrue(resp.context['minutes_left'] in (4, 5))
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.templates[0].name, 'question/question-list.html')
@@ -225,6 +246,7 @@ class Login_TestCases(TestCase):
                               args=(su_token.token_address,)), follow=True)
         before = datetime.datetime.now()
         resp = c.get(to_get, follow=True)
+        resp = c.get(to_get, follow=True)  # by-pass the honesty check again
         self.assertTrue(resp.context['minutes_left'] in (2, 3))
         self.assertEqual(resp.status_code, 200)
         timer = Timing.objects.filter(user=user[0], qset=qset)
@@ -297,6 +319,8 @@ class Login_TestCases(TestCase):
                               args=(su_token.token_address,)), follow=True)
         before = datetime.datetime.now()
         resp = c.get(to_get, follow=True)
+        resp = c.get(to_get, follow=True)  # by-pass the honesty check
+
         self.assertEqual(resp.status_code, 200)
         timer = Timing.objects.filter(user=user[0], qset=qset)
         self.assertEqual(len(timer), 1)
