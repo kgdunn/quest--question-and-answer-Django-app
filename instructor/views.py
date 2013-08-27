@@ -538,7 +538,6 @@ def load_from_template(request):
     Each question is split by "#----" in the text file
     """
     if request.POST:
-        #f_name = '/home/kevindunn/quest/week-10.qset'
         question_set_slug = request.POST.get('qset_slug')
         course_code_slug = request.POST.get('course_slug')
         course = validate_user(request, course_code_slug, question_set_slug,
@@ -578,7 +577,7 @@ def load_from_template(request):
 
     else:
         ctxdict = {'course_list': Course.objects.all(),
-                   'qset_list': QSet.objects.all(),
+                   'qset_list': QSet.objects.all().order_by('-ans_time_start'),
                   }
         ctxdict.update(csrf(request))
         return render_to_response('instructor/load-from-template.html',
