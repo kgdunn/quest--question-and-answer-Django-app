@@ -245,6 +245,8 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     if isinstance(quests, tuple):
         quests, _ = quests
 
+    course = Course.objects.filter(slug=course_code_slug)[0]
+
     min_remain = 0
     sec_remain = 0
 
@@ -260,7 +262,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     start_time = datetime.datetime.now()
     if exist:
         final_time = exist[0].final_time
-        TimerStart.objects.create(event='review-a-quest-session',
+        TimerStart.objects.create(event='resume-a-quest-question-during',
                                 user=request.user.profile,
                                 profile=get_profile(request),
                                 item_pk=qset.id,
@@ -286,11 +288,19 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
             final_time = datetime.datetime.now() + \
                                    datetime.timedelta(seconds=60*60)
             done_timing = True
+            TimerStart.objects.create(event='review-a-quest-question-post',
+                                      user=request.user.profile,
+                                      profile=get_profile(request),
+                                      item_pk=qset.id,
+                                      item_type='QSet',
+                                      referrer=request.META.get('HTTP_REFERER',
+                                                                ''))
 
         if not done_timing:
             # User is signing in during the test time frame and they have
             # not signed in before. How much time remaining = min(test
             # duration, test cut off-time)
+
             final = qset.max_duration
             right_now = datetime.datetime.now()
             indend_finish = right_now + \
@@ -303,6 +313,18 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
             else:
                 final_time = min(indend_finish,
                     quests[0].qset.ans_time_final)
+
+
+            # First send them off to sign the honesty statement
+            if not request.session.get('honesty_check', ''):
+                ctxdict = {'final_time': final_time,
+                           'qset': qset,
+                           'course': course}
+                ctxdict.update(csrf(request))
+                request.session['honesty_check'] = True
+                request.session.save()
+                return render_to_response('question/honesty-check.html',
+                            ctxdict, context_instance=RequestContext(request))
 
             token = request.session['token']
             token_obj = Token.objects.filter(token_address=token)
@@ -506,6 +528,7 @@ def submit_answers(request, course_code_slug, question_set_slug):
                 'error_message': ''}
     ctxdict.update(csrf(request))
 
+    # TODO(KGD): remove this honesty check at the end
     if request.POST:
         if request.POST.get('honesty-statement', 'NOT_CHECKED') == 'agreed':
             return redirect('quest-successful-submission', course_code_slug,

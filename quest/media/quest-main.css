@@ -347,9 +347,13 @@ margin: auto;
 .quest-form-button{
     padding: 5px;
 }
+.quest-unanswered-question{
+    font-weight: bold;
+    color: #ee0000;
+}
 
-    /* column container */
-    /* http://matthewjamestaylor.com/blog/perfect-3-column.htm */
+/* column container */
+/* http://matthewjamestaylor.com/blog/perfect-3-column.htm */
 .colmask {
     position:relative;	/* This fixes the IE7 overflow hidden bug */
     clear:both;

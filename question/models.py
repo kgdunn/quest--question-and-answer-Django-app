@@ -175,7 +175,7 @@ class QSet(models.Model):
         unique_slugify(self, self.name + '-' + self.course.code, 'slug')
 
         # happens if the slug is totally unicode characters
-        if len(slug) == 0:
+        if len(self.slug) == 0:
             raise ValidationError('QSet slug contains invalid characters')
 
         if self.min_num > self.max_num:
@@ -191,7 +191,6 @@ class QSet(models.Model):
                                    'or equal to the maximum difficulty.'))
 
         # Call the "real" save() method.
-        self.slug = slug
         super(QSet, self).save(*args, **kwargs)
 
 

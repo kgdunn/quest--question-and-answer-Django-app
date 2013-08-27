@@ -48,7 +48,6 @@
         {% if item.grade %}
             Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
         {% else %}
-            Not graded yet
             {% if item_id == 'Preview' %}
                 <form action="{% url admin-preview-question %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
                     <input type="submit" value="Check grading">

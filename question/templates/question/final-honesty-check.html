@@ -7,7 +7,11 @@
     {% spaceless %}
     <ul>
     {% for quest in quest_list %}
-        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}" target="_blank">Question {{forloop.counter}} of {{quest_list|length}}</a> [{{quest.qtemplate.max_grade}} points]</li>
+        <li><a href="{% url quest-ask-specific-question course qset forloop.counter %}"
+               target="_blank">Question {{forloop.counter}} of {{quest_list|length}}</a>
+               [{{quest.qtemplate.max_grade}} points]:
+               {% if quest.given_answer %}You provded an answer{% else %}<span class="quest-unanswered-question">You did not answer this question</span> {% endif %}
+        </li>
     {% endfor %}
     </ul>
 
@@ -19,8 +23,8 @@
 
         {% if error_message %}<div class="quest-field-error">{{error_message}}</div>{% endif %}
         <form action="{% url quest-submit-final-check course_code_slug=course, question_set_slug=qset %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
-            <input type="checkbox" name="honesty-statement" value="agreed">I agree with the above statement, and by marking the checkbox I am signing this statement
-            <input type="submit" value="Final submission of all my answers">
+            <p><input type="checkbox" name="honesty-statement" value="agreed">I agree with the above statement, and by marking the checkbox I am signing this statement
+            <p><input type="submit" value="Final submission of all my answers">
         </form>
      </div>
     {% endspaceless %}

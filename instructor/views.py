@@ -687,6 +687,9 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                         is_submitted=False)
             question_list.extend(qa)
             if len(qa) == 0:
+                # This is the usual path through the code; creating a new
+                # QActual. We don't even re-create a QActual in the case that
+                # the generation step is called a second or subsequent time.
                 html_q, html_a, var_dict, grading_answer = render(qt)
                 qa = QActual.objects.create(qtemplate=qt,
                                             qset=qset,
@@ -699,6 +702,10 @@ def generate_questions(request, course_code_slug, question_set_slug):
                 question_list.append(qa)
 
         question_list = get_questions_for_user(qset, user)
+        # len(qts) = the number of templates included in the question set, QSet
+        # len(question_list) = the number of questions found associated with
+        #                      that QSet in the database.
+        # There must be a 1:1 correspondence.
         assert(len(question_list) == len(qts))
         n_questions = len(question_list)
         # Run through a 2nd time to add the previous and next links
@@ -723,25 +730,31 @@ def generate_questions(request, course_code_slug, question_set_slug):
                                                     course.slug,
                                                     user.get_profile().slug))
 
-    if True:
-        to_list = []
-        message_list = []
-        out = subject = ''
-        for user in user_objs:
-            subject, message, to_address = create_sign_in_email(user, qset)
-            message_list.append(message)
-            to_list.append(to_address)
 
-        if to_list:
-            out, to_list_out = send_email(to_list, subject, message_list)
-        if out:
-            logger.debug('Successfully sent multiple emails for sign in to %s'
-                         % str(to_list_out))
-        else:
-            logger.error('Unable to send multiple sign-in emails to: %s' %
-                        str(to_list))
+    to_list = []
+    additional = ''
+    message_list = []
+    out = subject = ''
+    for user in user_objs:
+        subject, message, to_address = create_sign_in_email(user, qset)
+        message_list.append(message)
+        to_list.append(to_address)
 
-    return HttpResponse('All questions generated for all users for %s' % qset.slug)
+    if to_list:
+        out, to_list_out = send_email(to_list, subject, message_list)
+
+    if out:
+        additional = 'Successfully sent multiple emails for sign in to %s' % \
+        str(to_list_out)
+        logger.debug(additional)
+    else:
+        additional = 'Unable to send multiple sign-in emails to: %s' % \
+                    str(to_list_out)
+        logger.error(additional)
+
+    return HttpResponse(('All questions generated for all users for %s'
+                          '<p>Additional info: <code>%s</code>') %
+                          (qset.slug, additional))
 
 
 def evaluate_template_code(code, var_dict):                         #helper

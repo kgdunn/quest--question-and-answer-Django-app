@@ -155,7 +155,7 @@ INSTALLED_APPS = (
 
     # 3rd party apps
     #'south',
-    'dajax',
+    #'dajax',
 
     # Our apps
     'person',
