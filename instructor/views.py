@@ -1303,7 +1303,11 @@ def preview_question(request):    # URL: ``admin-preview-question``
                                   context_instance=RequestContext(request))
     else:
         qtemplate = request.GET['qtemplate']
-        question = qtemplate.split('#----')[0]
+        question = qtemplate.split('#----')
+        if len(question) > 1 and question[0].strip() == '':
+            question = question[1]
+        elif len(question) == 1:
+            question = question[0]
 
         preview_user = UserProfile.objects.filter(slug='quest-grader')[0]
         template = create_question_template(question, user=preview_user)
