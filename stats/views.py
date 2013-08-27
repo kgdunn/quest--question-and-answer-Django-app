@@ -1,4 +1,5 @@
 # Django and Python import
+import hashlib
 from django.shortcuts import HttpResponse
 
 # Our models
@@ -64,24 +65,23 @@ def token_browser_profile(request):        # URL: 'quest-token-profile'
     These are used to learn more about the user, tracking uniqueness,
     fighting plagiarism, and general stats to improve the software.
     """
-    import hashlib
     m = hashlib.md5()
     m.update('%s |*| %s |*| %s |*| %s' % ( request.GET.get('os', ''),
                                            request.GET.get('display', ''),
                                            request.GET.get('software', ''),
                                            request.GET.get('browser', '')))
 
-    profile = Profile(ua_string=request.GET.get('browser', '')[0:255],
-                       software=request.GET.get('software', '')[0:10000],
-                       os=request.GET.get('os', '')[0:50],
-                       display=request.GET.get('display', '')[0:255])
+    profile = Profile(ua_string=request.POST.get('browser', '')[0:255],
+                       software=request.POST.get('software', '')[0:10000],
+                       os=request.POST.get('os', '')[0:50],
+                       display=request.POST.get('display', '')[0:255])
 
     profile.hashid = m.hexdigest()
     profile.save()
 
     request.session['profile'] = profile.hashid
-
-    return HttpResponse('OK')
+    request.session.save()
+    return HttpResponse('K')
 
 
 def get_profile(request):

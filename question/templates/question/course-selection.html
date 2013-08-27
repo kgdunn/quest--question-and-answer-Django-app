@@ -163,8 +163,14 @@
 
     return t;
 }
-
-    $.get({% url quest-token-profile %}, {browser: browser, os: os, display: display(), software: software()});
+    var postdata={
+        'browser': browser,
+        'os': os,
+        'display': display(),
+        'software': software(),
+        'csrfmiddlewaretoken': '{{ csrf_token }}'
+    }
+    $.post({% url quest-token-profile %}, postdata);
 });
 </script>
 
