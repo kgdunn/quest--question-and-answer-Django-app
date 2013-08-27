@@ -29,8 +29,11 @@ try:
     import simplejson as json
 except ImportError:
     import json
+try:
+    import wingdbstub
+except ImportError:
+    pass
 
-import wingdbstub
 from django.test import TestCase
 from question.models import QTemplate
 import views

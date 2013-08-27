@@ -8,7 +8,10 @@ from course.models import Course
 from question.models import (QTemplate, QActual, QSet)
 import datetime
 
-import wingdbstub
+try:
+    import wingdbstub
+except ImportError:
+    pass
 
 #def test_login_during_second_time(self):
     #pass
