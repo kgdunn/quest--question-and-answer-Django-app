@@ -10,7 +10,7 @@ class QTemplateAdmin(admin.ModelAdmin):
 
 class QSetAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'min_total', 'max_total', 'course',
-                    'ans_time_start', 'ans_time_final')
+                    'ans_time_start', 'ans_time_final', 'slug')
     list_display_links = ('name', 'ans_time_start', 'ans_time_final' )
     list_per_page = 1000
     ordering = ('-id',)
