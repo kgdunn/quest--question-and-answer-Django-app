@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from django.core.exceptions import ValidationError
 
 # Our apps:
 from utils import unique_slugify
@@ -60,7 +61,8 @@ class UserProfile(models.Model):
 
 class Token(models.Model):
     """
-    Manages the unique sign-in tokens
+    Manages the unique sign-in tokens. Tokens are purely for authentication of
+    the user. They are never used to authorize access to any type of info.
     """
     user = models.ForeignKey(User)
     token_address = models.CharField(max_length=250)
@@ -73,14 +75,17 @@ class Token(models.Model):
 
 class Timing(models.Model):
     """
-    Manages the start and end times of various tests
+    Manages the start and end times of various tests. This is the primary
+    authorization mechanism.
+    Timing objects are not created when the QSet requested is outside of its
+    start and end time. e.g. when the user is signing in to review answers
+    from prior QSets or for other courses.
     """
     user = models.ForeignKey(UserProfile)
     start_time = models.DateTimeField()
     final_time = models.DateTimeField()
     qset = models.ForeignKey('question.QSet')
     token = models.ForeignKey(Token)
-    #is_valid = models.BooleanField(default=False)
 
     def __unicode__(self):
         return 'User %s -- Start: [%s] and Final [%s]' % \
@@ -88,3 +93,15 @@ class Timing(models.Model):
                              self.start_time.strftime('%H:%M:%S on %d %h %Y'),
                              self.final_time.strftime('%H:%M:%S on %d %h %Y'))
 
+    def save(self, *args, **kwargs):
+        if self.start_time >= self.final_time:
+            raise ValidationError('Start time must be earlier than end time.')
+        if self.start_time < self.qset.ans_time_start:
+            raise ValidationError('Start time must be later than QSet start time.')
+        if self.start_time > self.qset.ans_time_final:
+            raise ValidationError('Cannot start test after QSet final time.')
+        if self.final_time < self.qset.ans_time_start:
+            raise ValidationError('Cannot end test before QSet start time.')
+        if self.final_time > self.qset.ans_time_final:
+            raise ValidationError('Cannot end test after QSet final time.')
+        super(Timing, self).save(*args, **kwargs)

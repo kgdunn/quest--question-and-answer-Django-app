@@ -156,6 +156,13 @@ class Login_TestCases(TestCase):
         qset.ans_time_final = now + 2*delta
         qset.save()
         resp = self.client.get(to_get, follow=True)
+        self.assertEqual(resp.templates[0].name, 'question/question-list.html')
+        to_get += '/1/'
+        resp = self.client.get(to_get, follow=True)
+
+
+
+
         self.assertEqual(resp.templates[0].name, 'question/not-started-yet.html')
         timer = Timing.objects.filter(user=user[0], qset=qset)
         self.assertEqual(len(timer), 0)
@@ -345,3 +352,63 @@ class Login_TestCases(TestCase):
                                                         1)))
         self.assertEqual(resp.templates[0].name, 'question/time-expired.html')
         self.assertTrue(resp.context['solution_time'] == qset.ans_time_final)
+
+
+        # Can view the solutions to a prior quest, while the current quest
+        # is in progress
+        # Let's add a template, a QSet and render an actual question
+        # -----------------------------------------------------------
+        some_text = ('[[type]]\nMCQ\n[[question]]\nLet a=2, b=4. What is a+b?\n'
+                     '--\n& 8\n&2\n^6\n& 1\n')
+
+        user = UserProfile.objects.filter(role='Grader')[0]
+        qtemplate = create_question_template(some_text, user=user)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+        course = Course.objects.all()[0]
+        qset_curr = QSet.objects.create(name="CURRENT-TEST", course=course)
+
+        # Render a question for the student
+        student = UserProfile.objects.filter(role='Student')[0]
+        html_q, html_a, var_dict, grading_answer = render(qt)
+        qa = QActual.objects.create(qtemplate=qt,
+                                    qset=qset_curr,
+                                    user=student,
+                                    as_displayed=html_q,
+                                    html_solution=html_a,
+                                    var_dict=var_dict,
+                                    grading_answer=grading_answer)
+
+
+        now = datetime.datetime.now()
+        delta = datetime.timedelta(seconds=600)
+        qset_curr.ans_time_start = now - delta
+        qset_curr.ans_time_final = now + delta
+        qset_curr.save()
+
+        # Retrieve the prior test, and make sure it has expired (i.e. its
+        # solutions are available)
+        qset_prior = QSet.objects.filter(name="TEMPORARY-TEST", course=course)[0]
+        qset_prior.ans_time_final = now - delta
+        qset_prior.ans_time_start = now - 2*delta
+        qset_prior.save()
+        # Verify the solutions are visible for the older QSet
+        url_old = reverse('quest-ask-specific-question', args=(
+                                                        qset_prior.course.slug,
+                                                        qset_prior.slug,
+                                                        1))
+        url_curr = reverse('quest-ask-specific-question', args=(
+                                                        qset_curr.course.slug,
+                                                        qset_curr.slug,
+                                                        1))
+
+        resp_old = c.get(url_old)
+        resp_curr = c.get(url_curr)
+
+        self.assertEqual(resp.templates[0].name, 'question/single-question.html')
+        self.assertTrue(resp.context['html_solution'].find('THE_SOLUTION')>0)
+        self.assertTrue(resp.context['minutes_left'] == 0)
+
+
+
+
+    # Test what will happen if user starts the QSet before the official start time

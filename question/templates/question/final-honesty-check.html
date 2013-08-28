@@ -23,7 +23,7 @@
         permissible.
 
         {% if error_message %}<div class="quest-field-error">{{error_message}}</div>{% endif %}
-        <form action="{% url quest-submit-final-check course_code_slug=course, question_set_slug=qset %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
+        <form action="{% url 'quest-submit-final-check' course_code_slug=course     question_set_slug=qset %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
             <p><input type="checkbox" name="honesty-statement" value="agreed">I agree with the above statement, and by marking the checkbox I am signing this statement
             <p><input type="submit" value="Final submission of all my answers">
         </form>

@@ -191,6 +191,9 @@ class QSet(models.Model):
             raise ValidationError(('Minimum difficulty must be smaller '
                                    'or equal to the maximum difficulty.'))
 
+        if self.ans_time_start > self.ans_time_final:
+            raise ValidationError('Start time must be earlier than end time.')
+
         # Call the "real" save() method.
         super(QSet, self).save(*args, **kwargs)
 
