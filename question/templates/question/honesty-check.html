@@ -7,14 +7,13 @@
 {% block content %}
     <h2>Electronic signature</h2>
     <div style="quest-signature-statement">
-        <p>By clicking the link below to start the test,
+        <p>By clicking the link below to start the test:
         <ul>
         <li>I am signing that I will perform this work on my own.
         <li>I will not assist anyone else.
         <li>I will not seek assistance from others.
         <li>I will only used resources to help which are permissible.
         <li>It is <b>my responsibility</b> to ensure the answers are correctly recorded to all questions (review the questions a second/third time to ensure the answers are what you intended)
-        <li>If you start the test immediately, you must finish it by {{final_time|date:"d F"}} at {{final_time|date:"g:i A"}}. The time will start counting down when you click the link below.
         <ul>
         <br><br>
         <a href="{% url 'quest-ask-show-questions'  course_code_slug=course.slug    question_set_slug=qset.slug %}">Start the Quest</a>

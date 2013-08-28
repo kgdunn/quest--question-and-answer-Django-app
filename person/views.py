@@ -161,12 +161,3 @@ class TokenSignIn(View):                    # URL: 'quest-token-sign-in'
         # HTML for the redirect above.
         return HttpResponseRedirect(reverse('quest-course-selection'))
 
-
-#def token_sign_in(request, token):
-#    """ Signs the user in for a limited period.  """
-
-
-
-
-
-

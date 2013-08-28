@@ -222,17 +222,18 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     if isinstance(quests, tuple):
         quests, _ = quests
 
-    #course = Course.objects.filter(slug=course_code_slug)[0]
-
-    #min_remain = 0
-    #sec_remain = 0
-
     # Information to store
     if not quests:
         raise NotImplementedError(('Should not be able to click link if the '
                                    'questions are not available yet.'))
 
-    #qset = quests[0].qset
+    # Topics covered in this question set
+    tags = set()
+    for item in quests:
+        for tag in item.qtemplate.tags.all():
+            tags.add(tag)
+
+    #
     # Has the user started this QSet already? If not, create a DB entry
     # NOTE: there can only be one DB entry per user per Qset
     #exist = Timing.objects.filter(user=request.user.profile, qset=qset)
@@ -326,26 +327,29 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     ## or not to the user
     #request.session['expires'] = final_time
     #request.session.save()
+    #final = qset.max_duration
+    #right_now = datetime.datetime.now()
+    #indend_finish = right_now + \
+                    #datetime.timedelta(hours=final.hour) + \
+                    #datetime.timedelta(minutes=final.minute) + \
+                    #datetime.timedelta(seconds=final.second)
 
-    #exist = Timing.objects.filter(user=request.user.profile, qset=qset)
-    #if exist:
-        #final_time = exist[0].final_time
-    #else:
+    #if qset.max_duration == datetime.time(0, 0, 0):
         #final_time = quests[0].qset.ans_time_final
+    #else:
+        #final_time = min(indend_finish, quests[0].qset.ans_time_final)
 
-    #now_time = datetime.datetime.now()
-    #if final_time > now_time:        # The testing period is running
-        #delta = final_time - now_time
-        #min_remain = int(floor(delta.seconds/60.0))
-        #sec_remain = int(delta.seconds - min_remain*60)
+    # First send them off to sign the honesty statement
+    if not request.session.get('honesty_check', ''):
+        ctxdict = {'qset': quests[0].qset,
+                   'course': Course.objects.filter(slug=course_code_slug)[0]}
+        ctxdict.update(csrf(request))
+        request.session['honesty_check'] = True
+        request.session.save()
+        return render_to_response('question/honesty-check.html',
+                    ctxdict, context_instance=RequestContext(request))
 
-    # Topics:
-    tags = set()
-    for item in quests:
-        for tag in item.qtemplate.tags.all():
-            tags.add(tag)
-
-    # Now display the questions
+    # The second time through this function ... display the questions
     ctxdict = {'quest_list': quests,   # list of QActual items
                'course': course_code_slug,
                'qset': question_set_slug,
@@ -471,11 +475,8 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         timing_obj = Timing.objects.filter(user=request.user.profile, qset=qset)
         if timing_obj:
             tobj = timing_obj[0]
-            if tobj.final_time > now_time:
-                delta = tobj.final_time - now_time
-                min_remain = int(floor(delta.seconds/60.0))
-                sec_remain = int(delta.seconds - min_remain*60)
-            elif tobj.final_time <= now_time:
+
+            if tobj.final_time <= now_time:
                 # Either the user doesn't have the expiry date set in their
                 # session (i.e. they logged out and then refreshed the page)
                 # or the expiry has past the current time
@@ -506,11 +507,17 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
             token = request.session.get('token', None)
             if token:
                 token_obj = Token.objects.filter(token_address=token)
-                timing_obj = Timing.objects.create(user=request.user.profile,
-                                                   qset=qset,
-                                                   start_time=now_time,
-                                                   final_time=final_time,
-                                                   token=token_obj[0])
+                tobj = Timing.objects.create(user=request.user.profile,
+                                             qset=qset,
+                                             start_time=now_time,
+                                             final_time=final_time,
+                                             token=token_obj[0])
+
+        if tobj.final_time > now_time:
+            delta = tobj.final_time - now_time
+            min_remain = int(floor(delta.seconds/60.0))
+            sec_remain = int(delta.seconds - min_remain*60)
+
 
     # Now perform various actions depending on the authorizations above
     if not(show_question):

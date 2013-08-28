@@ -14,7 +14,7 @@
                 {% if quest.grade %} | grade: {{quest.grade.grade_value|floatformat}} / {{quest.qtemplate.max_grade}} {% endif %} </li>
     {% endfor %}
     </ul>
-    {% if grade_str %}<div class="quest-item-grading">{{grade_str}}</div> {% endif %}
+    {% if grade_str %}Total grade: <span class="quest-item-grading">{{grade_str}}</span> {% endif %}
 
 
 
@@ -30,7 +30,7 @@
     </div>
 </div>
 
-    Topics in this quiz:
+    Topics covered in this quiz:
     <br>
     {% for topic in tag_list %}<div class="quest-tag">{{topic}}</div>{% endfor %}
 
