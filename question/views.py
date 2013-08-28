@@ -233,106 +233,6 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
         for tag in item.qtemplate.tags.all():
             tags.add(tag)
 
-    #
-    # Has the user started this QSet already? If not, create a DB entry
-    # NOTE: there can only be one DB entry per user per Qset
-    #exist = Timing.objects.filter(user=request.user.profile, qset=qset)
-    #start_time = datetime.datetime.now()
-    #if exist:
-        #final_time = exist[0].final_time
-        #TimerStart.objects.create(event='resume-a-quest-question-during',
-                                #user=request.user.profile,
-                                #profile=get_profile(request),
-                                #item_pk=qset.id,
-                                #item_type='QSet',
-                                #referrer=request.META.get('HTTP_REFERER', ''))
-    #else:
-        #done_timing = False
-
-        ## Test has not started yet
-        #if qset.ans_time_start.replace(tzinfo=None) \
-                                                #> datetime.datetime.now():
-
-            #ctxdict = {'time_to_start': qset.ans_time_start}
-            #ctxdict.update(csrf(request))
-            #return render_to_response('question/not-started-yet.html',
-                        #ctxdict, context_instance=RequestContext(request))
-
-        ## Test has finished and solutions may be displayed.
-        ## Allow the users 60 mins to review the solutions
-        ## after that they need to sign in again to see the solutions again
-        #if qset.ans_time_final.replace(tzinfo=None) \
-                                               #<= datetime.datetime.now():
-            #final_time = datetime.datetime.now() + \
-                                   #datetime.timedelta(seconds=60*60)
-            #done_timing = True
-            #TimerStart.objects.create(event='review-a-quest-question-post',
-                                      #user=request.user.profile,
-                                      #profile=get_profile(request),
-                                      #item_pk=qset.id,
-                                      #item_type='QSet',
-                                      #referrer=request.META.get('HTTP_REFERER',
-                                                                #''))
-
-        #if not done_timing:
-            ## User is signing in during the test time frame and they have
-            ## not signed in before. How much time remaining = min(test
-            ## duration, test cut off-time)
-
-            #final = qset.max_duration
-            #right_now = datetime.datetime.now()
-            #indend_finish = right_now + \
-                            #datetime.timedelta(hours=final.hour) + \
-                            #datetime.timedelta(minutes=final.minute) + \
-                            #datetime.timedelta(seconds=final.second)
-
-            #if qset.max_duration == datetime.time(0, 0, 0):
-                #final_time = quests[0].qset.ans_time_final
-            #else:
-                #final_time = min(indend_finish,
-                    #quests[0].qset.ans_time_final)
-
-
-            ## First send them off to sign the honesty statement
-            #if not request.session.get('honesty_check', ''):
-                #ctxdict = {'final_time': final_time,
-                           #'qset': qset,
-                           #'course': course}
-                #ctxdict.update(csrf(request))
-                #request.session['honesty_check'] = True
-                #request.session.save()
-                #return render_to_response('question/honesty-check.html',
-                            #ctxdict, context_instance=RequestContext(request))
-
-            #token = request.session.get('token', None)
-            #if token:
-                #token_obj = Token.objects.filter(token_address=token)
-                #timing_obj = Timing.objects.create(user=request.user.profile,
-                                                   #qset=qset,
-                                                   #start_time=start_time,
-                                                   #final_time=final_time,
-                                                   #token=token_obj[0])
-
-                #TimerStart.objects.create(event='start-a-quest-session',
-                                #user=request.user.profile,
-                                #profile=get_profile(request),
-                                #item_pk= timing_obj.id,
-                                #item_type='Timing',
-                                #referrer=request.META.get('HTTP_REFERER', ''),
-                                #other_info='QSet.id = %d' % qset.id)
-
-
-    #final = qset.max_duration
-    #right_now = datetime.datetime.now()
-    #indend_finish = right_now + \
-                    #datetime.timedelta(hours=final.hour) + \
-                    #datetime.timedelta(minutes=final.minute) + \
-                    #datetime.timedelta(seconds=final.second)
-
-    #if qset.max_duration == datetime.time(0, 0, 0):
-        #final_time = quests[0].qset.ans_time_final
-    #else:
-        #final_time = min(indend_finish, quests[0].qset.ans_time_final)
 
     # First send them off to sign the honesty statement
     if not request.session.get('honesty_check', ''):
@@ -376,9 +276,9 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
     create_hit(request, quest, extra_info=None)
     html_question = quest.as_displayed
     q_type = quest.qtemplate.q_type
+
     # Has the user answered this question (even temporarily?).
     if quest.given_answer:
-
 
         if q_type in ('mcq', 'tf'):
             html_question = re.sub(r'"'+quest.given_answer+r'"',
@@ -581,7 +481,6 @@ def submit_answers(request, course_code_slug, question_set_slug):
                 'error_message': ''}
     ctxdict.update(csrf(request))
 
-    # TODO(KGD): remove this honesty check at the end
     if request.POST:
         if request.POST.get('honesty-statement', 'NOT_CHECKED') == 'agreed':
             return redirect('quest-successful-submission', course_code_slug,
@@ -662,10 +561,6 @@ def successful_submission(request, course_code_slug, question_set_slug):
     # TODO(KGD): should we check we have a token_obj[0]
     token_obj[0].has_been_used = True
     token_obj[0].save()
-    #_ = Token.objects.update(id=token_obj[0].id, user=user.user,
-    #                         has_been_used=True,
-    #                         token_address=token_obj[0].token_address)
-
 
     # TODO(KGD): log stats
     # TODO(KGD): send an email

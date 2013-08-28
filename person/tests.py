@@ -383,7 +383,3 @@ class Login_TestCases(TestCase):
         self.assertTrue(resp_old.context['minutes_left'] == 0)
         self.assertTrue(resp_curr.context['minutes_left'] in (9, 10))
 
-
-
-
-    # Test what will happen if user starts the QSet before the official start time
