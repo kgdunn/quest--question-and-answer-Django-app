@@ -240,9 +240,6 @@ class Login_TestCases(TestCase):
         timer = Timing.objects.filter(user=user[0], qset=qset)
         self.assertEqual(len(timer), 1)
 
-        mins_left_session = (c.session['expires'] - before).seconds//60
-        self.assertTrue(mins_left_session in (2, 3))
-
         mins_left_timer = (timer[0].final_time - before).seconds//60
         self.assertTrue(mins_left_timer in (2, 3))
 
@@ -274,9 +271,6 @@ class Login_TestCases(TestCase):
         self.assertEqual(resp.status_code, 200)
         timer = Timing.objects.filter(user=user[0], qset=qset)
         self.assertEqual(len(timer), 0)  # no timer gets created
-
-        mins_left_session = (c.session['expires'] - before).seconds//60
-        self.assertTrue(mins_left_session in (59, 60))
 
         # And verify the solutions are visible
         resp = c.get(reverse('quest-ask-specific-question', args=(
@@ -312,9 +306,6 @@ class Login_TestCases(TestCase):
         self.assertEqual(resp.status_code, 200)
         timer = Timing.objects.filter(user=user[0], qset=qset)
         self.assertEqual(len(timer), 1)
-
-        mins_left_session = (c.session['expires'] - before).seconds//60
-        self.assertTrue(mins_left_session == 0)
 
         mins_left_timer = (timer[0].final_time - before).seconds//60
         self.assertTrue(mins_left_timer == 0)
@@ -382,9 +373,15 @@ class Login_TestCases(TestCase):
         resp_old = c.get(url_old)
         resp_curr = c.get(url_curr)
 
-        self.assertEqual(resp.templates[0].name, 'question/single-question.html')
-        self.assertTrue(resp.context['html_solution'].find('THE_SOLUTION')>0)
-        self.assertTrue(resp.context['minutes_left'] == 0)
+        self.assertEqual(resp_old.templates[0].name, 'question/single-question.html')
+        self.assertEqual(resp_curr.templates[0].name,'question/single-question.html')
+
+        self.assertTrue(resp_old.context['html_solution'].find('THE_SOLUTION')>0)
+        self.assertTrue(resp_old.context['html_solution'].find('The solution is')>0)
+        self.assertTrue(resp_curr.context['html_solution'].find('THE_SOLUTION')==-1)
+        self.assertTrue(resp_curr.context['html_solution'].find('The solution is')==-1)
+        self.assertTrue(resp_old.context['minutes_left'] == 0)
+        self.assertTrue(resp_curr.context['minutes_left'] in (9, 10))
 
 
 

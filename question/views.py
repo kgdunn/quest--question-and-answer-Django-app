@@ -261,12 +261,10 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
         ## Test has finished and solutions may be displayed.
         ## Allow the users 60 mins to review the solutions
         ## after that they need to sign in again to see the solutions again
-        ## Don't create a Timing object, simply set a session key: 'expires'.
         #if qset.ans_time_final.replace(tzinfo=None) \
                                                #<= datetime.datetime.now():
             #final_time = datetime.datetime.now() + \
                                    #datetime.timedelta(seconds=60*60)
-            #request.session['expires'] = final_time
             #done_timing = True
             #TimerStart.objects.create(event='review-a-quest-question-post',
                                       #user=request.user.profile,
@@ -323,10 +321,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
                                 #referrer=request.META.get('HTTP_REFERER', ''),
                                 #other_info='QSet.id = %d' % qset.id)
 
-    ## This is the critical variable that decides whether we show the solutions
-    ## or not to the user
-    #request.session['expires'] = final_time
-    #request.session.save()
+
     #final = qset.max_duration
     #right_now = datetime.datetime.now()
     #indend_finish = right_now + \
@@ -411,7 +406,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                 token_dict = json.loads(quest.given_answer)
                 for item in INPUT_RE.finditer(html_question):
                     val = token_dict.get(item.group(2), '')
-                    out += '%s%s%s%s%s%s' %\
+                    out += '%s%s%s%s%s%s' % \
                             (html_question[start:item.start()],
                              r'<input',
                              ' value="%s"' % val,
@@ -448,7 +443,6 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         show_question = True
         fields_disabled = True
         final_time = now_time + datetime.timedelta(seconds=60*60)
-        #request.session['expires'] = final_time
         TimerStart.objects.create(event='review-a-quest-question-post',
                                   user=request.user.profile,
                                   profile=get_profile(request),
@@ -534,7 +528,6 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         if q_type in ('long'):
             html_question = re.sub(r'<textarea', r'<textarea disabled="true"',
                                 html_question)
-
 
     if show_solution:
         html_solution = quest.html_solution
@@ -661,12 +654,6 @@ def successful_submission(request, course_code_slug, question_set_slug):
         create_hit(request, quests[0].qset, extra_info='Submitted answers')
 
     token = request.session['token']
-
-    #try:
-        #del request.session['expires']
-    #except KeyError:
-        #pass
-    #request.session.save()  # consider using SESSION_SAVE_EVERY_REQUEST=True
 
     user = request.user.profile
     final = quests[0].qset.ans_time_final.strftime('%H:%M:%S on %d %h %Y')
