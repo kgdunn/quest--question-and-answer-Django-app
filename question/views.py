@@ -24,7 +24,7 @@ from person.models import Token, Timing
 from course.models import Course
 from stats.views import create_hit, get_profile
 from stats.models import TimerStart
-from utils import grade_display
+from utils import grade_display, send_email
 logger = logging.getLogger('quest')
 
 
@@ -69,7 +69,7 @@ def validate_user(request, course_code_slug, question_set_slug,
     """
     if admin and course_code_slug=='None' and question_set_slug=='None':
         #return Quest.objects.filter
-        assert(False)  # I'm not sure what was intended by the prior line
+        assert(False)  # I'm not sure what was ed by the prior line
     user = request.user.profile
     courses = Course.objects.filter(slug=course_code_slug)
     if not courses:
@@ -137,7 +137,7 @@ def validate_user(request, course_code_slug, question_set_slug,
             q_id = int(question_id)
         except ValueError:
             logger.info('Bad question number request: [%s]; request path="%s"'
-                    % (question_id, request.path_info))
+                        % (question_id, request.path_info))
             return redirect('quest-main-page')
 
         if q_id < 1 or q_id > len(quests):
@@ -160,7 +160,7 @@ def course_selection(request):        # URL: ``quest-course-selection``
 
     ctxdict = {'course_list':  user.courses.all(),
                'username': user.user.first_name + ' ' + user.user.last_name,
-              }
+               }
     ctxdict.update(csrf(request))
     return render_to_response('question/course-selection.html', ctxdict,
                               context_instance=RequestContext(request))
@@ -184,7 +184,7 @@ def ask_question_set(request, course_code_slug):
     iterate = 0
     for iterate, item in enumerate(qsets):
         qsets[iterate].grade, actual, max_grade = \
-                                           grades_for_quest(item, user)
+            grades_for_quest(item, user)
         if max_grade > 0.0:
             grade += actual / (max_grade + 0.0)
         else:
@@ -205,7 +205,7 @@ def ask_question_set(request, course_code_slug):
     ctxdict = {'question_set_list': qsets,
                'username': user.user.first_name + ' ' + user.user.last_name,
                'average': average,
-              }
+               }
     ctxdict.update(csrf(request))
     return render_to_response('question/question-sets.html', ctxdict,
                               context_instance=RequestContext(request))
@@ -242,7 +242,7 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
         request.session['honesty_check'] = True
         request.session.save()
         return render_to_response('question/honesty-check.html',
-                    ctxdict, context_instance=RequestContext(request))
+                                  ctxdict, context_instance=RequestContext(request))
 
     # The second time through this function ... display the questions
     ctxdict = {'quest_list': quests,   # list of QActual items
@@ -259,14 +259,14 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
 
 @login_required                          # URL: ``quest-ask-specific-question``
 def ask_specific_question(request, course_code_slug, question_set_slug,
-                              question_id):
+                          question_id):
     """
     Asks a specific question to the user.
 
     There is also extensive validation done in this function.
     """
     quests = validate_user(request, course_code_slug, question_set_slug,
-                                 question_id)
+                           question_id)
     if isinstance(quests, HttpResponse):
         return quests
     if isinstance(quests, tuple):
@@ -282,14 +282,14 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
         if q_type in ('mcq', 'tf'):
             html_question = re.sub(r'"'+quest.given_answer+r'"',
-                                r'"'+quest.given_answer+r'" checked',
-                                html_question)
+                                   r'"'+quest.given_answer+r'" checked',
+                                   html_question)
 
         if q_type in ('multi', ):
             for selection in quest.given_answer.split(','):
                 html_question = re.sub(r'"'+selection+r'"',
-                                                r'"'+selection+r'" checked',
-                                                html_question)
+                                       r'"'+selection+r'" checked',
+                                       html_question)
 
         if q_type in ('long'):
             re_exp = TEXTAREA_RE.search(html_question)
@@ -307,12 +307,12 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                 for item in INPUT_RE.finditer(html_question):
                     val = token_dict.get(item.group(2), '')
                     out += '%s%s%s%s%s%s' % \
-                            (html_question[start:item.start()],
-                             r'<input',
-                             ' value="%s"' % val,
-                             ' name="%s"' % item.group(2),
-                             item.group(3),
-                             r'</input>')
+                        (html_question[start:item.start()],
+                         r'<input',
+                         ' value="%s"' % val,
+                         ' name="%s"' % item.group(2),
+                         item.group(3),
+                         r'</input>')
 
                     start = item.end()
 
@@ -361,7 +361,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         timing_obj = Timing.objects.filter(user=request.user.profile, qset=qset)
         if timing_obj:
             tobj = timing_obj[0]
-	    event_type = 'attempting-quest'
+            event_type = 'attempting-quest'
 
             if tobj.final_time <= now_time:
                 # Either the user doesn't have the expiry date set in their
@@ -372,16 +372,16 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                            'solution_time': qset.ans_time_final}
                 ctxdict.update(csrf(request))
                 return render_to_response('question/time-expired.html',
-                                    ctxdict,
-                                    context_instance=RequestContext(request))
+                                          ctxdict,
+                                          context_instance=RequestContext(request))
 
         else:
             # Create the timing object, starting from right now
             final = qset.max_duration
-            indend_finish = now_time + \
-                            datetime.timedelta(hours=final.hour) + \
-                            datetime.timedelta(minutes=final.minute) + \
-                            datetime.timedelta(seconds=final.second)
+            intend_finish = now_time + \
+                datetime.timedelta(hours=final.hour) + \
+                datetime.timedelta(minutes=final.minute) + \
+                datetime.timedelta(seconds=final.second)
 
             if qset.max_duration == datetime.time(0, 0, 0):
                 # Not sure why this is checked; guess it is incase the admin
@@ -389,12 +389,12 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                 final_time = qset.ans_time_final
             else:
                 # Finish before the test if over, or earlier
-                final_time = min(indend_finish, qset.ans_time_final)
+                final_time = min(intend_finish, qset.ans_time_final)
 
             token = request.session.get('token', None)
             if token:
-		event_type = 'start-a-quest-session'
-		other_info = 'Starting QSet; creating Timing object'
+                event_type = 'start-a-quest-session'
+                other_info = 'Starting QSet; creating Timing object'
                 token_obj = Token.objects.filter(token_address=token)
                 tobj = Timing.objects.create(user=request.user.profile,
                                              qset=qset,
@@ -414,38 +414,38 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         ctxdict = {'time_to_start': qset.ans_time_start}
         ctxdict.update(csrf(request))
         return render_to_response('question/not-started-yet.html',
-                    ctxdict, context_instance=RequestContext(request))
+                                  ctxdict, context_instance=RequestContext(request))
 
     if fields_disabled:
         # Make the inputs disabled when displaying solutions:
         html_question = re.sub(r'<input', (r'<input disabled="true" '
-                               r'style="color: #B00"'), html_question)
+                                           r'style="color: #B00"'), html_question)
 
         if q_type in ('long'):
             html_question = re.sub(r'<textarea', r'<textarea disabled="true"',
-                                html_question)
+                                   html_question)
 
     if show_solution:
-	event_type = 'review-a-quest-question-post'
-	other_info = 'Token = %s' % request.session.get('token', '')
+        event_type = 'review-a-quest-question-post'
+        other_info = 'Token = %s' % request.session.get('token', '')
         html_solution = quest.html_solution
 
     else:
-	other_info = 'QActual=[%d]; current answer: %s' % \
-	                                (quest.id, quest.given_answer[0:4999])
+        other_info = 'QActual=[%d]; current answer: %s' % \
+            (quest.id, quest.given_answer[0:4999])
         html_solution = ''                      # don't show the solutions yet
 
 
     if event_type:
-	TimerStart.objects.create(event=event_type,
-	                user=request.user.profile,
-	                profile=get_profile(request),
-	                item_pk=item_pk,
-	                item_type=item_type,
-	                referrer=request.META.get('HTTP_REFERER', '')[0:510],
-	                other_info=other_info)
+        TimerStart.objects.create(event=event_type,
+                                  user=request.user.profile,
+                                  profile=get_profile(request),
+                                  item_pk=item_pk,
+                                  item_type=item_type,
+                                  referrer=request.META.get('HTTP_REFERER', '')[0:510],
+                                  other_info=other_info)
     else:
-	pass
+        pass
 
 
     ctxdict = {'quest_list': quests,
@@ -478,9 +478,9 @@ def submit_answers(request, course_code_slug, question_set_slug):
         quests, _ = quests
 
     ctxdict = {'quest_list': quests,
-                'course': course_code_slug,
-                'qset': question_set_slug,
-                'error_message': ''}
+               'course': course_code_slug,
+               'qset': question_set_slug,
+               'error_message': ''}
     ctxdict.update(csrf(request))
 
     if request.POST:
@@ -490,12 +490,12 @@ def submit_answers(request, course_code_slug, question_set_slug):
         else:
             ctxdict['error_message'] = 'The work submitted must be your own'
             return render_to_response('question/final-honesty-check.html',
-                                    ctxdict,
-                                    context_instance=RequestContext(request))
+                                      ctxdict,
+                                      context_instance=RequestContext(request))
     else:
         return render_to_response('question/final-honesty-check.html',
-                                    ctxdict,
-                                    context_instance=RequestContext(request))
+                                  ctxdict,
+                                  context_instance=RequestContext(request))
 
 @login_required                          # URL: ``quest-store-answer``
 def store_answer(request, course_code_slug, question_set_slug, question_id):
@@ -503,7 +503,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     The user is submitting an answer.
     """
     quests = validate_user(request, course_code_slug, question_set_slug,
-                            question_id)
+                           question_id)
     if isinstance(quests, HttpResponse):
         # Rather show this if the user isn't validated
         return HttpResponse('Please sign in again; answer <b>NOT recorded</b>')
@@ -515,16 +515,16 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     now_time = datetime.datetime.now()
     invalid_response = False
     if qset.ans_time_start.replace(tzinfo=None) > now_time:
-	# Invalid to have an answer before the starting time
+        # Invalid to have an answer before the starting time
         invalid_response = True
 
     elif qset.ans_time_final.replace(tzinfo=None) <= now_time:
-	# Invalid to have an answer after the ending time
+        # Invalid to have an answer after the ending time
         invalid_response = True
 
     else:
         # We are in the middle of the QSet testing period. There must be a
-	# Timing object. Are we within the USERS time window?
+        # Timing object. Are we within the USERS time window?
         #    Y : allow question to be answered
         #    N : throw error: time has expired.
 
@@ -533,18 +533,18 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
             tobj = timing_obj[0]
             if tobj.final_time <= now_time:
                 invalid_response = True
-	    else:
-		# The only valid condition under which we should be recording
-		# answers to questions. Any other path through this function
-		# indicates an attempt at hacking the system.
-		invalid_response = False
+            else:
+                # The only valid condition under which we should be recording
+                # answers to questions. Any other path through this function
+                # indicates an attempt at hacking the system.
+                invalid_response = False
         else:
             invalid_response = True
 
     if invalid_response:
-	logger.warn('Hacking attempt: [user: %s] [profile: %s]' %
-	        (request.user.profile, request.session.get('profile', '')))
-	return HttpResponse('')
+        logger.warn('Hacking attempt: [user: %s] [profile: %s]' %
+                    (request.user.profile, request.session.get('profile', '')))
+        return HttpResponse('')
 
     quest = quests[q_id-1]
     if quest.qtemplate.q_type == 'short':
@@ -592,8 +592,8 @@ def successful_submission(request, course_code_slug, question_set_slug):
     token_obj = Token.objects.filter(token_address=token).filter(user=user)
 
     if token_obj:
-	token_obj[0].has_been_used = True
-	token_obj[0].save()
+        token_obj[0].has_been_used = True
+        token_obj[0].save()
 
     TimerStart.objects.create(event='submit-qset',
                               user=user,
@@ -602,11 +602,31 @@ def successful_submission(request, course_code_slug, question_set_slug):
                               item_type='QSet',
                               referrer=request.META.get('HTTP_REFERER', ''))
 
-    # TODO(KGD): send an email
+    # Send an email
+    to_address = request.user.profile.user.email
+    message = """\
+    This message confirms that you have succesfully submitted the responses to
+    the questions.
+
+    If you have time left on the test, you may sign in again and update any of
+    your answers. Solutions will be available after the cut-off time,
+    %s.
+
+    The http://quest.mcmaster.ca web server.
+    """ % quests[0].qset.ans_time_final.strftime('%H:%M on %d %h %Y')
+    subject = 'Succesful Quest submission: %s' % quests[0].qset.name
+
+    out = send_email([to_address, ], subject, message)
+    if out:
+        logger.debug('Successfully sent email on QSet submission')
+    else:
+        logger.error('Unable to send submission confirmation email to: %s' %
+                    to_address[0])
+
     ctxdict = {'token': token,
                'quest_cut_off': final}
     return render_to_response('question/successfully-submitted.html', ctxdict,
-                                context_instance=RequestContext(request))
+                              context_instance=RequestContext(request))
 
 
 def grades_for_quest(qactuals_or_qset, user=None):

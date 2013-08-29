@@ -160,4 +160,3 @@ class TokenSignIn(View):                    # URL: 'quest-token-sign-in'
         # AJAX request to store user's profile in a session key appears in the
         # HTML for the redirect above.
         return HttpResponseRedirect(reverse('quest-course-selection'))
-
