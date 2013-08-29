@@ -69,7 +69,7 @@ def validate_user(request, course_code_slug, question_set_slug,
     """
     if admin and course_code_slug=='None' and question_set_slug=='None':
         #return Quest.objects.filter
-        assert(False)  # I'm not sure what was ed by the prior line
+        assert(False)  # I'm not sure what was intended by the prior line
     user = request.user.profile
     courses = Course.objects.filter(slug=course_code_slug)
     if not courses:
