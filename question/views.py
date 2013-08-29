@@ -503,15 +503,46 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     quests = validate_user(request, course_code_slug, question_set_slug,
                             question_id)
     if isinstance(quests, HttpResponse):
-        # This will show awkward HTML in the sidebar
-        #return quests
-
-        # Rather show nothing if the user isn't validated
+        # Rather show this if the user isn't validated
         return HttpResponse('Please sign in again; answer <b>NOT recorded</b>')
 
     if isinstance(quests, tuple):
         quests, q_id = quests
 
+    qset = quests[0].qset
+    now_time = datetime.datetime.now()
+    invalid_response = False
+    if qset.ans_time_start.replace(tzinfo=None) > now_time:
+	# Invalid to have an answer before the starting time
+        invalid_response = True
+
+    elif qset.ans_time_final.replace(tzinfo=None) <= now_time:
+	# Invalid to have an answer after the ending time
+        invalid_response = True
+
+    else:
+        # We are in the middle of the QSet testing period. There must be a
+	# Timing object. Are we within the USERS time window?
+        #    Y : allow question to be answered
+        #    N : throw error: time has expired.
+
+        timing_obj = Timing.objects.filter(user=request.user.profile, qset=qset)
+        if timing_obj:
+            tobj = timing_obj[0]
+            if tobj.final_time <= now_time:
+                invalid_response = True
+	    else:
+		# The only valid condition under which we should be recording
+		# answers to questions. Any other path through this function
+		# indicates an attempt at hacking the system.
+		invalid_response = False
+        else:
+            invalid_response = True
+
+    if invalid_response:
+	logger.warn('Hacking attempt: [user: %s] [profile: %s]' %
+	        (request.user.profile, request.session.get('profile', '')))
+	return HttpResponse('')
 
     quest = quests[q_id-1]
     if quest.qtemplate.q_type == 'short':

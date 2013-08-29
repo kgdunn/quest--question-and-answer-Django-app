@@ -244,13 +244,13 @@ LOGGING = {
     'loggers': {
         'django.request': {
             'handlers': ['mail_admins'],
-            'filters': ['require_debug_false'],
+            #'filters': ['require_debug_false'],
             'level': 'ERROR',
             'propagate': True,
         },
         'quest': {
             'handlers': ['file', 'mail_admins'],
-            'filters': ['require_debug_false'],
+            #'filters': ['require_debug_false'],
             'level': 'DEBUG',
             'propagate': True,
         },
