@@ -383,3 +383,15 @@ class Login_TestCases(TestCase):
         self.assertTrue(resp_old.context['minutes_left'] == 0)
         self.assertTrue(resp_curr.context['minutes_left'] in (9, 10))
 
+
+    # Tests to write still
+    # --------------------
+    # Submit the quests
+    # Check that unanswered questions are highlighted
+    # Check that honesty reuqest is displayed
+    # Check that successfully submitted response screen shows the token
+    # Check that an email was sent to the student on successful submission
+    # Check that the student cannot sign in again with that token
+    # Check that the student cannot sign in again if time has expired
+    # Check that student CAN sign in again, with a new token, if time remains
+

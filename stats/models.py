@@ -64,11 +64,9 @@ class TimerStart(models.Model):
         ('login', 'login'),
         ('show-all-course-quests',         'show-all-course-quests'),
         ('start-a-quest-session',          'start-a-quest-session'),
-        ('review-a-quest-session',         'review-a-quest-session'),
-        ('resume-a-quest-question-during', 'resume-a-quest-question-during'),
+        ('attempting-quest',               'attempting-quest'),
         ('review-a-quest-question-post',   'review-a-quest-question-post'),
-        ('start-question',                 'start-question'),
-        ('modify-answer',                  'modify-answer'),
+        ('submit-qset',                    'submit-qset'),
                   )
     event = models.CharField(max_length=80, choices=event_type)
     time = models.DateTimeField(auto_now_add=True)

@@ -323,12 +323,13 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
 
     # Validation types:
-    show_solution = False
-    show_question = False
+    show_solution = show_question = False
     fields_disabled = True
     event_type = ''
-    min_remain = 0
-    sec_remain = 0
+    other_info = ''
+    item_pk = quest.id
+    item_type = 'QActual'
+    min_remain = sec_remain = 0
     course = Course.objects.filter(slug=course_code_slug)[0]
     qset = quests[0].qset
     now_time = datetime.datetime.now()
@@ -341,15 +342,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         # Test is finished; show the questions, fields disabled, with solutions
         show_solution = True
         show_question = True
-        fields_disabled = True
         final_time = now_time + datetime.timedelta(seconds=60*60)
-        TimerStart.objects.create(event='review-a-quest-question-post',
-                                  user=request.user.profile,
-                                  profile=get_profile(request),
-                                  item_pk=qset.id,
-                                  item_type='QSet',
-                                  referrer=request.META.get('HTTP_REFERER',
-                                                            ''))
 
     else:
         # We are in the middle of the QSet testing period: show question but
@@ -363,12 +356,12 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         #        create one
 
         show_question = True
-        show_solution = False
         fields_disabled = False
 
         timing_obj = Timing.objects.filter(user=request.user.profile, qset=qset)
         if timing_obj:
             tobj = timing_obj[0]
+	    event_type = 'attempting-quest'
 
             if tobj.final_time <= now_time:
                 # Either the user doesn't have the expiry date set in their
@@ -400,12 +393,15 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
             token = request.session.get('token', None)
             if token:
+		event_type = 'start-a-quest-session'
+		other_info = 'Starting QSet; creating Timing object'
                 token_obj = Token.objects.filter(token_address=token)
                 tobj = Timing.objects.create(user=request.user.profile,
                                              qset=qset,
                                              start_time=now_time,
                                              final_time=final_time,
                                              token=token_obj[0])
+
 
         if tobj.final_time > now_time:
             delta = tobj.final_time - now_time
@@ -430,20 +426,26 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                                 html_question)
 
     if show_solution:
+	event_type = 'review-a-quest-question-post'
+	other_info = 'Token = %s' % request.session.get('token', '')
         html_solution = quest.html_solution
 
     else:
+	other_info = 'QActual=[%d]; current answer: %s' % \
+	                                (quest.id, quest.given_answer[0:4999])
         html_solution = ''                      # don't show the solutions yet
 
 
-    TimerStart.objects.create(event=event_type,
-                        user=request.user.profile,
-                        profile=get_profile(request),
-                        item_pk= quest.qtemplate.id,
-                        item_type='QTemplate',
-                        referrer=request.META.get('HTTP_REFERER', '')[0:510],
-                        other_info='QActual=[%d]; current answer: %s' %
-                                       (quest.id, quest.given_answer[0:4999]))
+    if event_type:
+	TimerStart.objects.create(event=event_type,
+	                user=request.user.profile,
+	                profile=get_profile(request),
+	                item_pk=item_pk,
+	                item_type=item_type,
+	                referrer=request.META.get('HTTP_REFERER', '')[0:510],
+	                other_info=other_info)
+    else:
+	pass
 
 
     ctxdict = {'quest_list': quests,
@@ -589,11 +591,17 @@ def successful_submission(request, course_code_slug, question_set_slug):
     final = quests[0].qset.ans_time_final.strftime('%H:%M:%S on %d %h %Y')
     token_obj = Token.objects.filter(token_address=token).filter(user=user)
 
-    # TODO(KGD): should we check we have a token_obj[0]
-    token_obj[0].has_been_used = True
-    token_obj[0].save()
+    if token_obj:
+	token_obj[0].has_been_used = True
+	token_obj[0].save()
 
-    # TODO(KGD): log stats
+    TimerStart.objects.create(event='submit-qset',
+                              user=user,
+                              profile=get_profile(request),
+                              item_pk=quests[0].qset.id,
+                              item_type='QSet',
+                              referrer=request.META.get('HTTP_REFERER', ''))
+
     # TODO(KGD): send an email
     ctxdict = {'token': token,
                'quest_cut_off': final}
