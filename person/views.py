@@ -40,6 +40,7 @@ def create_new_account(user=None, **kwargs):
         new_user_profile = models.UserProfile.objects.create(user=new_user)
         new_user_profile.save()
 
+
 def create_sign_in_email(user, qset=None):
     """
     Creates the token and generates the email body and subject for a user.
@@ -78,6 +79,7 @@ def create_sign_in_email(user, qset=None):
     """
 
     return subject, message, user.email
+
 
 def sign_in(request):                        # URL: 'quest-main-page'
     """
@@ -119,6 +121,16 @@ def sign_in(request):                        # URL: 'quest-main-page'
         ctxdict.update(csrf(request))
         return render_to_response('person/sign-in-form.html', ctxdict,
                                   context_instance=RequestContext(request))
+
+
+def mcmaster_macid_sign_in_success(request, *args, **kwargs):
+    """
+    For McMaster MacID sign in
+    """
+    logger.info('args = %s' % str(args))
+    logger.info('kwargs = %s' % str(kwargs))
+    logger.info('GET = %s' % str(request.GET))
+    return HttpResponse('Success URL')
 
 
 class TokenSignIn(View):                    # URL: 'quest-token-sign-in'

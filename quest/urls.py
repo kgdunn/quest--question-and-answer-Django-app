@@ -40,7 +40,14 @@ urlpatterns += patterns('',
 
     url(r'^$', person.views.sign_in, name='quest-main-page'),
 
+
+
+
     url(r'^tokens/(.*)/$', person.views.TokenSignIn.as_view(), name='quest-token-sign-in'),
+
+
+    url(r'^token/success$', person.views.mcmaster_macid_sign_in_success, name='mcmaster-macid-sign-in-success'),
+
     url(r'^profile/$', stats.views.token_browser_profile, name='quest-token-profile'),
 
     url(r'^course-selection/$', question.views.course_selection, name='quest-course-selection'),
