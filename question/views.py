@@ -20,7 +20,7 @@ from django.shortcuts import (render_to_response, redirect, RequestContext,
 
 # Our imports
 from models import (QSet, QActual)
-from person.models import Token, Timing
+from person.models import Token, Timing, UserProfile
 from course.models import Course
 from stats.views import create_hit, get_profile
 from stats.models import TimerStart
@@ -67,9 +67,16 @@ def validate_user(request, course_code_slug, question_set_slug,
     Some validation code that is common to functions below. Only validates
     authentication (not authorization).
     """
-    if admin and course_code_slug=='None' and question_set_slug=='None':
-        #return Quest.objects.filter
-        assert(False)  # I'm not sure what was intended by the prior line
+    if admin and course_code_slug=='None' and question_set_slug=='None' and \
+       question_id == 'Preview':
+        preview_user = UserProfile.objects.filter(
+                                             slug='quest-grader-previewer')[0]
+        for item in QActual.objects.filter(user=preview_user):
+            if item.template == request.COOKIES['sessionid']:
+                # We've found the QActual corresponding to the QActual being
+                # viewed
+                return item
+
     user = request.user.profile
     courses = Course.objects.filter(slug=course_code_slug)
     if not courses:
@@ -500,7 +507,7 @@ def submit_answers(request, course_code_slug, question_set_slug):
 @login_required                          # URL: ``quest-store-answer``
 def store_answer(request, course_code_slug, question_set_slug, question_id):
     """
-    The user is submitting an answer.
+    The user is submitting an answer in a real-time, during the test.
     """
     quests = validate_user(request, course_code_slug, question_set_slug,
                            question_id)

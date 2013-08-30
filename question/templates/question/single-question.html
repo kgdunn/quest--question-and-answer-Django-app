@@ -37,6 +37,9 @@
 
 <div id="quest-itemdisp-container">
     <div class="quest-item-question">
+        {% if item_id == 'Preview' %} {# enclose the question in a form #}
+            <form action="{% url 'admin-preview-question' %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
+        {% endif %}
         {% if html_solution %}<i>The question was</i>:{% endif %}
             <br>
             {{html_question|safe}}
@@ -49,9 +52,9 @@
         {% if item.grade %}
             Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
         {% else %}
-            {% if item_id == 'Preview' %}
-                <form action="{% url 'admin-preview-question' %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
+            {% if item_id == 'Preview' %} {# enclose the question in a form #}
                     <input type="submit" value="Check grading">
+                    <input type="hidden" value="{{user_token}}">
                 </form>
             {% endif %}
         {% endif %}

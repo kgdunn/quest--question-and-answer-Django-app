@@ -37,7 +37,10 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
             user_prof.role = 'Superuser'
             user_prof.save()
 
-
+        # This user SHOULD NEVER create Templates and QActual objects that
+        # are intended to be retained/used for the long term.
+        # This user is used to create temporary objects, which will be deleted
+        # periodically AND automatically, without prompt, from the database.
         if len(User.objects.filter(username='quest-grader-previewer')) == 0:
             # Only create this user if it doesn't exist
             auto_user = User.objects.create(username='quest-grader-previewer',

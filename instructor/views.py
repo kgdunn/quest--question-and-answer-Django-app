@@ -5,9 +5,11 @@ try:
     import simplejson as json
 except ImportError:
     import json
+
 import random
 import logging
 import hashlib
+import datetime
 from collections import defaultdict
 
 from django.conf import settings
@@ -455,6 +457,10 @@ def create_question_template(text, user=None):
     to this function. (e.g. it has all the necessary parts for a complete
     question)
     """
+
+YOu've changed something here, so that strings are now converted to double
+strings, and not the dict. For t_grading
+
     sd = parse_question_text(text)
     contributor = user
 
@@ -1302,12 +1308,12 @@ def preview_question(request):    # URL: ``admin-preview-question``
     """
     Allows an admin user to repeatedly preview a question
     """
-    if not(request.GET):
+    if request.method == 'GET' and not(request.GET):
         ctxdict = {}
         ctxdict.update(csrf(request))
         return render_to_response('instructor/preview-question.html', ctxdict,
                                   context_instance=RequestContext(request))
-    else:
+    elif request.method == 'GET' and request.GET.has_key('qtemplate'):
         qtemplate = request.GET['qtemplate']
         question = qtemplate.split('#----')
         if len(question) > 1 and question[0].strip() == '':
@@ -1317,6 +1323,22 @@ def preview_question(request):    # URL: ``admin-preview-question``
 
         preview_user = UserProfile.objects.filter(slug='quest-grader-previewer')[0]
         template = create_question_template(question, user=preview_user)
+
+        # Abuse the template's name to contain the user's token.
+        # We will use this to validate the question for preview grading
+        template.name = request.COOKIES['sessionid']
+        template.save()
+
+        # Clear out database from previews more than a day old
+        for item in QActual.objects.filter(user=preview_user):
+            if item.last_edit + datetime.timedelta(seconds=60*60*24) < \
+                                                    datetime.datetime.now():
+                item.delete()
+
+        for item in QTemplate.objects.filter(contributor=preview_user):
+            if item.when_uploaded + datetime.timedelta(seconds=60*60*24) < \
+                                                    datetime.datetime.now():
+                item.delete()
 
         # Now render the template, again, without hitting the database
         html_q, html_a, var_dict, grading_answer = render(template)
@@ -1339,8 +1361,14 @@ def preview_question(request):    # URL: ``admin-preview-question``
                    'seconds_left': 0,
                    'html_question': html_q,
                    'html_solution': html_a,
-                   'last_question': True}
+                   'last_question': True,
+                   'user_token': request.COOKIES['sessionid']}
         ctxdict.update(csrf(request))
         return render_to_response('question/single-question.html', ctxdict,
                                   context_instance=RequestContext(request))
+
+    elif request.method == 'POST':
+        # Preview user is wanting to check grading
+        pass
+
 
