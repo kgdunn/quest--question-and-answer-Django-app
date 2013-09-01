@@ -244,7 +244,7 @@ def parse_OTHER(text, solution, grading, q_type):                  # helper
     {var_long}: Grading text can be provided for long answer questions,
     but will never be used
     """
-    if q_type in ('short', 'long', 'multipart'):
+    if q_type in ('short', 'long'):#, 'multipart'):
         # The space is the list join() is intentional; to ensure imported text
         # that spans lines gets correctly spaced; double spaces are handled
         # well in HTML anyway, so 2 spaces won't show up badly.
@@ -329,7 +329,7 @@ def parse_question_text(text):                                    # helper
 
         sd.pop('question')
 
-    if sd['q_type'] in ('short', 'long', 'multipart'):
+    if sd['q_type'] in ('short', 'long'): #, 'multipart'):
         if not sd.has_key('solution'):
             raise ParseError(('[[solution]] section not given for %s question'
                               ' [%s...]') % (sd['q_type'],
@@ -458,8 +458,8 @@ def create_question_template(text, user=None):
     question)
     """
 
-YOu've changed something here, so that strings are now converted to double
-strings, and not the dict. For t_grading
+#YOu've changed something here, so that strings are now converted to double
+#strings, and not the dict. For t_grading
 
     sd = parse_question_text(text)
     contributor = user
@@ -980,8 +980,9 @@ def render(qt):                                                      # helper
 
 
     # 1. Convert to strings
-    if isinstance(qt.t_grading, basestring):
+    if isinstance(qt.t_grading, basestring) and qt.t_grading :
         qt.t_grading = json.loads(qt.t_grading)
+    if isinstance(qt.t_variables, basestring) and qt.t_variables:
         qt.t_variables = json.loads(qt.t_variables)
 
     # 2. Random variables, if required.
@@ -1019,9 +1020,9 @@ def render(qt):                                                      # helper
     elif qt.q_type == 'short':
         out, grading_answer = render_short_question(qt)
         rndr_question.append(out)
-    elif qt.q_type == 'multipart':
-        rndr_question.append(qt.t_question)
-        rndr_question.append('\n')
+    #elif qt.q_type == 'multipart':
+    #    rndr_question.append(qt.t_question)
+    #    rndr_question.append('\n')
 
 
     # 5. Evalute the solution string

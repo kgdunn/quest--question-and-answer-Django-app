@@ -46,7 +46,7 @@ class QTemplate(models.Model):
                 ('long',     'Long answer question'),
                 ('numeric',  'Numeric answer (with specified sensitivity)'),
                 ('fib',      'Fill in the blanks'),
-                ('multipart','Multipart questions'),
+                #('multipart','Multipart questions'),
     )
     # e.g. "The misbehaving clock", if given explictly, else it is the first
     # few characters of the question itself.
@@ -90,7 +90,7 @@ class QTemplate(models.Model):
 
         if isinstance(self.t_variables, dict):
             self.t_variables = json.dumps(self.t_variables, sort_keys=True)
-        if isinstance(self.t_grading, (dict, basestring)):
+        if isinstance(self.t_grading, dict): # do not convert if its a string!
             self.t_grading = json.dumps(self.t_grading, sort_keys=True)
         self.max_grade = float(self.max_grade)
         self.difficulty = int(self.difficulty)

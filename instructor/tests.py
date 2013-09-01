@@ -182,7 +182,7 @@ Grade: 1
     def test_variables_with_choices(self):
         some_text="""
 [[type]]
-multipart
+long
 [[question]]
 Plot a time series plot using rows {{row_start}} to
 {% quick_eval "row_start+1000" %} for the `{{variable_name}}` variable.
@@ -193,7 +193,6 @@ variable_name: {'choices': ['Opt1', 'Opt2', 'Opt3']}
 [[solution]]
 Some solution text would go here.
 [[grading]]
-Some grading text would go here.
         """
         qtemplate = views.create_question_template(some_text, user=user)
         qt = QTemplate.objects.get(id=qtemplate.id)
