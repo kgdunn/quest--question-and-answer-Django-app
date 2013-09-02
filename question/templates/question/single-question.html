@@ -86,10 +86,10 @@
         <div style="clear: both;">
         {% if item_id == 'Preview' %} {# enclose the question in a form #}
 
-            <input type="submit" value="Check grading">
+            <input type="submit" id="preview-button" value="Check grading">
             <script>
             $(document).ready(function() {
-                $('input').click(function() {
+                $('#preview-button').click(function() {
                     $.ajax({
                         type: "GET",
                         url: '{% url "admin-preview-question" %}',

@@ -1324,13 +1324,6 @@ def preview_question(request):    # URL: ``admin-preview-question``
             question = question[0]
 
         preview_user = UserProfile.objects.filter(slug='quest-grader-previewer')[0]
-        template = create_question_template(question, user=preview_user)
-
-        # Abuse the template's name to contain the user's token.
-        # We will use this to validate the question for preview grading
-        template.name = request.COOKIES['sessionid']
-        template.save()
-
         # Clear out database from previews more than a day old
         for item in QActual.objects.filter(user=preview_user):
             if item.last_edit + datetime.timedelta(seconds=60*60*24) < \
@@ -1341,6 +1334,25 @@ def preview_question(request):    # URL: ``admin-preview-question``
             if item.when_uploaded + datetime.timedelta(seconds=60*60*24) < \
                                                     datetime.datetime.now():
                 item.delete()
+
+
+        for item in QActual.objects.filter(qtemplate__name=\
+                                                request.COOKIES['sessionid']):
+            item.delete()
+
+        for item in QTemplate.objects.filter(name=\
+                                               request.COOKIES['sessionid']):
+            item.delete()
+
+
+        template = create_question_template(question, user=preview_user)
+
+        # Abuse the template's name to contain the user's token.
+        # We will use this to validate the question for preview grading
+        template.name = request.COOKIES['sessionid']
+        template.save()
+
+
 
         # Now render the template, again, without hitting the database
         html_q, html_a, var_dict, grading_answer = render(template)
