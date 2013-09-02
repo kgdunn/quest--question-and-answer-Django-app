@@ -39,7 +39,7 @@ def get_auto_grader():
     """ Get the UserProfile for the ``auto-grader''
     """
     return UserProfile.objects.filter(role='Grader',
-                                      username='quest-grader-previewer')[0]
+                                      slug='quest-grader-previewer')[0]
 
 
 @login_required                               # URL: ``grading-process-grades``

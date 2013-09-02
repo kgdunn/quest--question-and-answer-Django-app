@@ -33,6 +33,7 @@ from person.views import create_sign_in_email
 from tagging.views import get_and_create_tags
 from utils import generate_random_token, send_email, insert_evaluate_variables
 from course.models import Course
+from grades.views import do_grading
 
 logger = logging.getLogger('quest')
 
@@ -1362,14 +1363,21 @@ def preview_question(request):    # URL: ``admin-preview-question``
                    'seconds_left': 0,
                    'html_question': html_q,
                    'html_solution': html_a,
-                   'last_question': True,
-                   'user_token': request.COOKIES['sessionid']}
+                   'last_question': True}
         ctxdict.update(csrf(request))
         return render_to_response('question/single-question.html', ctxdict,
                                   context_instance=RequestContext(request))
-
-    elif request.method == 'POST':
+    elif request.method == 'GET' and request.GET.get('preview', '') == 'True':
         # Preview user is wanting to check grading
-        pass
+        preview_user = UserProfile.objects.filter(\
+                                            slug='quest-grader-previewer')[0]
+        for idx, item in enumerate(QActual.objects.filter(user=preview_user)):
+            if item.qtemplate.name == request.COOKIES['sessionid']:
+                # We've found the QActual corresponding to the QActual being
+                # viewed
+                do_grading(item)
+                return HttpResponse(str(item.grade))
+
+
 
 

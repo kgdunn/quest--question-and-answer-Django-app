@@ -37,27 +37,21 @@
 
 <div id="quest-itemdisp-container">
     <div class="quest-item-question">
-        {% if item_id == 'Preview' %} {# enclose the question in a form #}
-            <form action="{% url 'admin-preview-question' %}" method="POST" enctype="multipart/form-data">{% csrf_token %}
-        {% endif %}
-        {% if html_solution %}<i>The question was</i>:{% endif %}
-            <br>
-            {{html_question|safe}}
-            </div>
-        {% if html_solution %}
-        <div class="quest-item-solution">
-        {{html_solution|safe}}
-            </div>{% endif %}
-        <div class="quest-item-grading">
-        {% if item.grade %}
-            Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
-        {% else %}
-            {% if item_id == 'Preview' %} {# enclose the question in a form #}
-                    <input type="submit" value="Check grading">
-                    <input type="hidden" value="{{user_token}}">
-                </form>
-            {% endif %}
-        {% endif %}
+
+    {% if html_solution %}<i>The question was</i>:{% endif %}
+        <br>
+        {{html_question|safe}}
+        </div>
+    {% if html_solution %}
+    <div class="quest-item-solution">
+    {{html_solution|safe}}
+        </div>{% endif %}
+    <div class="quest-item-grading">
+    {% if item.grade %}
+        Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
+    {% else %}
+
+    {% endif %}
 
 </div>
     <div class="quest-item-feedback">
@@ -90,6 +84,28 @@
     <div class="col3">
     <span id='quest-countdown'></span>
         <div style="clear: both;">
+        {% if item_id == 'Preview' %} {# enclose the question in a form #}
+
+            <input type="submit" value="Check grading">
+            <script>
+            $(document).ready(function() {
+                $('input').click(function() {
+                    $.ajax({
+                        type: "GET",
+                        url: '{% url "admin-preview-question" %}',
+                        data: {preview: 'True'},
+                        cache: false,
+                        success: function(result) {
+                            $('#ajaxDiv').html(result);
+                        },
+                        error: function(response, desc, exception) { // custom error
+                        }
+                    });
+                });
+            });
+            </script>
+
+        {% endif %}
         <br>
         <div id="ajaxDiv"></div>
         </div>

@@ -67,16 +67,6 @@ def validate_user(request, course_code_slug, question_set_slug,
     Some validation code that is common to functions below. Only validates
     authentication (not authorization).
     """
-    if admin and course_code_slug=='None' and question_set_slug=='None' and \
-       question_id == 'Preview':
-        preview_user = UserProfile.objects.filter(
-                                             slug='quest-grader-previewer')[0]
-        for item in QActual.objects.filter(user=preview_user):
-            if item.template == request.COOKIES['sessionid']:
-                # We've found the QActual corresponding to the QActual being
-                # viewed
-                return item
-
     user = request.user.profile
     courses = Course.objects.filter(slug=course_code_slug)
     if not courses:
@@ -509,8 +499,42 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     """
     The user is submitting an answer in a real-time, during the test.
     """
-    quests = validate_user(request, course_code_slug, question_set_slug,
-                           question_id)
+    def clean_and_store_answer(quest):
+        if quest.qtemplate.q_type == 'short':
+            keys = request.GET.keys()
+            for item in ('_', 'csrfmiddlewaretoken'):
+                try:
+                    keys.remove(item)
+                except ValueError:
+                    pass
+            out = {}
+            for key in keys:
+                out[key] = request.GET[key]
+
+            quest.given_answer = json.dumps(out, sort_keys=True)
+        elif request.GET.has_key('entered'):
+            # The AJAX initiated GET request has this key
+            quest.given_answer = request.GET['entered']
+
+        quest.is_submitted = False
+        quest.save()
+
+    if course_code_slug=='None' and question_set_slug=='None' and \
+           question_id == 'Preview':
+        preview_user = UserProfile.objects.filter(
+                                             slug='quest-grader-previewer')[0]
+        for idx, item in enumerate(QActual.objects.filter(user=preview_user)):
+            if item.qtemplate.name == request.COOKIES['sessionid']:
+                # We've found the QActual corresponding to the QActual being
+                # viewed
+                clean_and_store_answer(item)
+                break
+        return HttpResponse('%s: Answer recorded' %
+                                datetime.datetime.now().strftime('%H:%M:%S'))
+    else:
+        quests = validate_user(request, course_code_slug, question_set_slug,
+                               question_id)
+
     if isinstance(quests, HttpResponse):
         # Rather show this if the user isn't validated
         return HttpResponse('Please sign in again; answer <b>NOT recorded</b>')
@@ -553,24 +577,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
                     (request.user.profile, request.session.get('profile', '')))
         return HttpResponse('')
 
-    quest = quests[q_id-1]
-    if quest.qtemplate.q_type == 'short':
-        keys = request.GET.keys()
-        try:
-            keys.remove('_')
-        except ValueError:
-            pass
-        out = {}
-        for key in keys:
-            out[key] = request.GET[key]
-
-        quest.given_answer = json.dumps(out, sort_keys=True)
-    elif request.GET.has_key('entered'):
-        quest.given_answer = request.GET['entered']
-
-
-    quest.is_submitted = False
-    quest.save()
+    quest = clean_and_store_answer(quests[q_id-1])
 
     return HttpResponse('%s: Answer recorded' %
                         datetime.datetime.now().strftime('%H:%M:%S'))
