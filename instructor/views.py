@@ -45,6 +45,7 @@ TAGS_RE = re.compile(r'^Tags:(\s*)(.*)$')
 DIFFICULTY_RE = re.compile(r'^Difficulty:(\s*)(.*)$')
 GRADES_RE = re.compile(r'^Grade:(\s*)(.*)$')
 FEEDBACK_RE = re.compile(r'^Feedback:(\s*)(.*)$')
+NAME_RE = re.compile(r'^Name:(\s*)(.*)$')
 
 LURE_RE = re.compile(r'^\&(\s*)(.*)$')       # & lure answer
 KEY_RE = re.compile(r'^\^(\s*)(.*)$')        # ^ correct answer
@@ -330,6 +331,10 @@ def parse_question_text(text):                                    # helper
 
         sd.pop('question')
 
+
+    Place the usernames into the template (for the whole class, not just the
+                                           group)
+
     if sd['q_type'] in ('short', 'long'): #, 'multipart'):
         if not sd.has_key('solution'):
             raise ParseError(('[[solution]] section not given for %s question'
@@ -341,7 +346,7 @@ def parse_question_text(text):                                    # helper
                             (sd['q_type'], str(sd['question'])[0:30]))
 
         # This function really doesn't do anything. Placeholder for now
-        # Remmber that ``parse_question_text()`` is intended only to load
+        # Remember that ``parse_question_text()`` is intended only to load
         # text templates into our internal representation. Text templates
         # match our internal representation closely anyway.
         # We render the question and solution later.
@@ -379,6 +384,9 @@ def parse_question_text(text):                                    # helper
 
             if GRADES_RE.match(line):
                 sd['max_grade'] = GRADES_RE.match(line).group(2)
+
+            if NAME_RE.match(line):
+                sd['name'] = NAME_RE.match(line).group(2)
 
             if FEEDBACK_RE.match(line):
                 sd['enable_feedback'] = FEEDBACK_RE.match(line).group(2)\
@@ -908,6 +916,13 @@ def render(qt):                                                      # helper
 
         return out, token_dict
     #---------
+    def render_peer_evaluation(qt):
+        """ Render the qt.t_question field into the Markdown necessary for
+        a peer evaluation.
+
+        The first few bullet points get
+        """
+    #---------
     def call_markdown(text, filenames):
         """
         Calls the Markdown library http://daringfireball.net/projects/markdown
@@ -946,7 +961,6 @@ def render(qt):                                                      # helper
 
         # Undo the filtering in the HTML
         return out.replace('\\\\', '\\'), filenames
-
     #---------
     def clean_diplayed_answer(item, sig_figs=None):
         """
@@ -978,7 +992,7 @@ def render(qt):                                                      # helper
                                   # subsequent ``insert_evaluate_variables()``
 
         return out
-
+    #---------
 
     # 1. Convert to strings
     if isinstance(qt.t_grading, basestring) and qt.t_grading :
@@ -1021,9 +1035,14 @@ def render(qt):                                                      # helper
     elif qt.q_type == 'short':
         out, grading_answer = render_short_question(qt)
         rndr_question.append(out)
-    #elif qt.q_type == 'multipart':
-    #    rndr_question.append(qt.t_question)
-    #    rndr_question.append('\n')
+    elif qt.q_type == 'peer-eval':
+        out, grading_answer = render_peer_evaluation(qt)
+
+        Do we have access to the class list at this point?
+
+
+        rndr_question.append(out)
+        rndr_question.append('\n')
 
 
     # 5. Evalute the solution string

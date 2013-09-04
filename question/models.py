@@ -46,6 +46,7 @@ class QTemplate(models.Model):
                 ('long',     'Long answer question'),
                 ('numeric',  'Numeric answer (with specified sensitivity)'),
                 ('fib',      'Fill in the blanks'),
+                ('peer-eval','Peer evaluation'),
                 #('multipart','Multipart questions'),
     )
     # e.g. "The misbehaving clock", if given explictly, else it is the first
@@ -277,7 +278,7 @@ class QActual(models.Model):
     given_answer = models.TextField(blank=True)
     # * list of strings: ['tf', 'mcq', 'multi']    <- refers to QTemplate.question_type
     # * string: 'short', 'long', 'numeric'         <- string only
-    # * dict: {'fib': '....'; 'multipart': '...'}  <- dict of strings
+    # * dict: {'fib': '....'; 'peer-eval': '...'}  <- dict of strings
 
     # A copy of the ``QTemplate.t_grading`` field, but customized for this
     # user. Grading keys for the same question can vary from student to

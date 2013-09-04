@@ -39,7 +39,7 @@ from question.models import QTemplate
 import views
 from views import render
 
-from person.models import UserProfile
+from person.models import UserProfile, Group, User
 user = UserProfile.objects.filter(role='Grader')[0]
 
 class SimpleTests(TestCase):
@@ -408,3 +408,50 @@ The image here contains oscillations
         html_q, _, _, _ = render(qt)
         idx = html_q.find('image_file_name.jpg')
         self.assertEqual(html_q[idx-3:idx], '/0/') # this is the subdir stored in
+
+
+    def test_peer_evaluation(self):
+        """
+        Template for peer evaluation.
+        """
+        some_text = """
+[[type]]
+Peer-eval
+[[question]]
+* Name one aspect of {[person]}'s work that you really appreciated this week.
+* Provide constructive feedback on {[person]}'s work that will help them improve.
+* Please rank {[person]}'s contribution to the assignment. {{ranking}}
+
+Note: your evaluation for each person will be a number from 0 to 8, with 6 being typical, satisfactory performance.
+
+0 = No show = Made no contribution. I could not recognize this person in a lineup.
+2 = Hitchhiker = Made minimal contribution. The group could have received the same grade without this member.
+4 = Marginal = Made limited contribution, only when required to do so. Took no initiative, was not always prepared and missed meetings.
+5 = Ordinary = Performed some tasks acceptably but was not reliable or consistent.
+6 = Fully satisfactory = Made good contributions to work and group organization and morale. This is the average performance for a student in the course.
+7 = Very good = Consistently showed initiative and preparation beyond expectations.  High quality of work.
+8 = Excellent = Lead the group by example and personality. Prepared excellent technical work and assisted others to excel.
+
+[[attribs]]
+Name: Peer feedback for Assignment 1 (on personal finance)
+Contributor: Kevin Dunn
+Difficulty: 1
+Grade: 1
+        """
+        group = Group.objects.create(name='TestA1')
+        user_2 = User.objects.create(username='TestUser-2')
+        user_2 = UserProfile.objects.create(role='Grader',
+                                            group=group, user=user_2)
+        user_3 = User.objects.create(username='TestUser-3')
+        user_3 = UserProfile.objects.create(role='Grader',
+                                            group=group, user=user_3)
+
+        qtemplate = views.create_question_template(some_text, user=user)
+        qt = QTemplate.objects.get(id=qtemplate.id)
+
+
+
+        html_q, html_a, var_dict, _ = render(qt)
+        #true_answer = var_dict['a'][1] * var_dict['b'][1]
+        #self.assertEqual(html_a, '<p>The solution is: "%s"</p>' % true_answer)
+

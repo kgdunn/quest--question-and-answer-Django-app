@@ -98,8 +98,8 @@ def do_grading(qactual):
     elif qactual.qtemplate.q_type in ('fib'):
         grade = grade_fib(qactual)
 
-    #elif qactual.qtemplate.q_type in ('multipart',):
-    #    grade = grade_multipart(qactual)
+    elif qactual.qtemplate.q_type in ('peer-eval',):
+        grade = grade_peereval(qactual)
 
     else:
         # TODO(KGD): else, raise an error: unspecified question type
