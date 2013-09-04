@@ -63,6 +63,25 @@
                 });
             }, {{timeout_time}});
         });
+        $('.quest-item-feedback').find('textarea').keydown(function() {
+            itemValue = encodeURIComponent($(this).val());
+            if (timer){
+                window.clearTimeout(timer);
+            };
+            timer = window.setTimeout(function()
+            {
+                $.ajax(
+                {
+                    type: "GET",
+                    url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}?feedback=' + itemValue,
+                    data:  '',
+                    cache: false,
+                    success: function(result) {$('#ajaxDiv').html(result);},
+                    error: function (response, desc, exception) {// custom error
+                    }
+                });
+            }, {{timeout_time}});
+        });
         $('.quest-item-question').find('input').keydown(function() {
             if (timer){
                 window.clearTimeout(timer);

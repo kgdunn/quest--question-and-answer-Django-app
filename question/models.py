@@ -61,7 +61,7 @@ class QTemplate(models.Model):
     # Can students provide feedback on this question
     enable_feedback = models.BooleanField(default=True)
 
-    # When uploaded
+    # When was the QTemplate uploaded/added
     when_uploaded = models.DateTimeField(auto_now_add=True, blank=True,
                                          null=True)
 

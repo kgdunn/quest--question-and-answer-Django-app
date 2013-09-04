@@ -5,7 +5,8 @@ import question
 import stats
 from question.views import(ask_question_set, ask_show_questions,
                            ask_specific_question, store_answer,
-                           submit_answers, successful_submission)
+                           submit_answers, successful_submission,
+                           )
 from django.conf import settings
 
 
@@ -56,6 +57,10 @@ urlpatterns += patterns('',
 
     url(r'^successfully-submitted/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', successful_submission, name='quest-successful-submission'),
 
+    # ://honesty-check/(course-code)/(question-set-slug)/
+    url(r'^honesty-check/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$',
+        question.views.honesty_check, name='quest-honesty-check'),
+
     # The final check and the actual submission of answers go through this URL
     url(r'^submit-final-check/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/$', submit_answers, name='quest-submit-final-check'),
 
@@ -64,6 +69,8 @@ urlpatterns += patterns('',
 
     # ://question/(course-code)/(question-set-slug)/(question-id)/
     url(r'^question/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
+
+
 
     # ://(course-code)/(question-set-slug)/
     url(r'^set/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', ask_show_questions, name='quest-ask-show-questions'),

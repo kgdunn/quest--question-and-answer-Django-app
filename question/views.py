@@ -230,16 +230,21 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
         for tag in item.qtemplate.tags.all():
             tags.add(tag)
 
-
-    # First send them off to sign the honesty statement
-    if not request.session.get('honesty_check', ''):
-        ctxdict = {'qset': quests[0].qset,
-                   'course': Course.objects.filter(slug=course_code_slug)[0]}
-        ctxdict.update(csrf(request))
-        request.session['honesty_check'] = True
-        request.session.save()
-        return render_to_response('question/honesty-check.html',
-                                  ctxdict, context_instance=RequestContext(request))
+    # Are we in a question testing period?
+    now_time = datetime.datetime.now()
+    qset = quests[0].qset
+    if qset.ans_time_final.replace(tzinfo=None) <= now_time:
+        pass
+    else:
+        # We are in the middle of the QSet testing period.
+        # First send them off to sign the honesty statement
+        if not request.session.get('honesty_check', None):
+            ctxdict = {'qset': qset,
+                    'course': Course.objects.filter(slug=course_code_slug)[0]}
+            ctxdict.update(csrf(request))
+            return render_to_response('question/honesty-check.html',
+                                      ctxdict,
+                                      context_instance=RequestContext(request))
 
     # The second time through this function ... display the questions
     ctxdict = {'quest_list': quests,   # list of QActual items
@@ -253,6 +258,19 @@ def ask_show_questions(request, course_code_slug, question_set_slug):
     ctxdict.update(csrf(request))
     return render_to_response('question/question-list.html', ctxdict,
                               context_instance=RequestContext(request))
+
+@login_required                          # URL: ``quest-honesty-check``
+def honesty_check(request, course_code_slug, question_set_slug):
+    """
+    Redirects the user if they clicked on the honesty check.
+    """
+    if not request.session.get('honesty_check', None):
+        request.session['honesty_check'] = True
+        request.session.save()
+
+    return redirect('quest-ask-show-questions', course_code_slug,
+                    question_set_slug)
+
 
 @login_required                          # URL: ``quest-ask-specific-question``
 def ask_specific_question(request, course_code_slug, question_set_slug,
@@ -355,7 +373,8 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         show_question = True
         fields_disabled = False
 
-        timing_obj = Timing.objects.filter(user=request.user.profile, qset=qset)
+        timing_obj = Timing.objects.filter(user=request.user.profile,
+                                           qset=qset)
         if timing_obj:
             tobj = timing_obj[0]
             event_type = 'attempting-quest'
@@ -398,7 +417,6 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                                              start_time=now_time,
                                              final_time=final_time,
                                              token=token_obj[0])
-
 
         if tobj.final_time > now_time:
             delta = tobj.final_time - now_time
@@ -457,7 +475,8 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                'seconds_left': sec_remain,
                'html_question': html_question,
                'html_solution': html_solution,
-               'last_question': q_id==len(quests)
+               'last_question': q_id==len(quests),
+               'prior_feedback': quest.feedback or ''
                }
     ctxdict.update(csrf(request))
     return render_to_response('question/single-question.html', ctxdict,
@@ -512,11 +531,17 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
                 out[key] = request.GET[key]
 
             quest.given_answer = json.dumps(out, sort_keys=True)
+
         elif request.GET.has_key('entered'):
             # The AJAX initiated GET request has this key
             quest.given_answer = request.GET['entered']
+            quest.is_submitted = False
 
-        quest.is_submitted = False
+        if request.GET.has_key('feedback'):
+            # User is leaving feedback for us:
+            quest.feedback = request.GET['feedback']
+
+        # Save the changes made
         quest.save()
 
     if course_code_slug=='None' and question_set_slug=='None' and \
@@ -572,6 +597,13 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
         else:
             invalid_response = True
 
+    # Check whether the user is leaving feedback. We only accept feedback
+    # if that was the only key press
+    keys = request.GET.keys()
+    keys.sort()
+    if keys == [u'_', u'feedback']:
+        invalid_response = False
+
     if invalid_response:
         logger.warn('Hacking attempt: [user: %s] [profile: %s]' %
                     (request.user.profile, request.session.get('profile', '')))
@@ -579,7 +611,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
 
     quest = clean_and_store_answer(quests[q_id-1])
 
-    return HttpResponse('%s: Answer recorded' %
+    return HttpResponse('%s: Response recorded' %
                         datetime.datetime.now().strftime('%H:%M:%S'))
 
 @login_required                          # URL: ``quest-successful-submission``

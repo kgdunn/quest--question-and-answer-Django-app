@@ -150,8 +150,11 @@ class Login_TestCases(TestCase):
         qset.ans_time_final = now + 2*delta
         qset.save()
         resp = self.client.get(to_get, follow=True)
+
         # First there is an honesty check
         self.assertEqual(resp.templates[0].name, 'question/honesty-check.html')
+
+        to_get = to_get.replace('/set/', '/honesty-check/')
         resp = self.client.get(to_get, follow=True)
         self.assertEqual(resp.templates[0].name, 'question/question-list.html')
         to_get = to_get.replace('/set/', '/question/') + '/1/'
