@@ -157,7 +157,7 @@ class Login_TestCases(TestCase):
         to_get = to_get.replace('/set/', '/honesty-check/')
         resp = self.client.get(to_get, follow=True)
         self.assertEqual(resp.templates[0].name, 'question/question-list.html')
-        to_get = to_get.replace('/set/', '/question/') + '/1/'
+        to_get = to_get.replace('/honesty-check/', '/question/') + '/1/'
         resp = self.client.get(to_get, follow=True)
         self.assertEqual(resp.templates[0].name, 'question/not-started-yet.html')
         timer = Timing.objects.filter(user=user[0], qset=qset)
