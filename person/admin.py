@@ -7,7 +7,7 @@ import views
 signals.post_save.connect(views.create_new_account, User)
 
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('pk', 'user', 'role')
+    list_display = ('pk', 'user', 'role', 'group')
     list_display_links = ('user',)
     list_per_page = 300
     ordering = ('user',)

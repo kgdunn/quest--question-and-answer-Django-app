@@ -331,9 +331,9 @@ def parse_question_text(text):                                    # helper
 
         sd.pop('question')
 
-
-    Place the usernames into the template (for the whole class, not just the
-                                           group)
+    if sd['q_type'] in ('peer-eval',):
+        t_question = '\n'.join(sd['question'])
+        sd.pop('question')
 
     if sd['q_type'] in ('short', 'long'): #, 'multipart'):
         if not sd.has_key('solution'):
@@ -710,7 +710,10 @@ def generate_questions(request, course_code_slug, question_set_slug):
                 # This is the usual path through the code; creating a new
                 # QActual. We don't even re-create a QActual in the case that
                 # the generation step is called a second or subsequent time.
-                html_q, html_a, var_dict, grading_answer = render(qt)
+
+                options = {}
+                options['peers'] = user.get_profile().get_peers()
+                html_q, html_a, var_dict, grading_answer = render(qt, options)
                 qa = QActual.objects.create(qtemplate=qt,
                                             qset=qset,
                                             user=user.get_profile(),
@@ -818,8 +821,12 @@ def evaluate_template_code(code, var_dict):                         #helper
     return output
 
 
-def render(qt):                                                      # helper
+def render(qt, options=None):                                        # helper
     """
+    ``options`` is a dict that may be provided, containing keys specific to the
+    type of question being rendered. e.g. ``peer-eval`` questions send in the
+    names of the user's peers.
+
     Renders templates to HTML.
     * Handles text
     * MathJax math
@@ -916,12 +923,78 @@ def render(qt):                                                      # helper
 
         return out, token_dict
     #---------
-    def render_peer_evaluation(qt):
+    def render_peer_evaluation(qt, var_dict):
         """ Render the qt.t_question field into the Markdown necessary for
         a peer evaluation.
 
         The first few bullet points get
         """
+        peers = options['peers']
+        if not(peers):
+            return (('This question does not apply; you were not working in a '
+                     'group'), var_dict)
+        out = []
+        question = qt.t_question.split('\n')
+        repeated = ''
+        rest = ''
+        for line in question:
+            if line.startswith('*'):
+                repeated += line + '\n'
+            else:
+                rest += line + '\n'
+
+        repeated += "<hr>"
+
+        ranking = """<table border="0" cellpadding="5" cellspacing="0"><tbody>
+        <tr>
+        <td class="question-sn"></td>
+        <td class="question-sn"><label for="{{person_slug}}_1">0</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_2">1</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_3">2</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_4">3</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_5">4</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_6">5</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_7">6</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_8">7</label></td>
+        <td class="question-sn"><label for="{{person_slug}}_9">8</label></td>
+        <td class="question-sn"></td>
+        </tr><tr>
+        <td class="quest-sr ss-leftlabel">No show</td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="0" class="quest-qr" id="{{person_slug}}_1"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="1" class="quest-qr" id="{{person_slug}}_2"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="2" class="quest-qr" id="{{person_slug}}_3"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="3" class="quest-qr" id="{{person_slug}}_4"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="4" class="quest-qr" id="{{person_slug}}_5"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="5" class="quest-qr" id="{{person_slug}}_6"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="6" class="quest-qr" id="{{person_slug}}_7"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="7" class="quest-qr" id="{{person_slug}}_8"></td>
+        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="8" class="quest-qr" id="{{person_slug}}_9"></td>
+        <td class="quest-sr ss-rightlabel">Excellent [note: 6 is very satisfactory]</td>
+        </tr></tbody></table>
+        """
+        for peer, person_slug in peers:
+            slug = person_slug.replace('-', '_')
+            out.append(repeated.replace('--ranking--', ranking)\
+                                        .replace('{{person}}', '**'+peer+'**')\
+                                        .replace('{{person_slug}}', slug)\
+                                        .replace('person_slug', slug))
+            var_dict[person_slug] = peer
+
+        out.append(rest)
+        out = '\n'.join(out)
+
+        # Add the textarea where required
+        tarea = re.compile(r'\{\[\[(.*?)\]\]\}')
+        textarea = '<textarea name="%s" cols="100" rows="3"></textarea>'
+        fout = ''
+        start = 0
+        for segment in tarea.finditer(out):
+            fout += out[start:segment.start()] + \
+                                            textarea % (segment.groups()[0])
+            start = segment.end()
+        fout += out[start:-1]
+        return fout, var_dict
+
     #---------
     def call_markdown(text, filenames):
         """
@@ -1036,11 +1109,7 @@ def render(qt):                                                      # helper
         out, grading_answer = render_short_question(qt)
         rndr_question.append(out)
     elif qt.q_type == 'peer-eval':
-        out, grading_answer = render_peer_evaluation(qt)
-
-        Do we have access to the class list at this point?
-
-
+        out, var_dict = render_peer_evaluation(qt, var_dict)
         rndr_question.append(out)
         rndr_question.append('\n')
 
@@ -1370,7 +1439,6 @@ def preview_question(request):    # URL: ``admin-preview-question``
         # We will use this to validate the question for preview grading
         template.name = request.COOKIES['sessionid']
         template.save()
-
 
 
         # Now render the template, again, without hitting the database

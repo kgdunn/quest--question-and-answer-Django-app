@@ -58,6 +58,20 @@ class UserProfile(models.Model):
     def __unicode__(self):
         return self.slug
 
+    def get_peers(self):
+        if self.group:
+            userP = list(UserProfile.objects.filter(group=self.group))
+            userP.remove(self)
+            out = []
+            for item in userP:
+                out.append(('%s %s' % (item.user.first_name,
+                                      item.user.last_name), item.user.username))
+
+            return(out)
+
+        else:
+            return []
+
 
 class Token(models.Model):
     """
