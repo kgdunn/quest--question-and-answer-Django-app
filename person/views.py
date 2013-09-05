@@ -130,7 +130,57 @@ def mcmaster_macid_sign_in_success(request, *args, **kwargs):
     logger.info('args = %s' % str(args))
     logger.info('kwargs = %s' % str(kwargs))
     logger.info('GET = %s' % str(request.GET))
-    return HttpResponse('Success URL')
+
+
+    # Download from http://twhiteman.netfirms.com/des.html
+    from pyDes import PAD_PKCS5, CBC, triple_des
+    from zlib import decompress, compress
+
+    #  UTS instructions: Decode the token using Hex decoding.
+    #                    Then you will decrypt it using 3DES CBC with PKCS5 Padding.
+    #                    The final step would be to unzip using gzip.
+
+
+    # -----------------
+    # Try an example
+    # -----------------
+
+    # Try to simulate encryption, compression, and encoding
+    KEY = 'a1b2c3D4E5s6j329dj432123'
+    plain_message = 'mcauth1.02:3EEA96245BA36E1C6F469F5B5914BDB6:1343408970:192.168.1.1:sayede:yes'
+
+    k_encrypt = triple_des(key, mode=CBC, padmode=PAD_PKCS5) # initialize key
+    encrypted_message = k_encrypt.encrypt(plain_message)
+
+    zipped_encrypted_message = compress(encrypted_message)
+    token = zipped_encrypted_message.encode('hex')
+
+
+    # # Then decode, decompress, deencrypt it
+    def decode_token(token):
+        token_zip = token.decode('hex')
+        token_encrypted = decompress(token_zip)
+        k_decrypt = triple_des(KEY, mode=CBC, padmode=PAD_PKCS5)
+        decrypted_message = k_decrypt.decrypt(token_encrypted)
+        return decrypted_message
+
+    assert(zipped_encrypted_message == token_zip)
+    assert(encrypted_message == token_encrypted)
+    assert(decrypted_message == plain_message)
+
+
+    # -----
+
+    token1='e884fd0eca16d7f49ef8d83ce2d13adb2a95b0e788f07b318bb91667c4398862ccf09372e8239e66126fc80699bb630c8be06d0bb96e200032d4533f39228afd833881095bc7d6a9fe4e6c6fcc06b34e83d09b56c86b94a6e2ac64170072bcc0a82246a27dd270da'
+    token2='e884fd0eca16d7f423034c0d47574858eea93b21154af966da5cf6be06712a60e9865f083d7643bc2c8716087eb0f7f480068378be5debdd46a43be8dcccda9987ca6b070fe19d94b0a0420e8d13a2f6060c148a03173656fbfba814eb1262f4e41bd111beb1cc54'
+    token_hex_zip = token.decode('hex')
+    decompressed = decompress(token_hex_zip)
+    KEY = 'tr3bRujupa9e!ec6uSp4wr37'
+    k = triple_des(key, mode=CBC, padmode=PAD_PKCS5)
+    decrypted = k.decrypt(decompressed)
+
+
+    return HttpResponse('This is the success URL')
 
 
 class TokenSignIn(View):                    # URL: 'quest-token-sign-in'
