@@ -518,8 +518,14 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     """
     The user is submitting an answer in a real-time, during the test.
     """
+Peer evaluation: radio buttons should send the sequence they are for
+Peer evalu: repopulate question when re-shown
+Peer eval: merge all the textarea, input, radio and fields into 1 AJAX request
+Peer eval: make that a POST request, not a GET request
+
+
     def clean_and_store_answer(quest):
-        if quest.qtemplate.q_type == 'short':
+        if quest.qtemplate.q_type in ('short', 'peer-eval'):
             keys = request.GET.keys()
             for item in ('_', 'csrfmiddlewaretoken'):
                 try:

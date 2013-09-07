@@ -923,16 +923,17 @@ def render(qt, options=None):                                        # helper
 
         return out, token_dict
     #---------
-    def render_peer_evaluation(qt, var_dict):
+    def render_peer_evaluation(qt):
         """ Render the qt.t_question field into the Markdown necessary for
         a peer evaluation.
 
         The first few bullet points get
         """
+        token_dict = {}
         peers = options['peers']
         if not(peers):
             return (('This question does not apply; you were not working in a '
-                     'group'), var_dict)
+                     'group'), token_dict)
         out = []
         question = qt.t_question.split('\n')
         repeated = ''
@@ -943,21 +944,21 @@ def render(qt, options=None):                                        # helper
             else:
                 rest += line + '\n'
 
-        repeated += "<hr>"
+        repeated += "<hr>\n"  # The "\n" helps with the markdown creation
 
         ranking = """<table border="0" cellpadding="5" cellspacing="0"><tbody>
         <tr>
-        <td class="question-sn"></td>
-        <td class="question-sn"><label for="{{person_slug}}_1">0</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_2">1</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_3">2</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_4">3</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_5">4</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_6">5</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_7">6</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_8">7</label></td>
-        <td class="question-sn"><label for="{{person_slug}}_9">8</label></td>
-        <td class="question-sn"></td>
+        <td class="quest-sn"></td>
+        <td class="quest-sn"><label for="{{person_slug}}_1">0</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_2">1</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_3">2</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_4">3</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_5">4</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_6">5</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_7">6</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_8">7</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_9">8</label></td>
+        <td class="quest-sn"></td>
         </tr><tr>
         <td class="quest-sr ss-leftlabel">No show</td>
         <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="0" class="quest-qr" id="{{person_slug}}_1"></td>
@@ -978,7 +979,6 @@ def render(qt, options=None):                                        # helper
                                         .replace('{{person}}', '**'+peer+'**')\
                                         .replace('{{person_slug}}', slug)\
                                         .replace('person_slug', slug))
-            var_dict[person_slug] = peer
 
         out.append(rest)
         out = '\n'.join(out)
@@ -989,11 +989,13 @@ def render(qt, options=None):                                        # helper
         fout = ''
         start = 0
         for segment in tarea.finditer(out):
-            fout += out[start:segment.start()] + \
-                                            textarea % (segment.groups()[0])
+            key = segment.groups()[0]
+            val = generate_random_token(8)
+            token_dict[val] = key
+            fout += out[start:segment.start()] + textarea % (val)
             start = segment.end()
-        fout += out[start:-1]
-        return fout, var_dict
+        fout += out[start:]
+        return fout, token_dict
 
     #---------
     def call_markdown(text, filenames):
@@ -1109,7 +1111,7 @@ def render(qt, options=None):                                        # helper
         out, grading_answer = render_short_question(qt)
         rndr_question.append(out)
     elif qt.q_type == 'peer-eval':
-        out, var_dict = render_peer_evaluation(qt, var_dict)
+        out, var_dict = render_peer_evaluation(qt)
         rndr_question.append(out)
         rndr_question.append('\n')
 

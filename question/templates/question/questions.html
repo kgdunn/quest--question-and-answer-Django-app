@@ -12,7 +12,6 @@
             $('.quest-item-question input:checked').each(function() {
                 selected.push($(this).attr('value'));
             });
-            //alert('Selected: ' + selected);
             var valueSelected = this.value;
             var buttonSelected = this.id.replace(valueSelected + '_','');
             $.ajax(
@@ -45,7 +44,10 @@
     $(document).ready(function() {
         var timer = null;
         $('.quest-item-question').find('textarea').keydown(function() {
-            itemValue = encodeURIComponent($(this).val());
+            var url_out = '?';
+            $('.quest-item-question textarea').each(function() {
+                url_out += $(this).attr('name') + '=' + encodeURIComponent($(this).val()) + '&';
+            });
             if (timer){
                 window.clearTimeout(timer);
             };
@@ -54,7 +56,7 @@
                 $.ajax(
                 {
                     type: "GET",
-                    url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}?entered=' + itemValue,
+                    url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}' + url_out,
                     data:  '',
                     cache: false,
                     success: function(result) {$('#ajaxDiv').html(result);},
@@ -89,12 +91,8 @@
             timer = window.setTimeout(function()
             {
                 var url_out = '?';
-                //var typed_values = new Array();
-                //var box_names = new Array();
                 $('.quest-item-question input').each(function() {
                     url_out += $(this).attr('name') + '=' + encodeURIComponent($(this).val()) + '&';
-                    //typed_values.push();
-                    //box_names.push($(this).attr('name'));
                 });
                 $.ajax(
                 {

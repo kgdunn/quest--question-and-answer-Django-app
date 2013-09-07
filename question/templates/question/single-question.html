@@ -55,9 +55,10 @@
 
 </div>
     <div class="quest-item-feedback">
-
+    {% if item.feedback %}
         <textarea placeholder="Enter any comments/feedback about this question. Note: instructors or TAs may not always have time to read/respond to feedback."
             rows="3" cols="100" name="feedback">{{prior_feedback}}</textarea>
+    {% endif %}
 
     </div>
     <div class="quest-item-graders-comments">

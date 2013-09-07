@@ -202,6 +202,24 @@ div#quest-header a:hover{
     text-decoration: underline;
 }
 
+/* Styling for radiobutton in the peer evaluation*/
+.quest-sn{
+    display: block;
+    padding: 0.5em 0 .5em;
+}
+td.quest-sr{
+    border-color: #afa7a4;
+    padding: 5px 8px;
+}
+
+.ss-scalerow {
+    text-align: center;
+    color: #666;
+    border: 1px solid #d3d8d3;
+    border-left: 0;
+    border-right: 0;
+}
+
 /* Styling for images and figures: images are inline, figures are centered */
 div#quest-section-body .align-center{
     text-align: center;
