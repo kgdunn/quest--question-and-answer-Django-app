@@ -7,18 +7,23 @@
 {# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
 <script language="javascript" type="text/javascript">
     $(document).ready(function() {
-        $(':checkbox').click(function() {
-            var selected = new Array();
-            $('.quest-item-question input:checked').each(function() {
-                selected.push($(this).attr('value'));
+        $(':radio, :checkbox').click(function() {
+
+            var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
+            $('.quest-item-question :radio:checked').each(function() {
+                postdata[$(this).attr('name')] = $(this).attr('value');
+                <!--selected.push($(this).attr('value'));-->
             });
-            var valueSelected = this.value;
-            var buttonSelected = this.id.replace(valueSelected + '_','');
-            $.ajax(
-            {
-                type: "GET",
-                url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}?entered=' + selected,
-                data:  '',
+            $('.quest-item-question checkbox:checked').each(function() {
+                postdata[$(this).attr('name')] = true;
+                <!--selected.push($(this).attr('value'));-->
+            });
+
+
+            $.ajax({
+                type: "POST",
+                url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}',
+                data:  postdata,
                 cache: false,
                 success: function(result) {$('#ajaxDiv').html(result);},
                 error: function (response, desc, exception) {// custom error
@@ -27,26 +32,11 @@
         });
     });
     $(document).ready(function() {
-    $(':radio').click(function() {
-        var valueSelected = this.value;
-        var buttonSelected = this.id.replace(valueSelected + '_','');
-        $.ajax({
-            type: "GET",
-        url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}?entered=' + valueSelected,
-        data:  '',
-        cache: false,
-        success: function(result) {$('#ajaxDiv').html(result);},
-            error: function (response, desc, exception) {// custom error
-        }
-    });
-        });
-    });
-    $(document).ready(function() {
         var timer = null;
         $('.quest-item-question').find('textarea').keydown(function() {
-            var url_out = '?';
+            var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
             $('.quest-item-question textarea').each(function() {
-                url_out += $(this).attr('name') + '=' + encodeURIComponent($(this).val()) + '&';
+                postdata[$(this).attr('name')] = $(this).val();
             });
             if (timer){
                 window.clearTimeout(timer);
@@ -55,9 +45,9 @@
             {
                 $.ajax(
                 {
-                    type: "GET",
-                    url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}' + url_out,
-                    data:  '',
+                    type: "POST",
+                    url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}',
+                    data: postdata,
                     cache: false,
                     success: function(result) {$('#ajaxDiv').html(result);},
                     error: function (response, desc, exception) {// custom error

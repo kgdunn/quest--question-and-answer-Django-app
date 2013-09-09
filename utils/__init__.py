@@ -298,3 +298,38 @@ def grade_display(actual, max_grade):
         return '%s/%s' % (formatter(actual), formatter(max_grade))
     else:
         return '%s' % formatter(max_grade)
+
+
+def merge_dicts(primary, secondary, deepcopy=False):
+    """ This helper function will merge dictionary keys and their values.
+
+        The `primary` keys are always kept and override the `secondary` keys.
+        Any `secondary` keys that do not appear in `primary` are also added.
+        The joint dictionary is returned.
+
+        Note: by default, a shallow copy (reference copy) of secondary is made.
+        You can force a deepcopy by setting the input argument, `deepcopy` to
+        True.
+    """
+    # Objective: assemble `out` from
+    # (1) `primary`     <has a higher priority>
+    # (2) `secondary`
+
+    out = {}
+    if deepcopy:
+        two = _copy.deepcopy(secondary)
+    else:
+        two = secondary.copy()
+    out.update(primary)
+
+    # Remove those same keys from `secondary`:
+    for key in primary.iterkeys():
+        two.pop(key, None)
+
+    # Then append any remaining values in `secondary` into `out`.  However
+    # first deepcopy those values, if we've been asked to:
+    if deepcopy:
+        out.update(_copy.deepcopy(two))
+    else:
+        out.update(two)
+    return out

@@ -949,27 +949,27 @@ def render(qt, options=None):                                        # helper
         ranking = """<table border="0" cellpadding="5" cellspacing="0"><tbody>
         <tr>
         <td class="quest-sn"></td>
-        <td class="quest-sn"><label for="{{person_slug}}_1">0</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_2">1</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_3">2</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_4">3</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_5">4</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_6">5</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_7">6</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_8">7</label></td>
-        <td class="quest-sn"><label for="{{person_slug}}_9">8</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_0">0</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_1">1</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_2">2</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_3">3</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_4">4</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_5">5</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_6">6</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_7">7</label></td>
+        <td class="quest-sn"><label for="{{person_slug}}_8">8</label></td>
         <td class="quest-sn"></td>
         </tr><tr>
         <td class="quest-sr ss-leftlabel">No show</td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="0" class="quest-qr" id="{{person_slug}}_1"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="1" class="quest-qr" id="{{person_slug}}_2"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="2" class="quest-qr" id="{{person_slug}}_3"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="3" class="quest-qr" id="{{person_slug}}_4"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="4" class="quest-qr" id="{{person_slug}}_5"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="5" class="quest-qr" id="{{person_slug}}_6"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="6" class="quest-qr" id="{{person_slug}}_7"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="7" class="quest-qr" id="{{person_slug}}_8"></td>
-        <td class="quest-sr"><input type="radio" name="{{person_slug}}" value="8" class="quest-qr" id="{{person_slug}}_9"></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="0" class="quest-qr" id="{{person_slug}}_0"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="1" class="quest-qr" id="{{person_slug}}_1"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="2" class="quest-qr" id="{{person_slug}}_2"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="3" class="quest-qr" id="{{person_slug}}_3"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="4" class="quest-qr" id="{{person_slug}}_4"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="5" class="quest-qr" id="{{person_slug}}_5"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="6" class="quest-qr" id="{{person_slug}}_6"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="7" class="quest-qr" id="{{person_slug}}_7"></input></td>
+        <td class="quest-sr"><input type="radio" name="pf__{{person_slug}}" value="8" class="quest-qr" id="{{person_slug}}_8"></input></td>
         <td class="quest-sr ss-rightlabel">Excellent [note: 6 is very satisfactory]</td>
         </tr></tbody></table>
         """

@@ -24,7 +24,7 @@ from person.models import Token, Timing, UserProfile
 from course.models import Course
 from stats.views import create_hit, get_profile
 from stats.models import TimerStart
-from utils import grade_display, send_email
+from utils import grade_display, send_email, merge_dicts
 logger = logging.getLogger('quest')
 
 
@@ -41,8 +41,8 @@ LURE_RE = re.compile(r'^\&(\s*)(.*)$')
 KEY_RE = re.compile(r'^\^(\s*)(.*)$')
 FINAL_RE = re.compile(r'^\&(\s*)(.*)$')
 
-TEXTAREA_RE = re.compile(r'\<textarea (.*?)\>(?P<filled>.*?)\</textarea\>')
-INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
+#TEXTAREA_RE = re.compile(r'\<textarea (.*?)\>(?P<filled>.*?)\</textarea\>')
+#INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
 
 class ParseError(Exception):
     pass
@@ -272,6 +272,125 @@ def honesty_check(request, course_code_slug, question_set_slug):
                     question_set_slug)
 
 
+def update_with_current_answers(quest):
+    """ Takes the current question, and updates the HTML displayed to the user
+    with the answers they have (partially) filled in.
+    """
+    def update_radio(txt, tokens):
+        RADIO_RE = re.compile(r'\<input(.*?)type="radio"(.*?)name="(.*?)"(.*?)value="(.*?)"(.*?)\</input\>')
+        out = ''
+        start = 0
+        for item in RADIO_RE.finditer(txt):
+            val = tokens.get(item.group(3), '')
+            if val.strip() == item.group(5).strip():
+                added = ' checked '
+            else:
+                added = ''
+
+            out += '%s'*11 % \
+                (txt[start:item.start()],
+                 r'<input',
+                 item.group(1),
+                 r'type="radio"',
+                 item.group(2),
+                 'name="%s"' % item.group(3),
+                 item.group(4),
+                 'value="%s"' % item.group(5),
+                 added,
+                 item.group(6),
+                 r'</input>')
+
+            start = item.end()
+
+        if out:
+            out += txt[start:]
+
+        return out
+
+    def update_checkbox(txt):
+        #for selection in quest.given_answer.split(','):
+                        #html_question = re.sub(r'"'+selection+r'"',
+                                               #r'"'+selection+r'" checked',
+                                               #html_question)
+        return txt
+
+    def update_input(txt):
+        #out = ''
+        #if INPUT_RE.findall(html_question):
+            ## INPUT_RE = (r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
+            #start = 0
+            #token_dict = json.loads(quest.given_answer)
+            #for item in INPUT_RE.finditer(html_question):
+                #val = token_dict.get(item.group(2), '')
+                #out += '%s%s%s%s%s%s' % \
+                    #(html_question[start:item.start()],
+                     #r'<input',
+                     #' value="%s"' % val,
+                     #' name="%s"' % item.group(2),
+                     #item.group(3),
+                     #r'</input>')
+
+                #start = item.end()
+
+            #if out:
+                #out += html_question[start:]
+
+            #html_question = out
+
+        return txt
+
+    def update_textarea(txt, tokens):
+        #re_exp = TEXTAREA_RE.search(html_question)
+        #if re_exp:
+            #html_question = '%s%s%s' % (html_question[0:re_exp.start(2)],
+                                        #quest.given_answer,
+                                        #html_question[re_exp.end(2):])
+
+        TEXTAREA_RE = re.compile(r'\<textarea(.*?)name="(.*?)"(.*?)"\>\</textarea\>')
+        out = ''
+        start = 0
+        for item in TEXTAREA_RE.finditer(txt):
+            val = tokens.get(item.group(2), '')
+
+            out += '%s'*6 % \
+                (txt[start:item.start()],
+                 r'<textarea',
+                 item.group(1),
+                 'name="%s"%s' % (item.group(2), item.group(3)),
+                 '>%s' % val,
+                 r'</textarea>')
+
+            start = item.end()
+
+        if out:
+            out += txt[start:]
+
+        return out
+
+    tokens = json.loads(quest.given_answer)
+
+    # Start with the HTML displayed to the user, then progressively clean it up
+    out = quest.as_displayed
+    q_type = quest.qtemplate.q_type
+
+    if q_type in ('mcq', 'tf'):
+        out = update_radio(out)
+
+    if q_type in ('multi',):
+        out = update_checkbox(out)
+
+    if q_type in ('long',):
+        out = update_textarea(out)
+
+    if q_type in ('short',):
+        out = update_input(out)
+
+    if q_type in ('peer-eval',):
+        out = update_radio(out, tokens)
+        out = update_textarea(out, tokens)
+
+    return out
+
 @login_required                          # URL: ``quest-ask-specific-question``
 def ask_specific_question(request, course_code_slug, question_set_slug,
                           question_id):
@@ -294,47 +413,48 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
     # Has the user answered this question (even temporarily?).
     if quest.given_answer:
+        html_question = update_with_current_answers(quest)
 
-        if q_type in ('mcq', 'tf'):
-            html_question = re.sub(r'"'+quest.given_answer+r'"',
-                                   r'"'+quest.given_answer+r'" checked',
-                                   html_question)
+        #if q_type in ('mcq', 'tf'):
+            #html_question = re.sub(r'"'+quest.given_answer+r'"',
+                                   #r'"'+quest.given_answer+r'" checked',
+                                   #html_question)
 
-        if q_type in ('multi', ):
-            for selection in quest.given_answer.split(','):
-                html_question = re.sub(r'"'+selection+r'"',
-                                       r'"'+selection+r'" checked',
-                                       html_question)
+        #if q_type in ('multi', ):
+            #for selection in quest.given_answer.split(','):
+                #html_question = re.sub(r'"'+selection+r'"',
+                                       #r'"'+selection+r'" checked',
+                                       #html_question)
 
-        if q_type in ('long'):
-            re_exp = TEXTAREA_RE.search(html_question)
-            if re_exp:
-                html_question = '%s%s%s' % (html_question[0:re_exp.start(2)],
-                                            quest.given_answer,
-                                            html_question[re_exp.end(2):])
+        #if q_type in ('long'):
+            #re_exp = TEXTAREA_RE.search(html_question)
+            #if re_exp:
+                #html_question = '%s%s%s' % (html_question[0:re_exp.start(2)],
+                                            #quest.given_answer,
+                                            #html_question[re_exp.end(2):])
 
-        if q_type in ('short'):
-            out = ''
-            if INPUT_RE.findall(html_question):
-                # INPUT_RE = (r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
-                start = 0
-                token_dict = json.loads(quest.given_answer)
-                for item in INPUT_RE.finditer(html_question):
-                    val = token_dict.get(item.group(2), '')
-                    out += '%s%s%s%s%s%s' % \
-                        (html_question[start:item.start()],
-                         r'<input',
-                         ' value="%s"' % val,
-                         ' name="%s"' % item.group(2),
-                         item.group(3),
-                         r'</input>')
+        #if q_type in ('short'):
+            #out = ''
+            #if INPUT_RE.findall(html_question):
+                ## INPUT_RE = (r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
+                #start = 0
+                #token_dict = json.loads(quest.given_answer)
+                #for item in INPUT_RE.finditer(html_question):
+                    #val = token_dict.get(item.group(2), '')
+                    #out += '%s%s%s%s%s%s' % \
+                        #(html_question[start:item.start()],
+                         #r'<input',
+                         #' value="%s"' % val,
+                         #' name="%s"' % item.group(2),
+                         #item.group(3),
+                         #r'</input>')
 
-                    start = item.end()
+                    #start = item.end()
 
-                if out:
-                    out += html_question[start:]
+                #if out:
+                    #out += html_question[start:]
 
-                html_question = out
+                #html_question = out
 
 
     # Validation types:
@@ -518,15 +638,12 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     """
     The user is submitting an answer in a real-time, during the test.
     """
-Peer evaluation: radio buttons should send the sequence they are for
-Peer evalu: repopulate question when re-shown
-Peer eval: merge all the textarea, input, radio and fields into 1 AJAX request
-Peer eval: make that a POST request, not a GET request
-
+#Peer evalu: repopulate question when re-shown
+#Peer eval: merge all the textarea, input, radio and fields into 1 AJAX request
 
     def clean_and_store_answer(quest):
         if quest.qtemplate.q_type in ('short', 'peer-eval'):
-            keys = request.GET.keys()
+            keys = request.POST.keys()
             for item in ('_', 'csrfmiddlewaretoken'):
                 try:
                     keys.remove(item)
@@ -534,9 +651,14 @@ Peer eval: make that a POST request, not a GET request
                     pass
             out = {}
             for key in keys:
-                out[key] = request.GET[key]
+                out[key] = request.POST[key]
 
-            quest.given_answer = json.dumps(out, sort_keys=True)
+            if quest.given_answer:
+                merged = merge_dicts(out, json.loads(quest.given_answer))
+            else:
+                merged = out
+            quest.given_answer = json.dumps(merged, sort_keys=True)
+            print( quest.given_answer)
 
         elif request.GET.has_key('entered'):
             # The AJAX initiated GET request has this key
