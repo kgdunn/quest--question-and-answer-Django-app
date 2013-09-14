@@ -7,6 +7,7 @@
 {# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
 <script language="javascript" type="text/javascript">
     $(document).ready(function() {
+        var timer = null;
         $(':radio, :checkbox').click(function() {
 
             var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
@@ -29,6 +30,29 @@
                 error: function (response, desc, exception) {// custom error
                 }
             });
+        });
+        $('.quest-item-question').find('input').keydown(function() {
+            if (timer){
+                window.clearTimeout(timer);
+            };
+            timer = window.setTimeout(function()
+            {
+                <!--var url_out = '?';-->
+                var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
+                $('.quest-item-question input').each(function() {
+                    postdata[$(this).attr('name')] = $(this).val();
+                });
+                $.ajax(
+                {
+                    type: "POST",
+                    url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}', //+ url_out,//?entered=' + typed_values + '&box_names=' + box_names,
+                    data:  postdata,
+                    cache: false,
+                    success: function(result) {$('#ajaxDiv').html(result);},
+                    error: function (response, desc, exception) {// custom error
+                    }
+                });
+            }, {{timeout_time}});
         });
     });
     $(document).ready(function() {
@@ -74,28 +98,7 @@
                 });
             }, {{timeout_time}});
         });
-        $('.quest-item-question').find('input').keydown(function() {
-            if (timer){
-                window.clearTimeout(timer);
-            };
-            timer = window.setTimeout(function()
-            {
-                var url_out = '?';
-                $('.quest-item-question input').each(function() {
-                    url_out += $(this).attr('name') + '=' + encodeURIComponent($(this).val()) + '&';
-                });
-                $.ajax(
-                {
-                    type: "GET",
-                    url: '{% url 'quest-store-answer' course_code_slug=course question_set_slug=qset question_id=item_id %}' + url_out,//?entered=' + typed_values + '&box_names=' + box_names,
-                    data:  '',
-                    cache: false,
-                    success: function(result) {$('#ajaxDiv').html(result);},
-                    error: function (response, desc, exception) {// custom error
-                    }
-                });
-            }, {{timeout_time}});
-        });
+
     });
 {# http://stackoverflow.com/questions/1620602/javascript-jquery-make-an-ajax-request-when-a-user-is-typing-in-a-textarea    http://stackoverflow.com/questions/10018437/jquery-ajax-autosave-for-textareas #}
 </script>

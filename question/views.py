@@ -309,7 +309,6 @@ def update_with_current_answers(quest):
 
     def update_checkbox(txt, tokens):
         INPUT_RE = re.compile(r'\<label\>\<input(.*?)type="checkbox"(.*)name="(.*?)"(.*?)value="(.*?)"(.*?)\</label\>')
-        #<label><input type="checkbox" name="pBB5STBQ" value="m5Fz"/>simply another name for a measured variable.</label>
         out = ''
         start = 0
         for item in INPUT_RE.finditer(txt):
@@ -335,46 +334,31 @@ def update_with_current_answers(quest):
 
         return out
 
+    def update_input(txt,tokens):
+        """ For short-answer questions """
+        out = ''
+        INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
 
+        if INPUT_RE.findall(txt):
+            start = 0
+            for item in INPUT_RE.finditer(txt):
+                val = tokens.get(item.group(2), '')
+                out += '%s%s%s%s%s%s' % \
+                    (txt[start:item.start()],
+                     r'<input',
+                     ' value="%s"' % val,
+                     ' name="%s"' % item.group(2),
+                     item.group(3),
+                     r'</input>')
 
-        #for selection in quest.given_answer.split(','):
-            #html_question = re.sub(r'"'+selection+r'"',
-                                   #r'"'+selection+r'" checked',
-                                   #html_question)
-        #return txt
+                start = item.end()
 
-    def update_input(txt):
-        #out = ''
-        #if INPUT_RE.findall(html_question):
-            ## INPUT_RE = (r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
-            #start = 0
-            #token_dict = json.loads(quest.given_answer)
-            #for item in INPUT_RE.finditer(html_question):
-                #val = token_dict.get(item.group(2), '')
-                #out += '%s%s%s%s%s%s' % \
-                    #(html_question[start:item.start()],
-                     #r'<input',
-                     #' value="%s"' % val,
-                     #' name="%s"' % item.group(2),
-                     #item.group(3),
-                     #r'</input>')
+            if out:
+                out += txt[start:]
 
-                #start = item.end()
-
-            #if out:
-                #out += html_question[start:]
-
-            #html_question = out
-
-        return txt
+        return out
 
     def update_textarea(txt, tokens):
-        #re_exp = TEXTAREA_RE.search(html_question)
-        #if re_exp:
-            #html_question = '%s%s%s' % (html_question[0:re_exp.start(2)],
-                                        #quest.given_answer,
-                                        #html_question[re_exp.end(2):])
-
         TEXTAREA_RE = re.compile(r'\<textarea(.*?)name="(.*?)"(.*?)\>\</textarea\>')
         out = ''
         start = 0
@@ -402,12 +386,6 @@ def update_with_current_answers(quest):
         # this is an old-style `given_answer`
         tokens = quest.given_answer
 
-
-    #for selection in quest.given_answer.split(','):
-        #html_question = re.sub(r'"'+selection+r'"',
-                               #r'"'+selection+r'" checked',
-                               #html_question)
-
     # Start with the HTML displayed to the user, then progressively clean it up
     out = quest.as_displayed
     q_type = quest.qtemplate.q_type
@@ -422,7 +400,7 @@ def update_with_current_answers(quest):
         out = update_textarea(out)
 
     if q_type in ('short',):
-        out = update_input(out)
+        out = update_input(out, tokens)
 
     if q_type in ('peer-eval',):
         out = update_radio(out, tokens)
@@ -703,7 +681,6 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
                                    # convert it to the new style format
 
                 merged = merge_dicts(out, previous)
-                print(merged)
             else:
                 merged = out
             quest.given_answer = json.dumps(merged, sort_keys=True)
