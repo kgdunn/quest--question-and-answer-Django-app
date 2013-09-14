@@ -308,24 +308,28 @@ def update_with_current_answers(quest):
         return out
 
     def update_checkbox(txt, tokens):
-        INPUT_RE = re.compile(r'\<label\>\<input(.*?)name="(.*?)"(.*?)value="(.*?)"(.*?)\</label\>')
-
+        INPUT_RE = re.compile(r'\<label\>\<input(.*?)type="checkbox"(.*)name="(.*?)"(.*?)value="(.*?)"(.*?)\</label\>')
         #<label><input type="checkbox" name="pBB5STBQ" value="m5Fz"/>simply another name for a measured variable.</label>
         out = ''
         start = 0
         for item in INPUT_RE.finditer(txt):
-            val = tokens.get(item.group(2), '')
+            extra = ''
+            if item.group(5) in tokens.get(item.group(3), '').split(','):
+                extra = 'checked'
 
-            out += '%s'*6 % \
+            out += '%s'*10 % \
                 (txt[start:item.start()],
-                 r'<textarea',
+                 r'<label><input',
                  item.group(1),
-                 'name="%s"%s' % (item.group(2), item.group(3)),
-                 '>%s' % val,
-                 r'</textarea>')
+                 r'type="checkbox"',
+                 item.group(2),
+                 'name="%s"' % item.group(3),
+                 item.group(4),
+                 r'value="%s" %s' % (item.group(5), extra),
+                 item.group(6),
+                 r'</label>')
 
             start = item.end()
-
         if out:
             out += txt[start:]
 
