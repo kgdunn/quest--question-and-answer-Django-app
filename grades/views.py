@@ -117,16 +117,18 @@ def grade_MCQ(qactual):
     """
     reason = []
 
-    answer = qactual.given_answer
+    answer = json.loads(qactual.given_answer) # assume it is always a dict
     grading = json.loads(qactual.qtemplate.t_grading)
+
     grade_value = 0.0
 
     if qactual.qtemplate.q_type in ('tf', 'mcq',):
-        # Either the person gets the answer right, or wrong.
-        if grading[qactual.given_answer][0] == 'key':
-            grade_value = qactual.qtemplate.max_grade
-        else:
-            grade_value = 0.0
+        user_answer = answer.values()
+        grade_value = 0.0
+        if user_answer:
+            # Either the person gets the answer right, or wrong.
+            if grading[user_answer[0]][0] == 'key':
+                grade_value = qactual.qtemplate.max_grade
 
     elif qactual.qtemplate.q_type in ('multi', ):
 

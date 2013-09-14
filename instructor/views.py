@@ -605,12 +605,12 @@ def load_from_template(request):
                                   ctxdict,
                                   context_instance=RequestContext(request))
 
-
 @login_required                       # URL: ``admin-load-class-list``
 def load_class_list(request):
     """
     Load a CSV file class list (exported from Avenue via copy/paste to textfile)
     LASTNAME, FIRSTNAME,email.prefix,0001231  <-- student number
+    No header row allowed
     """
     if request.method == 'GET':
         ctxdict = {'course_list': Course.objects.all(),
@@ -662,6 +662,9 @@ def load_class_list(request):
                 logger.info('Created user for %s with name: %s' % (course_slug,
                                                                    username))
                 users_added.append(obj)
+
+            if len(student_id) == 6:
+                student_id = '0' + student_id
 
             profile = obj.get_profile()
             profile.role = 'Student'
@@ -930,10 +933,13 @@ def render(qt, options=None):                                        # helper
         The first few bullet points get
         """
         token_dict = {}
+        if not options:
+            return (('This question does not apply; you were not working in a '
+                                 'group.'), token_dict)
         peers = options['peers']
         if not(peers):
             return (('This question does not apply; you were not working in a '
-                     'group'), token_dict)
+                     'group.'), token_dict)
         out = []
         question = qt.t_question.split('\n')
         repeated = ''
@@ -996,7 +1002,6 @@ def render(qt, options=None):                                        # helper
             start = segment.end()
         fout += out[start:]
         return fout, token_dict
-
     #---------
     def call_markdown(text, filenames):
         """

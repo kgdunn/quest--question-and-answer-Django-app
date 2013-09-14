@@ -664,7 +664,8 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
             except ValueError:
                 pass
 
-        if quest.qtemplate.q_type in ('short', 'peer-eval', 'multi'):
+        if quest.qtemplate.q_type in ('short', 'peer-eval', 'multi', 'mcq',
+                                      'tf'):
             out = {}
             for key in keys:
                 newkey = key
@@ -684,7 +685,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
             else:
                 merged = out
             quest.given_answer = json.dumps(merged, sort_keys=True)
-
+            print(quest.given_answer)
 
         elif request.GET.has_key('entered'):
             # The AJAX initiated GET request has this key
