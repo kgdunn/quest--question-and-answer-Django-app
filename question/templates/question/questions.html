@@ -10,15 +10,15 @@
         $(':radio, :checkbox').click(function() {
 
             var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
+            var selected = new Array();
             $('.quest-item-question :radio:checked').each(function() {
                 postdata[$(this).attr('name')] = $(this).attr('value');
                 <!--selected.push($(this).attr('value'));-->
             });
-            $('.quest-item-question checkbox:checked').each(function() {
-                postdata[$(this).attr('name')] = true;
-                <!--selected.push($(this).attr('value'));-->
+            $('.quest-item-question :checkbox:checked').each(function() {
+                selected.push($(this).attr('value'));
+                postdata[$(this).attr('name')] = selected.toString();
             });
-
 
             $.ajax({
                 type: "POST",
@@ -34,15 +34,15 @@
     $(document).ready(function() {
         var timer = null;
         $('.quest-item-question').find('textarea').keydown(function() {
-            var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
-            $('.quest-item-question textarea').each(function() {
-                postdata[$(this).attr('name')] = $(this).val();
-            });
             if (timer){
                 window.clearTimeout(timer);
             };
             timer = window.setTimeout(function()
             {
+                var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
+                $('.quest-item-question textarea').each(function() {
+                    postdata[$(this).attr('name')] = $(this).val();
+                });
                 $.ajax(
                 {
                     type: "POST",

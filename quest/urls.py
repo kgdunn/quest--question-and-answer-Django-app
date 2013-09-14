@@ -41,11 +41,7 @@ urlpatterns += patterns('',
 
     url(r'^$', person.views.sign_in, name='quest-main-page'),
 
-
-
-
     url(r'^tokens/(.*)/$', person.views.TokenSignIn.as_view(), name='quest-token-sign-in'),
-
 
     url(r'^token/success$', person.views.mcmaster_macid_sign_in_success, name='mcmaster-macid-sign-in-success'),
 
@@ -69,8 +65,6 @@ urlpatterns += patterns('',
 
     # ://question/(course-code)/(question-set-slug)/(question-id)/
     url(r'^question/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/(?P<question_id>.+)/$', ask_specific_question, name='quest-ask-specific-question'),
-
-
 
     # ://(course-code)/(question-set-slug)/
     url(r'^set/(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/', ask_show_questions, name='quest-ask-show-questions'),

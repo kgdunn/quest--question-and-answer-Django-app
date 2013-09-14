@@ -271,7 +271,7 @@ def honesty_check(request, course_code_slug, question_set_slug):
     return redirect('quest-ask-show-questions', course_code_slug,
                     question_set_slug)
 
-
+# Helper function
 def update_with_current_answers(quest):
     """ Takes the current question, and updates the HTML displayed to the user
     with the answers they have (partially) filled in.
@@ -307,12 +307,37 @@ def update_with_current_answers(quest):
 
         return out
 
-    def update_checkbox(txt):
+    def update_checkbox(txt, tokens):
+        INPUT_RE = re.compile(r'\<label\>\<input(.*?)name="(.*?)"(.*?)value="(.*?)"(.*?)\</label\>')
+
+        #<label><input type="checkbox" name="pBB5STBQ" value="m5Fz"/>simply another name for a measured variable.</label>
+        out = ''
+        start = 0
+        for item in INPUT_RE.finditer(txt):
+            val = tokens.get(item.group(2), '')
+
+            out += '%s'*6 % \
+                (txt[start:item.start()],
+                 r'<textarea',
+                 item.group(1),
+                 'name="%s"%s' % (item.group(2), item.group(3)),
+                 '>%s' % val,
+                 r'</textarea>')
+
+            start = item.end()
+
+        if out:
+            out += txt[start:]
+
+        return out
+
+
+
         #for selection in quest.given_answer.split(','):
-                        #html_question = re.sub(r'"'+selection+r'"',
-                                               #r'"'+selection+r'" checked',
-                                               #html_question)
-        return txt
+            #html_question = re.sub(r'"'+selection+r'"',
+                                   #r'"'+selection+r'" checked',
+                                   #html_question)
+        #return txt
 
     def update_input(txt):
         #out = ''
@@ -346,7 +371,7 @@ def update_with_current_answers(quest):
                                         #quest.given_answer,
                                         #html_question[re_exp.end(2):])
 
-        TEXTAREA_RE = re.compile(r'\<textarea(.*?)name="(.*?)"(.*?)"\>\</textarea\>')
+        TEXTAREA_RE = re.compile(r'\<textarea(.*?)name="(.*?)"(.*?)\>\</textarea\>')
         out = ''
         start = 0
         for item in TEXTAREA_RE.finditer(txt):
@@ -367,7 +392,17 @@ def update_with_current_answers(quest):
 
         return out
 
-    tokens = json.loads(quest.given_answer)
+    try:
+        tokens = json.loads(quest.given_answer)
+    except json.decoder.JSONDecodeError:
+        # this is an old-style `given_answer`
+        tokens = quest.given_answer
+
+
+    #for selection in quest.given_answer.split(','):
+        #html_question = re.sub(r'"'+selection+r'"',
+                               #r'"'+selection+r'" checked',
+                               #html_question)
 
     # Start with the HTML displayed to the user, then progressively clean it up
     out = quest.as_displayed
@@ -377,7 +412,7 @@ def update_with_current_answers(quest):
         out = update_radio(out)
 
     if q_type in ('multi',):
-        out = update_checkbox(out)
+        out = update_checkbox(out, tokens)
 
     if q_type in ('long',):
         out = update_textarea(out)
@@ -638,27 +673,37 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
     """
     The user is submitting an answer in a real-time, during the test.
     """
-#Peer evalu: repopulate question when re-shown
 #Peer eval: merge all the textarea, input, radio and fields into 1 AJAX request
-
     def clean_and_store_answer(quest):
-        if quest.qtemplate.q_type in ('short', 'peer-eval'):
-            keys = request.POST.keys()
-            for item in ('_', 'csrfmiddlewaretoken'):
-                try:
-                    keys.remove(item)
-                except ValueError:
-                    pass
+        keys = request.POST.keys()
+        for item in ('_', 'csrfmiddlewaretoken'):
+            try:
+                keys.remove(item)
+            except ValueError:
+                pass
+
+        if quest.qtemplate.q_type in ('short', 'peer-eval', 'multi'):
             out = {}
             for key in keys:
-                out[key] = request.POST[key]
+                newkey = key
+                if key.endswith('[]'):
+                    newkey = key.strip('[]')
+
+                out[newkey] = request.POST[key]
 
             if quest.given_answer:
-                merged = merge_dicts(out, json.loads(quest.given_answer))
+                try:
+                    previous = json.loads(quest.given_answer)
+                except json.decoder.JSONDecodeError:
+                    previous = {}  # TODO(KGD: load the old answer and
+                                   # convert it to the new style format
+
+                merged = merge_dicts(out, previous)
+                print(merged)
             else:
                 merged = out
             quest.given_answer = json.dumps(merged, sort_keys=True)
-            print( quest.given_answer)
+
 
         elif request.GET.has_key('entered'):
             # The AJAX initiated GET request has this key
