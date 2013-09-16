@@ -665,7 +665,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
             except ValueError:
                 pass
 
-        logger.debug(print(request.POST))
+        logger.debug(str(request.POST))
 
         if quest.qtemplate.q_type in ('short', 'peer-eval', 'multi', 'mcq',
                                       'tf'):
