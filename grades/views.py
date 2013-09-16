@@ -357,7 +357,6 @@ def compare_numeric_with_precision(correct, given):
 
     # These must be inequalities (do not use <= or >=)
     if given_d < lower_b or given_d > upper_b:
-        #print('[%s] [%s] %s' % (correct_v, given, 'False'))
         return (False, 'Wrong value')
 
     # Test significant figures
@@ -366,7 +365,6 @@ def compare_numeric_with_precision(correct, given):
 
 
     # TODO(KGD): deal with significant figures. Ignoring it for now.
-    #print('[%s] [%s] %s' % (correct_v, given, 'True'))
     return (True, None)
 
 
@@ -406,7 +404,6 @@ def grade_summary(request, course_code_slug):
     results = dict()
     students = UserProfile.objects.filter(courses__slug=course_code_slug)
     for student in students:
-        print(student)
         qset_grade = []
         qset_maxes = []
         for qset in QSet.objects.filter(course__slug=course_code_slug):

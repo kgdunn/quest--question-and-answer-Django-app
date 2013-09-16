@@ -12,6 +12,8 @@
 
             var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
             var selected = new Array();
+            selected.push('')
+            postdata[$(this).attr('name')] = selected.toString();
             $('.quest-item-question :radio:checked').each(function() {
                 postdata[$(this).attr('name')] = $(this).attr('value');
                 <!--selected.push($(this).attr('value'));-->

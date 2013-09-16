@@ -309,7 +309,7 @@ def update_with_current_answers(quest):
         return out
 
     def update_checkbox(txt, tokens):
-        INPUT_RE = re.compile(r'\<label\>\<input(.*?)type="checkbox"(.*)name="(.*?)"(.*?)value="(.*?)"(.*?)\</label\>')
+        INPUT_RE = re.compile(r'\<label\>\<input(.*?)type="checkbox"(.*)name="(.*?)"(.*?)value="(.*?)"(.*?)([\n]*)\</label\>')
         out = ''
         start = 0
         for item in INPUT_RE.finditer(txt):
@@ -688,7 +688,6 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
             else:
                 merged = out
             quest.given_answer = json.dumps(merged, sort_keys=True)
-            print(quest.given_answer)
 
         elif request.GET.has_key('entered'):
             # The AJAX initiated GET request has this key
