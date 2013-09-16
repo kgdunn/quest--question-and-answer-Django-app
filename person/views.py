@@ -69,12 +69,14 @@ def create_sign_in_email(user, qset=None):
     else:
         subject = 'Quest website access'
 
+    #message += """
+
+    #Please note: negative grading will be used for multiple-selection answers.
+    #In other words, do not check an answer unless you are certain it is correct.
+    #Negative grading is -0.5 points per incorrect selection.
+    #"""
+
     message += """
-
-    Please note: negative grading will be used for multiple-selection answers.
-    In other words, do not check an answer unless you are certain it is correct.
-    Negative grading is -0.5 points per incorrect selection.
-
     The http://quest.mcmaster.ca web server.
     """
 
