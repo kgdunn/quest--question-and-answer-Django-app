@@ -164,19 +164,23 @@ def grade_short(qactual, force_reload=False):
     if not qactual.grading_answer or force_reload:
         #``grading_answer`` doesn't exist for the earlier quests.
         # this causes some unusual code here
-        grading = json.loads(qactual.qtemplate.t_grading)
-        TOKEN = re.compile(r'\{\[(.*?)\]\}')
-        INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
-        html_iter = INPUT_RE.finditer(qactual.as_displayed)
 
-        grading_answer = dict()
-        for token in TOKEN.finditer(qactual.qtemplate.t_question):
-            link = html_iter.next().group(2)
-            html_key = token.group(1)
-            grading_answer[link] = grading[html_key]
+        assert(False) # we shouldn't need this branch anymore as of rev 157.
+                       # kept for legacy purposes only.
 
-        # Store this as the grading answer
-        qactual.grading_answer = json.dumps(grading_answer)
+        #grading = json.loads(qactual.qtemplate.t_grading)
+        #TOKEN = re.compile(r'\{\[(.*?)\]\}')
+        #INPUT_RE = re.compile(r'\<input(.*?)name="(.*?)"(.*?)\</input\>')
+        #html_iter = INPUT_RE.finditer(qactual.as_displayed)
+
+        #grading_answer = dict()
+        #for token in TOKEN.finditer(qactual.qtemplate.t_question):
+            #link = html_iter.next().group(2)
+            #html_key = token.group(1)
+            #grading_answer[link] = grading[html_key]
+
+        ## Store this as the grading answer
+        #qactual.grading_answer = json.dumps(grading_answer)
 
     # Main idea: compare qactual.given_answer to qactual.grading_answer
     if qactual.grading_answer:

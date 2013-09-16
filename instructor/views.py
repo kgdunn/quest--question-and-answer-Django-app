@@ -31,7 +31,8 @@ from question.views import validate_user, get_questions_for_user
 from person.models import (UserProfile, User, Group)
 from person.views import create_sign_in_email
 from tagging.views import get_and_create_tags
-from utils import generate_random_token, send_email, insert_evaluate_variables
+from utils import (generate_random_token, send_email,
+                   insert_evaluate_variables, unique_slugify)
 from course.models import Course
 from grades.views import do_grading
 
@@ -655,7 +656,6 @@ def load_class_list(request):
                            first_name=first.strip(),
                            last_name=last.strip(),
                            email=email_id+email_suffix)
-                from utils import unique_slugify
 
                 unique_slugify(obj, obj.username, 'username')
                 obj.save()
@@ -930,7 +930,16 @@ def render(qt, options=None):                                        # helper
         """ Render the qt.t_question field into the Markdown necessary for
         a peer evaluation.
 
-        The first few bullet points get
+        The question can have
+
+        lines before
+        lines before
+        -*-
+        repeated parts for each user
+        repeated parts for each user
+        -*-
+        lines after
+        lines after
         """
         token_dict = {}
         if not options:
@@ -943,12 +952,22 @@ def render(qt, options=None):                                        # helper
         out = []
         question = qt.t_question.split('\n')
         repeated = ''
-        rest = ''
+        before = ''
+        after = ''
+        mode = 'before'
         for line in question:
-            if line.startswith('*'):
-                repeated += line + '\n'
+            if line.startswith('-*-'):
+                if mode == 'before':
+                    mode = 'repeat'
+                else:
+                    mode = 'after'
             else:
-                rest += line + '\n'
+                if mode == 'before':
+                    before += line + '\n'
+                elif mode == 'repeat':
+                    repeated += line + '\n'
+                elif mode == 'after':
+                    after += line + '\n'
 
         repeated += "<hr>\n"  # The "\n" helps with the markdown creation
 
@@ -979,6 +998,8 @@ def render(qt, options=None):                                        # helper
         <td class="quest-sr ss-rightlabel">Excellent [note: 6 is very satisfactory]</td>
         </tr></tbody></table>
         """
+        out.append(before)
+        out.append("<hr>\n",)
         for peer, person_slug in peers:
             slug = person_slug.replace('-', '_')
             out.append(repeated.replace('--ranking--', ranking)\
@@ -986,7 +1007,7 @@ def render(qt, options=None):                                        # helper
                                         .replace('{{person_slug}}', slug)\
                                         .replace('person_slug', slug))
 
-        out.append(rest)
+        out.append(after)
         out = '\n'.join(out)
 
         # Add the textarea where required

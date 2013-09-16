@@ -277,7 +277,7 @@ def update_with_current_answers(quest):
     with the answers they have (partially) filled in.
     """
     def update_radio(txt, tokens):
-        RADIO_RE = re.compile(r'\<input(.*?)type="radio"(.*?)name="(.*?)"(.*?)value="(.*?)"(.*?)\</input\>')
+        RADIO_RE = re.compile(r'<input(.*?)type="radio"(.*?)name="(.*?)"(.*?)value="(.*?)"(.*?)\<')
         out = ''
         start = 0
         for item in RADIO_RE.finditer(txt):
@@ -298,7 +298,8 @@ def update_with_current_answers(quest):
                  'value="%s"' % item.group(5),
                  added,
                  item.group(6),
-                 r'</input>')
+                 r'<')  # leave this vague: sometimes it ends with </label>,
+                        # and other times </input>
 
             start = item.end()
 
@@ -391,7 +392,7 @@ def update_with_current_answers(quest):
     q_type = quest.qtemplate.q_type
 
     if q_type in ('mcq', 'tf'):
-        out = update_radio(out)
+        out = update_radio(out, tokens)
 
     if q_type in ('multi',):
         out = update_checkbox(out, tokens)

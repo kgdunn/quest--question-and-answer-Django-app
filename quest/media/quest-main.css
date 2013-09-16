@@ -204,8 +204,8 @@ div#quest-header a:hover{
 
 /* Styling for radiobutton in the peer evaluation*/
 .quest-sn{
-    display: block;
-    padding: 0.5em 0 .5em;
+    padding: 5px 8px;
+    text-align: center;
 }
 td.quest-sr{
     border-color: #afa7a4;
