@@ -574,7 +574,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
         html_question = re.sub(r'<input', (r'<input disabled="true" '
                                            r'style="color: #B00"'), html_question)
 
-        if q_type in ('long'):
+        if q_type in ('long', 'peer-eval'):
             html_question = re.sub(r'<textarea', r'<textarea disabled="true"',
                                    html_question)
 
