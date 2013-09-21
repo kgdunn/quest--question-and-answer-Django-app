@@ -4,6 +4,9 @@ try:
 except ImportError:
     import json
 
+import logging
+logger = logging.getLogger('quest')
+
 #from django.conf import settings
 from django.core.context_processors import csrf
 #from django.core.exceptions import ValidationError
@@ -596,19 +599,19 @@ def email_user_feedback(request):        # URL: ``admin-email-user-feedback``
     to_address = userP.user.email
     qset = QSet.objects.filter(slug=request.POST['qset_slug'])[0]
     message = """\
-    %s,
+%s,
 
-    This message is regarding peer feed for Quest "%s", in course %s.
+This message is regarding peer feed for Quest "%s", in course %s.
 
-    These comments were left by your team members. They are in random order.
-    Not all comments are necessarily constructive, so consider this as advice
-    and opinion.
+These comments were left by your team members. They are in random order.
+Not all comments are necessarily constructive, so consider this as advice
+and opinion.
 
-    ---
-    %s
-    ---
+---
+%s
+---
 
-    Sent from the http://quest.mcmaster.ca web server.
+Sent from the http://quest.mcmaster.ca web server.
     """ % (userP.user.first_name, qset.name, qset.course.name,
            request.POST['comments'])
 
