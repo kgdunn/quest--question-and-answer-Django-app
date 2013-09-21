@@ -22,7 +22,7 @@ from question.models import (QTemplate, QActual, Inclusion, QSet)
 from question.views import validate_user
 from person.models import UserProfile
 from grades.models import Grade
-from utils import insert_evaluate_variables
+from utils import insert_evaluate_variables, send_email
 from course.models import Course
 
 reason_codes = {'SigFigs': 'Too many significant figures',
@@ -506,6 +506,7 @@ def get_peer_comments(user, qactuals, username):
             pass # already processed their QActual
 
     # Repeat again, this time getting the actual responses
+    merged = ''
     for other in user.get_peers():
         qa = qactuals.filter(user__slug=other[1])[0]
         try:
@@ -518,6 +519,7 @@ def get_peer_comments(user, qactuals, username):
             for key, val in gr_ans.iteritems():
                 if isinstance(val[0], basestring) and val[0] == username:
                     out[-1][1] += "%s: %s\n" % (val[1], val[2])
+                    merged += "%s: %s\n" % (val[1], val[2])
                 if isinstance(val[0], int) and user.slug.replace('-','_')\
                                                         in key:
                     out[-1][2] = val[0]
@@ -525,10 +527,13 @@ def get_peer_comments(user, qactuals, username):
         else:
             out.append([other[0], '--No comment--', 0])
 
+
+    out.append(['Merged', merged, -99.9])
+
     return out
 
 @login_required
-def grade_peer_eval(request):                # URL: ``admin-grade-peer-eval``
+def grade_peer_eval(request):            # URL: ``admin-grade-peer-eval``
     """
     Grade the peer evaluations
     """
@@ -566,17 +571,54 @@ def grade_peer_eval(request):                # URL: ``admin-grade-peer-eval``
         qactuals = QActual.objects.filter(qtemplate=qtemplate)
 
         users = []
-        comments = {}
         for item in qactuals:
             username = '%s %s' % (item.user.user.first_name,
                                   item.user.user.last_name)
 
-            users.append(username)
-            comments[username] = get_peer_comments(item.user, qactuals,
-                                                                      username)
+            users.append((username, get_peer_comments(item.user, qactuals,
+                                                    username), item.user.slug))
 
         ctxdict = {'users':  users,
-                   'comments': comments}
+                   'qset_slug': item.qset.slug}
         ctxdict.update(csrf(request))
         return render_to_response('grades/grade-peer-evaluation.html', ctxdict,
                                   context_instance=RequestContext(request))
+
+@login_required
+def email_user_feedback(request):        # URL: ``admin-email-user-feedback``
+    """
+    """
+    if request.method != 'POST':
+        return HttpResponse('Bad input')
+
+
+    userP = UserProfile.objects.filter(slug=request.POST['user'])[0]
+    to_address = userP.user.email
+    qset = QSet.objects.filter(slug=request.POST['qset_slug'])[0]
+    message = """\
+    %s,
+
+    This message is regarding peer feed for Quest "%s", in course %s.
+
+    These comments were left by your team members. They are in random order.
+    Not all comments are necessarily constructive, so consider this as advice
+    and opinion.
+
+    ---
+    %s
+    ---
+
+    Sent from the http://quest.mcmaster.ca web server.
+    """ % (userP.user.first_name, qset.name, qset.course.name,
+           request.POST['comments'])
+
+    subject = 'Peer feedback from Quest: %s' % qset.name
+
+    out = send_email([to_address, ], subject, message)
+    if out:
+        logger.debug('Successfully sent peer feedback to %s' % to_address)
+    else:
+        logger.error('Unable to send submission confirmation email to: %s' %
+                    to_address)
+
+    return HttpResponse('Sent email')

@@ -1,9 +1,48 @@
+{% extends "base.html" %}
+{% load url from future %}
+
+{% block html_headers %}
+{# http://stackoverflow.com/questions/7218010/ajax-radio-buttons-dont-work #}
+<script language="javascript" type="text/javascript">
+    $(document).ready(function() {
+        var timer = null;
+        $(':submit').click(function() {
+
+            var postdata = {'csrfmiddlewaretoken': '{{ csrf_token }}'};
+            var field = $("textarea[name='" + $(this).attr('name') + "']")[0];
+            postdata['comments'] = field.value;
+            postdata['user'] = $(this).attr('name');
+            postdata['qset_slug'] = $("input[name='__qset_slug__']")[0].value;
+            $.ajax({
+                type: "POST",
+                url: '{% url 'admin-email-user-feedback' %}',
+                data:  postdata,
+                cache: false,
+                success: function(result) {$('#ajaxDiv').html(result);},
+                error: function (response, desc, exception) {// custom error
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+
 {% block content %}
-
-{% for item in users %}
-<p>User: {{item}}
-<p>Value: {{comments.item}}
-<hr>
-{% endfor %}
-
+    <input type="hidden" name="__qset_slug__" value="{{qset_slug}}">
+    {% for user, comments, slug in users %}
+    <h2>User: {{user}}</h2>
+        {% for other in comments %}
+            {% if forloop.last %}
+                <p><b>{{other.0}}</b>: <textarea name="{{slug}}" rows="10"
+                                      cols="100">{{other.1|safe}}</textarea>
+                Score: {{other.2}}
+                <input type="submit" name="{{slug}}" value="Send feedback to {{user}}">
+            {% else %}
+                <p><b>{{other.0}}</b>: <textarea rows="4" cols="100">{{other.1|safe}}</textarea>
+                Score: {{other.2}} / 8
+            {% endif %}
+        {% endfor %}
+    <hr>
+    {% endfor %}
 {% endblock %}

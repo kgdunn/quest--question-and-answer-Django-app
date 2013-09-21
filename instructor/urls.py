@@ -1,7 +1,7 @@
 from django.conf.urls import patterns, include, url
 from django.conf import settings
 import views
-from grades.views import grade_peer_eval
+from grades.views import grade_peer_eval, email_user_feedback
 
 urlpatterns = patterns('',
 
@@ -22,6 +22,8 @@ urlpatterns = patterns('',
     url('preview-question/', views.preview_question,
         name='admin-preview-question'),
 
-    url('grade-peer-eval/', grade_peer_eval, name='admin-grade-peer-eval')
+    url('grade-peer-eval/', grade_peer_eval, name='admin-grade-peer-eval'),
+
+    url('email-user-feedback', email_user_feedback, name="admin-email-user-feedback")
 
 )
