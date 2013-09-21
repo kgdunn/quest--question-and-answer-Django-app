@@ -578,8 +578,13 @@ def grade_peer_eval(request):            # URL: ``admin-grade-peer-eval``
             username = '%s %s' % (item.user.user.first_name,
                                   item.user.user.last_name)
 
-            users.append((username, get_peer_comments(item.user, qactuals,
-                                                    username), item.user.slug))
+            users.append((item.user.group.name,
+                          username,
+                          get_peer_comments(item.user, qactuals, username),
+                          item.user.slug))
+
+        # Sort the list in group order (the first entry in the tuple)
+        users.sort()
 
         ctxdict = {'users':  users,
                    'qset_slug': item.qset.slug}
