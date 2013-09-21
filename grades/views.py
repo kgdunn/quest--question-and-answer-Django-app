@@ -615,6 +615,9 @@ def email_user_feedback(request):        # URL: ``admin-email-user-feedback``
     subject = 'Peer feedback from Quest: %s' % qset.name
 
     out = send_email([to_address, ], subject, message)
+    logger.info('Send email to "%s" about %s: %s' % (to_address,
+                                                     qset.name,
+                                                     request.POST['comments']))
     if out:
         logger.debug('Successfully sent peer feedback to %s' % to_address)
     else:
