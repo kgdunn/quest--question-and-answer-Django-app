@@ -1,0 +1,15 @@
+{% block content %}
+<form name="input" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+
+<p>Select the item to grade
+<select name="item_slug">
+    {% for item in item_list %}
+        <option value="{{item.slug}}">{{item.name}}</option>
+    {% endfor %}
+</select>
+<input type="hidden" name="item_type" value="{{item_type}}">
+
+<p><input type="submit" value="Start the peer evaluation">
+</form>
+</hr>
+{% endblock %}

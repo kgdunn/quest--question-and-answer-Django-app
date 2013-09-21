@@ -32,7 +32,7 @@ from django.core.urlresolvers import reverse
 from django.core.exceptions import ValidationError
 
 # Our imports
-from utils import unique_slugify
+from utils import unique_slugify, generate_random_token
 
 class QTemplate(models.Model):
     """
@@ -52,6 +52,7 @@ class QTemplate(models.Model):
     # e.g. "The misbehaving clock", if given explictly, else it is the first
     # few characters of the question itself.
     name = models.CharField(max_length=250)
+    slug = models.CharField(editable=False, max_length=32)
 
     q_type = models.CharField(max_length=10, choices=question_type)
     contributor = models.ForeignKey('person.UserProfile', blank=True)
@@ -96,6 +97,12 @@ class QTemplate(models.Model):
         self.max_grade = float(self.max_grade)
         self.difficulty = int(self.difficulty)
         self.difficulty = min(self.difficulty, 9)
+
+        # http://docs.djangoproject.com/en/dev/topics/db/models/
+                                                    #overriding-predefined-model-methods
+        if not self.slug:
+            self.slug = generate_random_token(30)
+
 
         # Call the "real" save() method.
         super(QTemplate, self).save(*args, **kwargs)

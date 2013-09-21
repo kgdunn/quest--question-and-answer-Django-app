@@ -5,10 +5,11 @@ except ImportError:
     import json
 
 #from django.conf import settings
-#from django.core.context_processors import csrf
+from django.core.context_processors import csrf
 #from django.core.exceptions import ValidationError
 #from django.template import Context, Template, Library
 from django.contrib.auth.decorators import login_required
+from django.core.context_processors import csrf
 from django.shortcuts import (HttpResponse, render_to_response,
                               RequestContext)
 
@@ -22,6 +23,7 @@ from question.views import validate_user
 from person.models import UserProfile
 from grades.models import Grade
 from utils import insert_evaluate_variables
+from course.models import Course
 
 reason_codes = {'SigFigs': 'Too many significant figures',
                 'Negative MCQ': 'Lost grades for checking incorrect entries',
@@ -465,3 +467,116 @@ def fix_glitch(request):
                     qactual.save()
                 else:
                     assert(False)
+
+
+def get_peer_comments(user, qactuals, username):
+    """
+    From a QuerySet of ``qactuals`` return the comments from the ``user``'s
+    peers.
+    """
+    NAME = re.compile(r'strong\>(.*?)\</strong\>')
+    out = []
+    for other in user.get_peers():
+        qa = qactuals.filter(user__slug=other[1])[0]
+        if qa.grading_answer != '':
+            # Old version of peer-eval: create the grading answer
+            ans = {}
+            try:
+                ga = json.loads(qa.given_answer)
+            except json.decoder.JSONDecodeError:
+                continue
+            for item, value in ga.iteritems():
+                if item.startswith('pf__'):
+                    ans[item] = [int(value),]
+                    continue
+
+                idx = qa.as_displayed.find(item)
+                string = qa.as_displayed[idx-250:idx]
+                if 'constructive' in string:
+                    ans[item] = (NAME.search(string).group(1), 'Constructive',
+                                 ga[item])
+                elif 'appreciated' in string:
+                    ans[item] = (NAME.search(string).group(1), 'Appreciated',
+                                 ga[item])
+
+            # Store the answer
+            qa.grading_answer = json.dumps(ans)
+            qa.save()
+        else:
+            pass # already processed their QActual
+
+    # Repeat again, this time getting the actual responses
+    for other in user.get_peers():
+        qa = qactuals.filter(user__slug=other[1])[0]
+        try:
+            gr_ans = json.loads(qa.grading_answer)
+        except json.decoder.JSONDecodeError:
+            gr_ans = {}
+
+        if qa.given_answer:
+            out.append([other[0], '', None])
+            for key, val in gr_ans.iteritems():
+                if isinstance(val[0], basestring) and val[0] == username:
+                    out[-1][1] += "%s: %s\n" % (val[1], val[2])
+                if isinstance(val[0], int) and user.slug.replace('-','_')\
+                                                        in key:
+                    out[-1][2] = val[0]
+
+        else:
+            out.append([other[0], '--No comment--', 0])
+
+    return out
+
+@login_required
+def grade_peer_eval(request):                # URL: ``admin-grade-peer-eval``
+    """
+    Grade the peer evaluations
+    """
+    if request.method == 'GET':
+        ctxdict = { 'item_list': QSet.objects.all(),
+                    'item_type': 'qset_slug'
+                  }
+        ctxdict.update(csrf(request))
+        return render_to_response('grades/select-peer-evaluation.html', ctxdict,
+                                    context_instance=RequestContext(request))
+
+    elif request.method == 'POST' and \
+                                      request.POST['item_type'] == 'qset_slug':
+        qset_slug = request.POST.get('item_slug', '')
+        qset = QSet.objects.filter(slug=qset_slug)[0]
+        qtemplates = QTemplate.objects.filter(qset=qset).filter(q_type='peer-eval')
+        if len(qtemplates) == 0:
+            return HttpResponse(('There are no peer evaluations in the '
+                                  'selected question set'))
+        else:
+            ctxdict = { 'item_list': qtemplates,
+                        'item_type': 'qtemplate_slug'
+                    }
+            ctxdict.update(csrf(request))
+            return render_to_response('grades/select-peer-evaluation.html',
+                                      ctxdict,
+                                      context_instance=RequestContext(request))
+
+        qactuals = QActual.objects.filter(qset=qset)
+
+    elif request.method == 'POST' and \
+                               request.POST['item_type'] == 'qtemplate_slug':
+        qtemplate_slug = request.POST.get('item_slug', '')
+        qtemplate = QTemplate.objects.filter(slug=qtemplate_slug)[0]
+        qactuals = QActual.objects.filter(qtemplate=qtemplate)
+
+        users = []
+        comments = {}
+        for item in qactuals:
+            username = '%s %s' % (item.user.user.first_name,
+                                  item.user.user.last_name)
+
+            users.append(username)
+            comments[username] = get_peer_comments(item.user, qactuals,
+                                                                      username)
+
+        ctxdict = {'users':  users,
+                   'comments': comments}
+        ctxdict.update(csrf(request))
+        return render_to_response('grades/grade-peer-evaluation.html', ctxdict,
+                                  context_instance=RequestContext(request))
