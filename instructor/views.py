@@ -125,8 +125,11 @@ def parse_MCQ_TF_Multi(text, q_type):                             # helper
 
         for line in text:
 
+            if len(line.strip()) == 0:
+                continue
+
             # This check must be before the next one
-            if line.startswith('%^'):
+            elif line.startswith('%^'):
                 section_name = generate_random_token(4)
                 t_grading[section_name] = ['final-key', ]
                 final = FINALKEY_RE.match(line).group(2)
