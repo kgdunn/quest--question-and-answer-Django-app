@@ -647,6 +647,7 @@ def load_class_list(request):
             username = '%s-%s' % (first.strip().lower(),
                                   last.strip().lower())
 
+            email_id = email_id.strip()
             if '@' not in email_id:
                 email = email_id+email_suffix
             else:
