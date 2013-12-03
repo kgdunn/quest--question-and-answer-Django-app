@@ -812,8 +812,10 @@ def successful_submission(request, course_code_slug, question_set_slug):
     the questions.
 
     If you have time left on the test, you may sign in again and update any of
-    your answers. Solutions will be available after the cut-off time,
-    %s.
+    your answers. But like a regular exam, once YOUR time is up, you cannot
+    change your answers, even if it is before the cut-off time.
+
+    Solutions will be available after the cut-off time, %s.
 
     The http://quest.mcmaster.ca web server.
     """ % quests[0].qset.ans_time_final.strftime('%H:%M on %d %h %Y')
