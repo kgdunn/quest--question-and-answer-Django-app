@@ -34,7 +34,7 @@ reason_codes = {'SigFigs': 'Too many significant figures',
                 'Wrong value': 'Wrong answer given',
                 'No match': 'Answer could not be matched with the template',
                 'Blank answer': 'Blank answer',
-                'Brief feedback': 'Feedback is too brief; not actionable/constructive/specific enough',
+                'Brief feedback': 'Feedback is too brief; or not actionable/constructive/specific enough',
                 'Not convertable': 'Answer could not converted to a numeric result'}
 
 negative_deduction_multi = 0.5
@@ -77,7 +77,7 @@ def process_grades(request, course_code_slug, question_set_slug):
                 do_grading(qactual)
             count += 1
 
-    return HttpResponse('Graded %d questions' % count)
+    return HttpResponse('Graded %d question(s)' % count)
 
 
 def do_grading(qactual):
@@ -283,8 +283,10 @@ def grade_peereval(qactual):
     grade_value = qactual.qtemplate.max_grade
     reason = []
     if len(qactual.given_answer) < 400:
-        print(len(qactual.given_answer), qactual, qactual.given_answer)
-        print('\n')
+        logger.info('Peer eval auto-grade: len=%d, ID#=%d' % (
+            len(qactual.given_answer),
+            qactual.id
+        ))
         grade_value = 0.0
         reason.append(reason_codes['Brief feedback'])
 
@@ -296,6 +298,7 @@ def grade_peereval(qactual):
                                 )
 
     return grade
+
 
 def string_match(correct, given, multiple_tries=True):
     """

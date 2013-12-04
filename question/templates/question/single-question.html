@@ -49,6 +49,9 @@
     <div class="quest-item-grading">
     {% if item.grade %}
         Your score: {{item.grade.grade_value|floatformat }} / {{item.qtemplate.max_grade}}
+        {% if item.grade.reason_description %}
+            {{item.grade.reason_description}}
+        {% endif %}
     {% else %}
 
     {% endif %}
