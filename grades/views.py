@@ -283,14 +283,20 @@ def grade_peereval(qactual):
     grade_value = qactual.qtemplate.max_grade
     reason = []
     print(len(qactual.given_answer))
-    if len(qactual.given_answer) < 450:
+    if len(qactual.given_answer) > 400 and len(qactual.given_answer) < 450:
+        logger.info('Peer eval auto-grade: len=%d, ID#=%d' % (
+            len(qactual.given_answer),
+            qactual.id
+        ))
+        grade_value = 2.5
+        reason.append(reason_codes['Brief feedback'])
+    elif len(qactual.given_answer) < 401:
         logger.info('Peer eval auto-grade: len=%d, ID#=%d' % (
             len(qactual.given_answer),
             qactual.id
         ))
         grade_value = 0.0
         reason.append(reason_codes['Brief feedback'])
-
 
     grade = Grade.objects.create(graded_by=get_auto_grader(),
                                 approved=True,
