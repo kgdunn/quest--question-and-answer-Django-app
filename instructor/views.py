@@ -1407,23 +1407,34 @@ def fix_questions(request):
         #qa.save()
         #logger.debug('Fixed question %d' % qa.id)
 
-    for qa in QActual.objects.filter(qtemplate__id=42):
-        ga = json.loads(qa.grading_answer)
-        for key, value in ga.iteritems():
-            value = eval(value[0])
-            value[1] = 0.1
-            ga[key] = [json.dumps(value), ]
-        qa.grading_answer = json.dumps(ga)
-        qa.save()
+    #for qa in QActual.objects.filter(qtemplate__id=42):
+        #ga = json.loads(qa.grading_answer)
+        #for key, value in ga.iteritems():
+            #value = eval(value[0])
+            #value[1] = 0.1
+            #ga[key] = [json.dumps(value), ]
+        #qa.grading_answer = json.dumps(ga)
+        #qa.save()
 
-    for qa in QActual.objects.filter(qtemplate__id=43):
+    #for qa in QActual.objects.filter(qtemplate__id=43):
+        #ga = json.loads(qa.grading_answer)
+        #for key, value in ga.iteritems():
+            #value = eval(value[0])
+            #if value[1] > 0:
+                #value[1] = 0.1
+            #ga[key] = [json.dumps(value), ]
+        #qa.grading_answer = json.dumps(ga)
+        #qa.save()
+
+    for qa in QActual.objects.filter(qtemplate__id=58):
+        price = int(qa.as_displayed[88:qa.as_displayed.find('.')])
+        book_value = price - price * 0.2 / 2.0
         ga = json.loads(qa.grading_answer)
         for key, value in ga.iteritems():
-            value = eval(value[0])
-            if value[1] > 0:
-                value[1] = 0.1
-            ga[key] = [json.dumps(value), ]
+            ga[key][0] = book_value
         qa.grading_answer = json.dumps(ga)
+
+        qa.html_solution = '<p>The book value is $%d.</p>' % book_value
         qa.save()
 
 def preview_question(request):    # URL: ``admin-preview-question``

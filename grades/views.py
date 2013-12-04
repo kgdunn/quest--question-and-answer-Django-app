@@ -282,7 +282,8 @@ def grade_peereval(qactual):
     """
     grade_value = qactual.qtemplate.max_grade
     reason = []
-    if len(qactual.given_answer) < 400:
+    print(len(qactual.given_answer))
+    if len(qactual.given_answer) < 450:
         logger.info('Peer eval auto-grade: len=%d, ID#=%d' % (
             len(qactual.given_answer),
             qactual.id
