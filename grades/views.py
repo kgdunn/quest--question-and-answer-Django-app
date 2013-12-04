@@ -34,6 +34,7 @@ reason_codes = {'SigFigs': 'Too many significant figures',
                 'Wrong value': 'Wrong answer given',
                 'No match': 'Answer could not be matched with the template',
                 'Blank answer': 'Blank answer',
+                'Brief feedback': 'Feedback is too brief; not actionable/constructive/specific enough',
                 'Not convertable': 'Answer could not converted to a numeric result'}
 
 negative_deduction_multi = 0.5
@@ -73,7 +74,7 @@ def process_grades(request, course_code_slug, question_set_slug):
                 # Do not re-grade a question that has already received a grade
                 continue
             else:
-                do_grading()
+                do_grading(qactual)
             count += 1
 
     return HttpResponse('Graded %d questions' % count)
@@ -140,7 +141,7 @@ def grade_MCQ(qactual):
         keys = [item[0] for item in grading.items() if item[1][0]=='key']
         grade_per_key = qactual.qtemplate.max_grade / (len(keys) + 0.0)# float
 
-        for ans in answer.split(','):
+        for ans in answer.values()[0].strip(',').split(','): #answer.items():
             if ans in keys:
                 grade_value += grade_per_key
             elif negative_deduction_multi:
@@ -274,6 +275,27 @@ def grade_long(qactual):
                                  )
     return grade
 
+
+def grade_peereval(qactual):
+    """
+    Grades the peer evaluations.
+    """
+    grade_value = qactual.qtemplate.max_grade
+    reason = []
+    if len(qactual.given_answer) < 400:
+        print(len(qactual.given_answer), qactual, qactual.given_answer)
+        print('\n')
+        grade_value = 0.0
+        reason.append(reason_codes['Brief feedback'])
+
+
+    grade = Grade.objects.create(graded_by=get_auto_grader(),
+                                approved=True,
+                                grade_value=grade_value,
+                                reason_description = reason,
+                                )
+
+    return grade
 
 def string_match(correct, given, multiple_tries=True):
     """
