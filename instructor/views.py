@@ -703,7 +703,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
         if qset.random_choice:
             qts = choose_random_questions(qset, user)
         else:
-            qts = qset.include.all()
+            qts = qset.include.all().order_by('id')
 
         question_list = []
         for idx, qt in enumerate(qts):
