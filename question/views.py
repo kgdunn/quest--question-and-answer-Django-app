@@ -357,7 +357,10 @@ def update_with_current_answers(quest):
             if out:
                 out += txt[start:]
 
-        return out
+        if out:
+            return out
+        else:
+            return txt  # always return at least what you were given
 
     def update_textarea(txt, tokens):
         TEXTAREA_RE = re.compile(r'\<textarea(.*?)name="(.*?)"(.*?)\>\</textarea\>')
@@ -378,6 +381,8 @@ def update_with_current_answers(quest):
 
         if out:
             out += txt[start:]
+        else:
+            out = txt   # always return at least what you were given
 
         return out
 
