@@ -17,6 +17,10 @@ class Group(models.Model):
     def __unicode__(self):
         return self.name
 
+    class Meta:
+        ordering = ['name', ]
+
+
 
 class UserProfile(models.Model):
     # See https://docs.djangoproject.com/en/1.3/topics/auth/
