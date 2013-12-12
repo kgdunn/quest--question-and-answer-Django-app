@@ -357,7 +357,10 @@ def update_with_current_answers(quest):
             if out:
                 out += txt[start:]
 
-        return out
+        if out:
+            return out
+        else:
+            return txt  # always return at least what you were given
 
     def update_textarea(txt, tokens):
         TEXTAREA_RE = re.compile(r'\<textarea(.*?)name="(.*?)"(.*?)\>\</textarea\>')
@@ -378,6 +381,8 @@ def update_with_current_answers(quest):
 
         if out:
             out += txt[start:]
+        else:
+            out = txt   # always return at least what you were given
 
         return out
 
@@ -398,7 +403,7 @@ def update_with_current_answers(quest):
         out = update_checkbox(out, tokens)
 
     if q_type in ('long',):
-        out = update_textarea(out)
+        out = update_textarea(out, tokens)
 
     if q_type in ('short',):
         out = update_input(out, tokens)
@@ -531,7 +536,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
         else:
             # Create the timing object, starting from right now
-            final = qset.max_duration
+            final = qset.duration()
             intend_finish = now_time + \
                 datetime.timedelta(hours=final.hour) + \
                 datetime.timedelta(minutes=final.minute) + \
@@ -540,6 +545,8 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
             if qset.max_duration == datetime.time(0, 0, 0):
                 # Not sure why this is checked; guess it is incase the admin
                 # user has forgot to specify the maximum time duration
+                # Maybe it was a method to handle the case where the test was
+                # as long in duration as the start to final time??
                 final_time = qset.ans_time_final
             else:
                 # Finish before the test if over, or earlier
@@ -558,7 +565,10 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
         if tobj.final_time > now_time:
             delta = tobj.final_time - now_time
-            min_remain = int(floor(delta.seconds/60.0))
+            extra = 0
+            if delta.days:
+                extra = 60 * 24 * delta.days
+            min_remain = int(floor(delta.seconds/60.0)) + extra
             sec_remain = int(delta.seconds - min_remain*60)
 
 
@@ -668,7 +678,7 @@ def store_answer(request, course_code_slug, question_set_slug, question_id):
         logger.debug(str(request.POST))
 
         if quest.qtemplate.q_type in ('short', 'peer-eval', 'multi', 'mcq',
-                                      'tf'):
+                                      'tf', 'long'):
             out = {}
             for key in keys:
                 newkey = key

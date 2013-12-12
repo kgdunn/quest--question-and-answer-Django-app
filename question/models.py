@@ -26,6 +26,8 @@ try:
     import simplejson as json
 except ImportError:
     import json
+from collections import namedtuple
+
 from django.db import models
 from django.core.urlresolvers import reverse
 #from django.template.defaultfilters import slugify
@@ -168,7 +170,14 @@ class QSet(models.Model):
     # Maximum test duration, e.g. 1 hour is "01:00:00". If 00:00, then allow the
     # test to be completed anytime between ``ans_time_start`` and
     # ``ans_time_final``.
-    max_duration = models.TimeField(default="00:00:00")
+    max_duration = models.TimeField(default="00:00:00", blank=True,
+                                    help_text="Don't use anymore.")
+    max_qset_duration = models.CharField(blank=True, null=True,
+                                         default="00:00:00",
+                                         max_length=16,
+                                         help_text=('Enter the time duration'
+                                                    'as "HHHHH:MM:SS" format')
+                                                    )
 
     # Intended to be used later to allow super-users to preview tests before
     # they are made available to regular student users
@@ -209,6 +218,20 @@ class QSet(models.Model):
     def __unicode__(self):
         return '%s [%s]' % (self.name, self.course.name)
 
+    def duration(self):
+        """
+        Returns the duration of the test in a named tuple
+        """
+        duration = namedtuple('duration', 'hour, minute, second')
+        if self.max_duration:
+            return duration(self.max_duration.hour,
+                             self.max_duration.minute,
+                             self.max_duration.second)
+        elif self.max_qset_duration:
+            qset_duration = self.max_qset_duration.split(':')
+            return duration(int(qset_duration[0]),
+                            int(qset_duration[1]),
+                            int(qset_duration[2]))
 
 class Inclusion(models.Model):
     """

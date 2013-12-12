@@ -63,8 +63,8 @@ def create_sign_in_email(user, qset=None):
         message += """
     * Test duration = %s hours and %s minute(s).
     * Testing window closes at: %s; after which solutions are available.""" % \
-          (qset.max_duration.strftime('%H'),
-           qset.max_duration.strftime('%M'),
+          (qset.duration().hour,
+           qset.duration().minute,
            qset.ans_time_final.strftime('%H:%M on %d %h %Y'))
     else:
         subject = 'Quest website access'
