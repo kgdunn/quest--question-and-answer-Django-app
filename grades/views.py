@@ -29,7 +29,7 @@ from utils import insert_evaluate_variables, send_email
 from course.models import Course
 
 reason_codes = {'SigFigs': 'Too many significant figures',
-                'Negative MCQ': 'Lost grades for checking incorrect entries',
+                'MCQ': 'Lost grades for checking incorrect entries and/or not checking all correct entries',
                 'Not answered': 'Question was not answered',
                 'Wrong value': 'Wrong answer given',
                 'No match': 'Answer could not be matched with the template',
@@ -148,7 +148,7 @@ def grade_MCQ(qactual):
                 grade_value -= negative_deduction_multi
 
         if grade_value != qactual.qtemplate.max_grade:
-            reason.append(reason_codes['Negative MCQ'])
+            reason.append(reason_codes['MCQ'])
 
     reason = list(set(reason)) # remove duplicates
     grade = Grade.objects.create(graded_by=get_auto_grader(),

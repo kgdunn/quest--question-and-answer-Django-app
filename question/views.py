@@ -585,7 +585,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
     else:
         other_info = 'QActual=[%d]; current answer: %s' % \
-            (quest.id, quest.given_answer[0:4999])
+            (quest.id, quest.given_answer[0:4900])
         html_solution = ''                      # don't show the solutions yet
 
 
