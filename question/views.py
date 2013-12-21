@@ -833,7 +833,7 @@ def successful_submission(request, course_code_slug, question_set_slug):
 
     out = send_email([to_address, ], subject, message)
     if out:
-        logger.debug('Successfully sent email on QSet submission')
+        logger.debug('Successfully sent email on QSet submission: %s' % to_address[0])
     else:
         logger.error('Unable to send submission confirmation email to: %s' %
                     to_address[0])
