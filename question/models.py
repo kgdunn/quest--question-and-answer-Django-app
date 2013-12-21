@@ -110,7 +110,7 @@ class QTemplate(models.Model):
         super(QTemplate, self).save(*args, **kwargs)
 
     def __unicode__(self):
-        return '%s [%s]' % (self.name[0:50], self.q_type)
+        return '[%s] %s [%s]' % (self.id, self.name[0:50], self.q_type)
 
 
 class QSet(models.Model):
