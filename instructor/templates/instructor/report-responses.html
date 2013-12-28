@@ -1,0 +1,20 @@
+{% block content %}
+<form name="input" action="" method="post" enctype="multipart/form-data">{% csrf_token %}
+
+    <p>Course code:
+    <select name="course_slug">
+        {% for course in course_list %}
+            <option value="{{course.slug}}">{{course.name}} [{{course.year}}]</option>
+        {% endfor %}
+    </select>
+    <p>Question template:
+    <select name="qtemplate_slug">
+        {% for qt in qtemplate_list %}
+            <option value="{{qt.slug}}">{{qt}}</option>
+        {% endfor %}
+    </select>
+
+    <p><input type="submit" value="Report all student responses">
+</form>
+</hr>
+{% endblock %}

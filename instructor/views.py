@@ -786,6 +786,51 @@ def generate_questions(request, course_code_slug, question_set_slug):
                           '<p>Additional info: <code>%s</code>') %
                           (qset.slug, additional))
 
+@login_required                       # URL: ``admin-report-responses``
+def report_responses(request):
+    """
+    Reports all the responses from the student for a particular textarea-based
+    answer.
+    """
+    if request.POST:
+        qtemplate_slug = request.POST.get('qtemplate_slug')
+        course_code_slug = request.POST.get('course_slug')
+        qtemplate = QTemplate.objects.get(slug=qtemplate_slug)
+        qactuals = QActual.objects.filter(qtemplate__slug=qtemplate_slug)
+
+        out = [qtemplate.t_question, ]
+        out.append("""
+        <table border="1"><th><tr>
+            <td>Q-ID</td>
+            <td>Student</td>
+            <td>Response</td>
+            </tr></th>""")
+        for item in qactuals:
+            if item.given_answer.strip() == '':
+                item.given_answer = '{"_": "NOT ANSWERED"}'
+
+            out.append("""
+            <tr><td>{0}</td>
+                <td>{1}</td>
+                <td>{2}</td>
+            </tr>""".format(item.id,
+                            item.user.user.last_name,
+                            json.loads(item.given_answer).values()[0]\
+                                           .encode('utf8', 'replace')
+                            ))
+
+        out.append("</table>")
+        return HttpResponse(out)
+    else:
+        ctxdict = {'course_list': Course.objects.all(),
+                   'qtemplate_list': QTemplate.objects.filter(\
+                       q_type__iexact='long')
+                  }
+        ctxdict.update(csrf(request))
+        return render_to_response('instructor/report-responses.html',
+                                  ctxdict,
+                                  context_instance=RequestContext(request))
+
 
 def evaluate_template_code(code, var_dict):                         #helper
     """
@@ -1436,6 +1481,7 @@ def fix_questions(request):
 
         qa.html_solution = '<p>The book value is $%d.</p>' % book_value
         qa.save()
+
 
 def preview_question(request):    # URL: ``admin-preview-question``
     """

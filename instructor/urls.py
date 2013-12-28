@@ -17,7 +17,10 @@ urlpatterns = patterns('',
     url(r'load-from-template/$', #(?P<course_code_slug>.+)/(?P<question_set_slug>.+)/',
         views.load_from_template, name='admin-load-from-template'),
 
-    url(r'fix-questions/', views.fix_questions),
+    url(r'report-responses/',
+        views.report_responses, name='admin-report-responses'),
+
+    #url(r'fix-questions/', views.fix_questions),
 
     url('preview-question/', views.preview_question,
         name='admin-preview-question'),
