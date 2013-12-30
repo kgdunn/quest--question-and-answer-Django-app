@@ -37,5 +37,5 @@ class Grade(models.Model):
 
     def __unicode__(self):
 
-        return '[%f]: %s' % (self.grade_value, str(self.reason_description))
+        return '[%d] [%f]: %s' % (self.id, self.grade_value, str(self.reason_description))
 
