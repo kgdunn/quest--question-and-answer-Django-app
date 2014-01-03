@@ -588,7 +588,11 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
             html_question = re.sub(r'<textarea', r'<textarea disabled="true"',
                                    html_question)
 
-    if show_solution:
+    if quest.qtemplate.disable_solution_display:
+        show_solution = False
+        html_solution = 'Solution display is disabled for this question.'
+
+    elif show_solution:
         event_type = 'review-a-quest-question-post'
         other_info = 'Token = %s' % request.session.get('token', '')
         html_solution = quest.html_solution

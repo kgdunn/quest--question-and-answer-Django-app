@@ -80,6 +80,9 @@ class QTemplate(models.Model):
     # Source code used to evaluate any variables and grading responses
     t_code = models.TextField(blank=True, null=True)
 
+    # Chose to show/hide the solution
+    disable_solution_display = models.BooleanField(default=False)
+
     def save(self, *args, **kwargs):
         """ Override the model's saving function to do some checks """
         # http://docs.djangoproject.com/en/dev/topics/db/models/
@@ -232,6 +235,7 @@ class QSet(models.Model):
             return duration(int(qset_duration[0]),
                             int(qset_duration[1]),
                             int(qset_duration[2]))
+
 
 class Inclusion(models.Model):
     """
