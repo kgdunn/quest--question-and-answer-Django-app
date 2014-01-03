@@ -1102,7 +1102,7 @@ def render(qt, options=None):                                        # helper
             hashm.update(image.group(2))
             root = settings.QUEST['MEDIA_LOCATION'] % hashm.hexdigest()[0]
             filenames[image.group(2)] = root + image.group(2)
-            mod_out += 'src="%s"' % (settings.MEDIA_URL + \
+            mod_out += 'style="width: 100%" src="{0}"'.format(settings.MEDIA_URL + \
                                 hashm.hexdigest()[0] + '/' + image.group(2))
             start = image.end()
 

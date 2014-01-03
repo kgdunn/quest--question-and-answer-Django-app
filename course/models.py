@@ -17,7 +17,7 @@ class Course(models.Model):
     code = models.CharField(max_length=20)  # shorter course code
     slug = models.SlugField(max_length=100, editable=False)
     year = models.CharField(verbose_name='Academic year', choices=year_choice,
-                            max_length=20, default='2013/2014')
+                            max_length=20, default='2014/2015')
 
     def __unicode__(self):
         return '%s [%s]' % (self.code, self.year)
