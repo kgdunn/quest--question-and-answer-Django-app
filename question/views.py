@@ -590,7 +590,7 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
 
     if quest.qtemplate.disable_solution_display:
         show_solution = False
-        html_solution = 'Solution display is disabled for this question.'
+        html_solution = 'The solution is disabled for this question.'
 
     elif show_solution:
         event_type = 'review-a-quest-question-post'

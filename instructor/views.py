@@ -647,15 +647,24 @@ def load_class_list(request):
             username = '%s-%s' % (first.strip().lower(),
                                   last.strip().lower())
 
+            if len(student_id) == 6:
+                student_id = '0' + student_id
+
             email_id = email_id.strip()
             if '@' not in email_id:
                 email = email_id+email_suffix
             else:
                 email = email_id
+
+
             try:
-                obj = User.objects.get(email=email)
+                # Rather fetch by student number, instead of emails.
+                # Emails sometimes have spaces at the start of them.
+                user_obj = UserProfile.objects.get(student_number=student_id)
+                obj = user_obj.user
+                #obj = User.objects.get(email=email)
                 logger.info('User [%s] already exists' % username)
-            except User.DoesNotExist:
+            except UserProfile.DoesNotExist:
                 obj = User(username=username,
                            first_name=first.strip(),
                            last_name=last.strip(),
@@ -666,9 +675,6 @@ def load_class_list(request):
                 logger.info('Created user for %s with name: %s' % (course_slug,
                                                                    username))
                 users_added.append(obj)
-
-            if len(student_id) == 6:
-                student_id = '0' + student_id
 
             profile = obj.get_profile()
             profile.role = 'Student'
