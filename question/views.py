@@ -72,7 +72,8 @@ def validate_user(request, course_code_slug, question_set_slug,
     Some validation code that is common to functions below. Only validates
     authentication (not authorization).
     """
-    user = request.user.profile
+    user_profile = request.user.profile
+    user = user_profile.user
     courses = Course.objects.filter(slug=course_code_slug)
     if not courses:
         logger.info('Bad course code request: [%s]; request path="%s"' %
@@ -87,7 +88,7 @@ def validate_user(request, course_code_slug, question_set_slug,
     else:
         if not qset[0].is_active:
             logger.warn('Attempt by user "%s" to access in-active QSet [%s]' %
-                        (user, question_set_slug))
+                        (user_profile, question_set_slug))
             return redirect('quest-main-page')
 
     if not admin:
@@ -116,7 +117,7 @@ def validate_user(request, course_code_slug, question_set_slug,
         # question set objects, as well as to validate the admin user
         return courses[0], qset[0]
     else:
-        quests = get_questions_for_user(qset, user)
+        quests = get_questions_for_user(qset, user_profile)
 
 
     if len(quests) == 0:
