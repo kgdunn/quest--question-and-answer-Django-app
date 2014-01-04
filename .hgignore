@@ -9,3 +9,4 @@ mod.wsgi
 apache-logs
 database/
 jsons/
+quest/media
