@@ -48,17 +48,22 @@ class ParseError(Exception):
     pass
 
 
-def get_questions_for_user(qset, user):
+def get_questions_for_user(qset, user_profile):
     """
     Returns the QActual objects for a specific question set (quiz) for a
-    specific user. Use this function, because it is called elsewhere.
+    specific user's profile. Use this function, because it is called elsewhere.
     """
     if isinstance(qset, QuerySet):
         q = qset[0]
     else:
         q = qset
 
-    return QActual.objects.filter(qset=q).filter(user=user).order_by('id')
+    if not isinstance(user_profile, UserProfile):
+        # A ``UserProfile`` object must be provided.
+        assert(False)
+
+    return QActual.objects.filter(qset=q).filter(user=user_profile)\
+                                                                .order_by('id')
 
 
 def validate_user(request, course_code_slug, question_set_slug,

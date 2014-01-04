@@ -676,6 +676,9 @@ def load_class_list(request):
                                                                    username))
                 users_added.append(obj)
 
+
+            # TODO(KGD): if group is already there, this code currently over
+            #            writes the Group to be "None", which is wrong
             profile = obj.get_profile()
             profile.role = 'Student'
             profile.group = group
@@ -737,7 +740,7 @@ def generate_questions(request, course_code_slug, question_set_slug):
                 logger.debug('Create QA with id = %s' % str(qa.id))
                 question_list.append(qa)
 
-        question_list = get_questions_for_user(qset, user)
+        question_list = get_questions_for_user(qset, user.get_profile())
         # len(qts) = the number of templates included in the question set, QSet
         # len(question_list) = the number of questions found associated with
         #                      that QSet in the database.
