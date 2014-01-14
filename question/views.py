@@ -548,15 +548,17 @@ def ask_specific_question(request, course_code_slug, question_set_slug,
                 datetime.timedelta(minutes=final.minute) + \
                 datetime.timedelta(seconds=final.second)
 
-            if qset.max_duration == datetime.time(0, 0, 0):
-                # Not sure why this is checked; guess it is incase the admin
-                # user has forgot to specify the maximum time duration
-                # Maybe it was a method to handle the case where the test was
-                # as long in duration as the start to final time??
-                final_time = qset.ans_time_final
-            else:
-                # Finish before the test if over, or earlier
-                final_time = min(intend_finish, qset.ans_time_final)
+            # OLD, crufty code. We no longer use qset.max_duration
+            #if qset.max_duration == datetime.time(0, 0, 0):
+                ## Not sure why this is checked; guess it is incase the admin
+                ## user has forgot to specify the maximum time duration
+                ## Maybe it was a method to handle the case where the test was
+                ## as long in duration as the start to final time??
+                #final_time = qset.ans_time_final
+            #else:
+                ## Finish before the test if over, or earlier
+
+            final_time = min(intend_finish, qset.ans_time_final)
 
             token = request.session.get('token', None)
             if token:
