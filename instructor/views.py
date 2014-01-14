@@ -662,7 +662,7 @@ def load_class_list(request):
                 # Emails sometimes have spaces at the start of them.
                 user_obj = UserProfile.objects.get(student_number=student_id)
                 obj = user_obj.user
-                #obj = User.objects.get(email=email)
+                assert(student_id.strip() == obj.get_profile().student_number)
                 logger.info('User [%s] already exists' % username)
             except UserProfile.DoesNotExist:
                 obj = User(username=username,
@@ -676,12 +676,10 @@ def load_class_list(request):
                                                                    username))
                 users_added.append(obj)
 
-
-            # TODO(KGD): if group is already there, this code currently over
-            #            writes the Group to be "None", which is wrong
+            # Add/updated the user's profile
             profile = obj.get_profile()
             profile.role = 'Student'
-            profile.group = group
+            profile.group = profile.group or group
             profile.student_number = student_id.strip()
             profile.courses.add(course)
             profile.save()

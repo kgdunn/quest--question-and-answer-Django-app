@@ -256,7 +256,6 @@ def grade_short(qactual, force_reload=False):
                                      grade_value=grade_value,
                                      reason_description=reason)
 
-
     return grade
 
 
