@@ -233,7 +233,7 @@ def grade_short(qactual, force_reload=False):
                     assert(False)
 
                 if string_answer:
-                    out = string_match(value, token_dict[key], qactual)
+                    out = string_match(value, token_dict[key])
                 else:
                     out = compare_numeric_with_precision(correct,
                                                          token_dict[key])
@@ -319,13 +319,11 @@ def string_match(correct, given, multiple_tries=True):
     for item in correct:
         item = item.strip()
         given = given.strip()
+        given = handle_special_cases(given).replace('-', ' ')
+
+
         if item.lower() == given.lower():
             return (True, None)
-
-        if multiple_tries:
-            # Try once more.
-            given = handle_special_cases(given).replace('-', ' ')
-            return string_match(item, given, multiple_tries=False)
 
     return (False, 'No match')
 
