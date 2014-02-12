@@ -845,10 +845,10 @@ def successful_submission(request, course_code_slug, question_set_slug):
 
     out = send_email([to_address, ], subject, message)
     if out:
-        logger.debug('Successfully sent email on QSet submission: %s' % to_address[0])
+        logger.debug('Successfully sent email on QSet submission: %s' % str(to_address))
     else:
         logger.error('Unable to send submission confirmation email to: %s' %
-                    to_address[0])
+                    str(to_address))
 
     ctxdict = {'token': token,
                'quest_cut_off': final}
