@@ -637,6 +637,7 @@ def load_class_list(request):
                 group = None
             if len(row)==5:
                 last, first, email_id, student_id, group = row
+
                 group_obj = Group.objects.filter(name=group)
                 if len(group_obj) == 0:
                     group = Group(name=group)
@@ -660,11 +661,19 @@ def load_class_list(request):
             try:
                 # Rather fetch by student number, instead of emails.
                 # Emails sometimes have spaces at the start of them.
-                user_obj = UserProfile.objects.get(student_number=student_id)
-                obj = user_obj.user
-                assert(student_id.strip() == obj.get_profile().student_number)
-                logger.info('User [%s] already exists' % username)
-            except UserProfile.DoesNotExist:
+                #user_obj = UserProfile.objects.get(student_number=student_id)
+                #obj = user_obj.user
+                #assert(student_id.strip() == obj.get_profile().student_number)
+
+                # Go back to email address, it is more unique
+                obj = User.objects.get(email=email)
+                #obj = user_obj.get_profile()
+                #assert(student_id.strip() == obj.get_profile().student_number)
+
+
+                logger.info('User [%s] already exists' % email)
+            #except UserProfile.DoesNotExist:
+            except User.DoesNotExist:
                 obj = User(username=username,
                            first_name=first.strip(),
                            last_name=last.strip(),

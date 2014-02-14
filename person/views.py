@@ -45,7 +45,7 @@ def create_sign_in_email(user, qset=None):
     """
     Creates the token and generates the email body and subject for a user.
     """
-    token_address = generate_random_token()
+    token_address = generate_random_token(token_length=6)
     Token.objects.get_or_create(token_address=token_address,
                                 user=user,
                                 has_been_used=False)
