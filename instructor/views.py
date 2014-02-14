@@ -123,41 +123,44 @@ def parse_MCQ_TF_Multi(text, q_type):                             # helper
     else:
         t_grading = dict()
 
+        start_letter = 'a'
         for line in text:
+            start_letter = chr(ord(start_letter) + 1)
 
             if len(line.strip()) == 0:
                 continue
 
             # This check must be before the next one
             elif line.startswith('%^'):
-                section_name = generate_random_token(4)
+                section_name = start_letter + generate_random_token(4)
                 t_grading[section_name] = ['final-key', ]
                 final = FINALKEY_RE.match(line).group(2)
                 t_grading[section_name].append(final)
                 continue
 
             elif line.startswith('%'):
-                section_name = generate_random_token(4)
+                section_name = start_letter + generate_random_token(4)
                 t_grading[section_name] = ['final-lure', ]
                 final = FINALLURE_RE.match(line).group(2)
                 t_grading[section_name].append(final)
                 continue
 
             elif line.startswith('^'):
-                section_name = generate_random_token(4)
+                section_name = start_letter + generate_random_token(4)
                 t_grading[section_name] = ['key', ]
                 key = KEY_RE.match(line).group(2)
                 t_grading[section_name].append(key)
                 continue
 
             elif line.startswith('&'):
-                section_name = generate_random_token(4)
+                section_name = start_letter + generate_random_token(4)
                 t_grading[section_name] = ['lure', ]
                 lure = LURE_RE.match(line).group(2)
                 t_grading[section_name].append(lure)
                 continue
 
             t_grading[section_name][1] += '\n' + line
+
 
     # Do a sanity check: MCQ and TF must have a single correct answer
     #                    MULTI must have more than one correct answer<-NO
@@ -940,15 +943,24 @@ def render(qt, options=None):                                        # helper
 
         lst = []
         name = generate_random_token(8)
-        for (key, value) in get_type(qt.t_grading, keytype='key'):
-            lst.append(template % (q_type, name, value, key))
 
-        for (lure, value) in get_type(qt.t_grading, keytype='lure'):
-            lst.append(template % (q_type, name, value, lure))
+        keys =  qt.t_grading.keys()
+        keys.sort()
+
+        for key in keys:
+            lst.append(template % (q_type, name, key, qt.t_grading[key][1]))
+
+
+
+            #for (key, value) in get_type(qt.t_grading, keytype='key'):
+                #lst.append(template % (q_type, name, value, key))
+
+            #for (lure, value) in get_type(qt.t_grading, keytype='lure'):
+                #lst.append(template % (q_type, name, value, lure))
 
         #random.shuffle(lst)
-        for (final, value) in get_type(qt.t_grading, keytype='final'):
-            lst.append(template % (q_type, name, value, final))
+        #for (final, value) in get_type(qt.t_grading, keytype='final'):
+        #    lst.append(template % (q_type, name, value, final))
 
         # NOTE: Do not use <div> tags: content inside it is ignored by Markdown
         #       Causes math not to be rendered.
