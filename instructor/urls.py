@@ -20,6 +20,10 @@ urlpatterns = patterns('',
     url(r'report-responses/',
         views.report_responses, name='admin-report-responses'),
 
+    url(r'report-responses-short-answer/',
+            views.report_responses_short_answer,
+            name='admin-report-responses-short-answer'),
+
     #url(r'fix-questions/', views.fix_questions),
 
     url('preview-question/', views.preview_question,

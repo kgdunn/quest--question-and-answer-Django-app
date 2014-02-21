@@ -833,7 +833,7 @@ def report_responses(request):
                 <td>{1}</td>
                 <td>{2}</td>
             </tr>""".format(item.id,
-                            item.user.user.last_name,
+                            item.user.user.email,
                             json.loads(item.given_answer).values()[0]\
                                            .encode('utf8', 'replace')
                             ))
@@ -849,6 +849,79 @@ def report_responses(request):
         return render_to_response('instructor/report-responses.html',
                                   ctxdict,
                                   context_instance=RequestContext(request))
+
+@login_required                       # URL: ``admin-report-responses-short-answer``
+def report_responses_short_answer(request):
+    """
+    Reports all the responses from the student for a particular short-answer
+    answer.
+    """
+    if request.POST:
+        qtemplate_slug = request.POST.get('qtemplate_slug')
+        course_code_slug = request.POST.get('course_slug')
+        qtemplate = QTemplate.objects.get(slug=qtemplate_slug)
+        qactuals = QActual.objects.filter(qtemplate__slug=qtemplate_slug)
+
+        keys = []
+        values = []
+        t_grading = json.loads(qtemplate.t_grading)
+        for key, value in t_grading.iteritems():
+            keys.append(key)
+            values.append(value[0])
+
+        out = [qtemplate.t_question, ]
+        header = """<tr><td>Q-ID</td><td>Student</td>""" + \
+            "<td>%s</td>" * len(keys) + "</tr>"
+        names = header % tuple(keys)
+        expected = header % tuple(values)
+        out.append("""<table border="1"><th>""" + names + expected + "</th>")
+        for item in qactuals:
+            if item.given_answer.strip() == '':
+                out.append("""
+                <tr><td>{0}</td>
+                    <td>{1}</td>
+                    <td colspan="{3}">{2}</td>
+                </tr>""".format(item.id,
+                                item.user.user.email,
+                                "Not answered",
+                                len(keys)
+                                ))
+                continue
+
+            # The aim to match the ``item.given_answer`` to be in the same column
+            # order as the column headers defined above by ``keys`` and ``values``
+            response_code = []
+            true_answer = []
+            for key, value in json.loads(item.grading_answer).iteritems():
+                response_code.append(key)
+                true_answer.append(value[0])
+
+            responses = [None, ] * len(keys)
+            ga = json.loads(item.given_answer)
+            for idx, entry in enumerate(true_answer):
+                idx_table = values.index(entry)
+                responses[idx_table] = ga[response_code[idx]].encode('utf8', 'replace') or 'NA'
+
+
+            out.append("""<tr><td>{0}</td> <td>{1}</td>""".format(item.id,
+                                                item.user.user.email))
+
+            output =  "<td>%s</td>" * len(keys) + "</tr>"
+            out.append(output % (tuple(responses)))
+
+
+        out.append("</table>")
+        return HttpResponse(out)
+    else:
+        ctxdict = {'course_list': Course.objects.all(),
+                   'qtemplate_list': QTemplate.objects.filter(\
+                       q_type__iexact='short')
+                  }
+        ctxdict.update(csrf(request))
+        return render_to_response('instructor/report-responses.html',
+                                  ctxdict,
+                                  context_instance=RequestContext(request))
+
 
 
 def evaluate_template_code(code, var_dict):                         #helper
