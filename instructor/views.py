@@ -958,7 +958,9 @@ def render(qt, options=None):                                        # helper
             #for (lure, value) in get_type(qt.t_grading, keytype='lure'):
                 #lst.append(template % (q_type, name, value, lure))
 
-        #random.shuffle(lst)
+        # Shuffles the presentation order for the students
+        random.shuffle(lst)
+
         #for (final, value) in get_type(qt.t_grading, keytype='final'):
         #    lst.append(template % (q_type, name, value, final))
 

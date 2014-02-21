@@ -220,11 +220,18 @@ def send_email(to_addresses, subject, messages):
 
     return out, to_list
 
-def generate_random_token(token_length=16, base_address=''):
+def generate_random_token(token_length=16, base_address='', easy_use=False):
     import random
-    token = ''.join([random.choice(('ABCEFGHJKLMNPQRSTUVWXYZ'
-                                    'abcdefghjkmnpqrstuvwxyz2345689'))
+
+    if easy_use:
+        # use characters from a restricted range, that are easy to write and read
+        # unambiguously
+        token = ''.join([random.choice(('abfghkqstwxyz2345689'))
                                                for i in range(token_length)])
+    else:
+        token = ''.join([random.choice(('ABCEFGHJKLMNPQRSTUVWXYZ'
+                                            'abcdefghjkmnpqrstuvwxyz2345689'))
+                                                       for i in range(token_length)])
     return base_address + token
 
 def convert_percentage_to_letter(grade):
