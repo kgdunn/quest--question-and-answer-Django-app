@@ -484,20 +484,22 @@ def fix_glitch(request):
     #for student in students:
     for qactual in qset_questions:  #.filter(user=student).order_by('id'):
 
-        if qactual.given_answer == '':
-            pass
+        #if qactual.given_answer == '':
+        #    pass
 
-        else:
+        #else:
             #qactual.grade = 5  #
             # grade_short(qactual, force_reload=True)
-            if qactual.grade:
+            #if qactual.grade:
                 #if grade.grade_value != qactual.grade.grade_value:
                     #print('Changed [%s]:(%s) -> (%s)' %
                           #(qactual.user.slug,
                               #qactual.grade.grade_value, grade.grade_value))
                 #qactual.grade.delete()
-                qactual.grade.grade_value = 5
-                qactual.save()
+        g = qactual.grade
+        g.grade_value = 5
+        g.save()
+        #qactual.save()
             #else:
                 #assert(False)
 
