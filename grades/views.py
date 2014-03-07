@@ -474,31 +474,34 @@ def grade_summary(request, course_code_slug):
 
 def fix_glitch(request):
 
-    course_code_slug = 'statistics-for-engineering-6c3'
-    question_set_slug = 'week-3'
+    course_code_slug = 'process-control-3p4-2013-2014'
+    question_set_slug = 'quest-4-3p4-3p4-20132014'
+
     # Iterate through all questions by all students in the QSet
     students = UserProfile.objects.filter(courses__slug=course_code_slug)
-    qset_questions = QActual.objects.filter(qset__slug=question_set_slug)
+    qset_questions = QActual.objects.filter(qtemplate__id=961)
 
+    #for student in students:
+    for qactual in qset_questions:  #.filter(user=student).order_by('id'):
 
-    for student in students:
-        for qactual in qset_questions.filter(user=student).order_by('id'):
+        if qactual.given_answer == '':
+            pass
 
-            if qactual.given_answer == '':
-                pass
+        else:
+            #qactual.grade = 5  #
+            # grade_short(qactual, force_reload=True)
+            if qactual.grade:
+                #if grade.grade_value != qactual.grade.grade_value:
+                    #print('Changed [%s]:(%s) -> (%s)' %
+                          #(qactual.user.slug,
+                              #qactual.grade.grade_value, grade.grade_value))
+                #qactual.grade.delete()
+                qactual.grade.grade_value = 5
+                qactual.save()
+            #else:
+                #assert(False)
 
-            elif qactual.qtemplate.q_type in ('short'):
-                grade = grade_short(qactual, force_reload=True)
-                if qactual.grade:
-                    if grade.grade_value != qactual.grade.grade_value:
-                        print('Changed [%s]:(%s) -> (%s)' %
-                              (qactual.user.slug,
-                                  qactual.grade.grade_value, grade.grade_value))
-                    #qactual.grade.delete()
-                    qactual.grade = grade
-                    qactual.save()
-                else:
-                    assert(False)
+    return HttpResponse('All done')
 
 
 def get_peer_comments(user, qactuals, username):
