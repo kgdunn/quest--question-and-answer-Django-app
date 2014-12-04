@@ -43,12 +43,14 @@ class QTemplate(models.Model):
     question_type = (
                 ('tf',       'True/False question'),
                 ('mcq',      'Multiple choice question'),
+                ('mcq-ifat', 'Multiple choice question IFAT'),
                 ('multi',    'Multi-select'),  # Like MCQ, but multiple options
                 ('short',    'Short answer question'),
                 ('long',     'Long answer question'),
                 ('numeric',  'Numeric answer (with specified sensitivity)'),
                 ('fib',      'Fill in the blanks'),
                 ('peer-eval','Peer evaluation'),
+
                 #('multipart','Multipart questions'),
     )
     # e.g. "The misbehaving clock", if given explictly, else it is the first

@@ -1,4 +1,6 @@
 from django.conf.urls import patterns, include, url
+from django.views.generic.base import RedirectView
+
 import person
 import instructor
 import question
@@ -11,8 +13,8 @@ from django.conf import settings
 
 
 # Uncomment these lines to find DeprecationWarning
-#import warnings
-#warnings.simplefilter('error', DeprecationWarning)
+import warnings
+warnings.simplefilter('error', DeprecationWarning)
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -31,9 +33,11 @@ else:
 
 urlpatterns += patterns('',
 
-    (r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/media/favicon.ico'}),
-    (r'^apple-touch-icon-precomposed\.png$', 'django.views.generic.simple.redirect_to', {'url': '/media/favicon.ico'}),
-    (r'^apple-touch-icon\.png$', 'django.views.generic.simple.redirect_to', {'url': '/media/favicon.ico'}),
+
+    (r'^favicon\.ico$', RedirectView.as_view(url='/media/favicon.ico')),
+    #(r'^favicon\.ico$', 'django.views.generic.simple.redirect_to', {'url': '/media/favicon.ico'}),
+    #(r'^apple-touch-icon-precomposed\.png$', 'django.views.generic.simple.redirect_to', {'url': '/media/favicon.ico'}),
+    #(r'^apple-touch-icon\.png$', 'django.views.generic.simple.redirect_to', {'url': '/media/favicon.ico'}),
 
     # Instructor specific URLs
     url(r'^_admin/', include('instructor.urls')),

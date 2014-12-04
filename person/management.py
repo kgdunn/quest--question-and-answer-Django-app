@@ -41,14 +41,14 @@ def validate_superuser(app, created_models, verbosity, **kwargs):
         # are intended to be retained/used for the long term.
         # This user is used to create temporary objects, which will be deleted
         # periodically AND automatically, without prompt, from the database.
-        if len(User.objects.filter(username='quest-grader-previewer')) == 0:
-            # Only create this user if it doesn't exist
-            auto_user = User.objects.create(username='quest-grader-previewer',
-                                    email='quest.grader.previewer@example.com',
-                                    is_active=False)
-            auser = user_class.objects.create(user=auto_user)
-            auser.role = 'Grader'
-            auser.save()
+        #if len(User.objects.filter(username='quest-grader-previewer')) == 0:
+            ## Only create this user if it doesn't exist
+            #auto_user = User.objects.create(username='quest-grader-previewer',
+                                    #email='quest.grader.previewer@example.com',
+                                    #is_active=False)
+            #auser = user_class.objects.create(user=auto_user)
+            #auser.role = 'Grader'
+            #auser.save()
 
 
 

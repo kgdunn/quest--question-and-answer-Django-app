@@ -1,22 +1,24 @@
 # Project dependancies
 # ----------------------
-# easy_install -U django       <--- version 1.5.2 used during development
-# easy_install -U simplejson   <--- version 2.6.2
+# easy_install -U django       <--- version 1.7.1 used during development
+# easy_install -U simplejson   <--- version 3.6.5
 # easy_install -U psychopg2    <--- version 2.5.1
-# easy_install -U python-magic <--- version 0.4.3
+# easy_install -U python-magic <--- version 0.4.6
 
-## easy_install -U markdown   <--- version 2.2.1
-## easy_install -U numpy      <--- version 1.6.2
-## easy_install -U pygments   <--- version 1.6rc1
-## easy_install -U pil        <--- version 1.1.7  (for ImageField)
-#
+# easy_install -U markdown   <--- version 2.5.2
+# easy_install -U numpy      <--- version 1.6.2
+# easy_install -U pygments   <--- version 2.0.1
+# easy_install -U pil        <--- version 1.1.7  (for ImageField) http://stackoverflow.com/questions/19532125/cant-install-pil-after-mac-os-x-10-9
+
 
 import os
 import django.conf.global_settings as DEFAULT_SETTINGS
-DEBUG = False
+DEBUG = True
 TESTING = False  # Set to False during unit test to previous sending email
 #TEMPLATE_DEBUG = DEBUG
 TEMPLATE_DEBUG = True
+
+ALLOWED_HOSTS = ['*']
 
 ADMINS = (
      ('Kevin Dunn', 'kevin.dunn@mcmaster.ca'),
@@ -108,15 +110,27 @@ TEMPLATE_LOADERS = (
 )
 
 MIDDLEWARE_CLASSES = (
+    'django.middleware.common.BrokenLinkEmailsMiddleware',  # <-- add for newer Django version; must go first
+
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.contrib.auth.middleware.RemoteUserMiddleware',  # <--- add this
+
+
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
+
+import re
+IGNORABLE_404_URLS = (
+    re.compile(r'\.(php|cgi)$'),
+    re.compile(r'^/phpmyadmin/'),
+)
+
+
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.RemoteUserBackend',
     'django.contrib.auth.backends.ModelBackend',
